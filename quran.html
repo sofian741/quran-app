@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes">
+    <meta name="theme-color" content="#176B63">
+    <title>المصحف الشريف</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="reader-page" data-theme="paper">
+    <div class="loading-screen" id="loading-screen" role="status" aria-live="polite">
+        <div class="loading-mark" aria-hidden="true">۞</div>
+        <strong>جاري تجهيز المصحف…</strong>
+    </div>
+
+    <header class="reader-toolbar reader-overlay" id="reader-toolbar">
+        <a class="icon-button" href="index.html" aria-label="العودة للرئيسية">⌂</a>
+        <div class="toolbar-title">
+            <strong id="toolbar-surah">القرآن الكريم</strong>
+            <small id="toolbar-range">جاري التحميل…</small>
+        </div>
+        <button class="icon-button" id="open-settings" type="button" aria-label="إعدادات القراءة">⚙</button>
+    </header>
+
+    <main class="reader-stage" id="reader-stage" aria-label="صفحة المصحف">
+        <section class="mushaf-page" id="mushaf-page">
+            <div class="page-heading" aria-hidden="true">
+                <span id="page-surah">سورة الفاتحة</span>
+                <span id="page-range">الآيات ١–٧</span>
+            </div>
+            <article class="quran-text" id="quran-text" aria-live="polite"></article>
+            <div class="page-foot" aria-hidden="true">
+                <span class="page-divider"></span>
+                <span class="display-page-number" id="display-page-number">١</span>
+                <span class="page-divider"></span>
+            </div>
+        </section>
+    </main>
+
+    <nav class="reader-nav reader-overlay" aria-label="التنقل بين الصفحات">
+        <button type="button" id="prev-page" class="nav-button">الصفحة السابقة</button>
+        <div class="nav-center">
+            <small>صفحة العرض</small>
+            <strong id="nav-page-number">١</strong>
+        </div>
+        <button type="button" id="next-page" class="nav-button">الصفحة التالية</button>
+    </nav>
+
+    <div class="settings-backdrop" id="settings-backdrop" hidden></div>
+    <aside class="settings-sheet" id="settings-sheet" aria-label="إعدادات القراءة" aria-hidden="true">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-title-row">
+            <div>
+                <small>تخصيص القراءة</small>
+                <h2>إعدادات المصحف</h2>
+            </div>
+            <button class="close-settings" id="close-settings" type="button" aria-label="إغلاق الإعدادات">×</button>
+        </div>
+
+        <div class="setting-block">
+            <div class="setting-label-row">
+                <label for="font-size-range">حجم الخط</label>
+                <output id="font-size-value">34</output>
+            </div>
+            <input id="font-size-range" type="range" min="24" max="48" step="1" value="34">
+        </div>
+
+        <div class="setting-block">
+            <div class="setting-label-row">
+                <label for="line-height-range">تباعد السطور</label>
+                <output id="line-height-value">1.75</output>
+            </div>
+            <input id="line-height-range" type="range" min="1.45" max="2.05" step="0.05" value="1.75">
+        </div>
+
+        <div class="setting-block">
+            <span class="setting-label">لون الصفحة</span>
+            <div class="theme-grid" role="group" aria-label="ألوان جاهزة">
+                <button type="button" class="theme-swatch is-active" data-theme-choice="paper"><span class="swatch paper"></span>ورقي</button>
+                <button type="button" class="theme-swatch" data-theme-choice="white"><span class="swatch white"></span>أبيض</button>
+                <button type="button" class="theme-swatch" data-theme-choice="mint"><span class="swatch mint"></span>أخضر</button>
+                <button type="button" class="theme-swatch" data-theme-choice="dark"><span class="swatch dark"></span>ليلي</button>
+            </div>
+        </div>
+
+        <div class="setting-block custom-colors">
+            <label>لون مخصص للصفحة <input type="color" id="paper-color" value="#fbf7ec"></label>
+            <label>لون النص <input type="color" id="text-color" value="#191b18"></label>
+        </div>
+
+        <button type="button" class="reset-settings" id="reset-settings">إعادة الإعدادات الافتراضية</button>
+        <p class="settings-note">صفحات المصحف ثابتة (٦٠٤ صفحة). تغيير حجم الخط يضبط العرض، ويمكن التمرير داخل الصفحة لقراءة بقية آياتها. نص القرآن من <a href="https://tanzil.net" target="_blank" rel="noopener noreferrer">Tanzil Project</a>.</p>
+    </aside>
+
+    <script src="app.js"></script>
+</body>
+</html>
