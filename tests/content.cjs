@@ -1,44 +1,88 @@
-// Dependency-free content regression checks. Does not emulate browser layout.
-const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
-const root=path.join(__dirname,'..'),source=fs.readFileSync(path.join(root,'app.js'),'utf8');
-class Node {
- constructor(tag='',text=''){this.tag=tag;this.value=text;this.children=[];this.dataset={};this.className='';}
- appendChild(n){this.children.push(n);return n;}
- replaceChildren(n){this.children=n.children;}
- setAttribute(){}
- set textContent(t){this.value=t;this.children=[];}
- get textContent(){return this.value+this.children.map(n=>n.textContent).join('');}
+'use strict';
+
+const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.join(__dirname, '..');
+const raw = fs.readFileSync(path.join(root, 'data/quran-uthmani.txt'), 'utf8');
+const layout = JSON.parse(fs.readFileSync(path.join(root, 'data/mushaf-layout.json'), 'utf8'));
+const suffixMarks = new Set(['ۖ', 'ۚ', 'ۘ', 'ۗ', 'ۛ', 'ۙ', 'ۜ', '۩']);
+const prefixMarks = new Set(['۞']);
+
+function splitWords(text) {
+    const words = [];
+    let prefix = '';
+    for (const word of text.trim().split(/\s+/).filter(Boolean)) {
+        if (prefixMarks.has(word)) prefix += word;
+        else if (suffixMarks.has(word) && words.length) words[words.length - 1] += word;
+        else {
+            words.push(prefix + word);
+            prefix = '';
+        }
+    }
+    return words;
 }
-const document={createDocumentFragment:()=>new Node(),createTextNode:t=>new Node('#text',t),createElement:t=>new Node(t)};
-const context=vm.createContext({document,els:{text:new Node()},console});
-const names=source.slice(source.indexOf('    const SURAH_NAMES'),source.indexOf('    const THEMES'));
-const parse=source.slice(source.indexOf('    function parseQuran'),source.indexOf('    // عرض صفحة'));
-const render=source.slice(source.indexOf('    // Original geometric artwork'),source.indexOf('    function updatePageMeta'));
-const digits=source.slice(source.indexOf('    function toArabicDigits'),source.indexOf('    function clamp'));
-vm.runInContext(names+parse+render+digits,context);
-const raw=fs.readFileSync(path.join(root,'data/quran-uthmani.txt'),'utf8');context.raw=raw;
-vm.runInContext('var verses=parseQuran(raw); var tokens=buildTokens(verses);',context);
-const expected=raw.split(/\r?\n/).filter(x=>/^\d+\|/.test(x)).map(x=>x.split('|').slice(2).join('|'));
-assert.equal(context.verses.length,6236);assert.deepEqual(Array.from(context.verses,v=>v.text),expected);
-const pages=JSON.parse(fs.readFileSync(path.join(root,'data/verse-to-page.json')));
-assert.equal(pages.length,604);
-const starts=pages.map(p=>context.verses.findIndex(v=>v.surah===p.surah&&v.ayah===p.ayah));
-assert.equal(starts[0],0);assert.ok(starts.every((x,i)=>x>=0&&(!i||x>starts[i-1])));
-let offset=0;const tokenStarts=context.verses.map(v=>{const x=offset;offset+=v.text.split(/\s+/).length;return x});
-const all=(node)=>[node,...node.children.flatMap(all)];
-const clean=node=>['surah-heading','ayah-marker'].includes(node.className)?'':node.value+node.children.map(clean).join('');
-let headings=0,basmalas=0,markers=0;
-for(let i=0;i<604;i++){
- context.start=tokenStarts[starts[i]];context.end=tokenStarts[starts[i+1]]??offset;
- vm.runInContext('renderRange(start,end)',context);
- const nodes=all(context.els.text), vv=context.verses.slice(starts[i],starts[i+1]);
- assert.equal(clean(context.els.text).replace(/\s+/g,' ').trim(),vv.map(v=>v.text).join(' '),`page ${i+1}`);
- const h=nodes.filter(n=>n.className==='surah-heading'),b=nodes.filter(n=>n.className==='surah-basmala'),m=nodes.filter(n=>n.className==='ayah-marker');
- assert.deepEqual(h.map(n=>+n.dataset.surah),Array.from(vv.filter(v=>v.ayah===1),v=>v.surah));
- assert.equal(b.length,vv.filter(v=>v.ayah===1&&v.surah!==9).length);assert.equal(m.length,vv.length);
- b.forEach((x,j)=>assert.equal(clean(x).trim(),vv.filter(v=>v.ayah===1&&v.surah!==9)[j].text.split(/\s+/).slice(0,4).join(' ')));
- if(i===0)assert.equal(all(b[0]).filter(n=>n.className==='ayah-marker').length,1);
- headings+=h.length;basmalas+=b.length;markers+=m.length;
+
+const verses = [];
+const words = [];
+for (const line of raw.split(/\r?\n/)) {
+    if (!/^\d+\|\d+\|/.test(line)) continue;
+    const [surahText, ayahText, ...textParts] = line.split('|');
+    const surah = Number(surahText);
+    const ayah = Number(ayahText);
+    const verseWords = splitWords(textParts.join('|'));
+    verses.push({ surah, ayah, verseWords });
+    verseWords.forEach((text, word) => words.push({ surah, ayah, word, text }));
 }
-assert.equal(headings,114);assert.equal(basmalas,113);assert.equal(markers,6236);
-console.log('PASS: 604 pages; 6236 unchanged verses and markers; 114 headings; 113 opening basmalas (including numbered Fatiha); no Tawbah basmala. DOM/content only; browser layout not tested.');
+
+assert.equal(
+    crypto.createHash('sha256').update(raw).digest('hex'),
+    'aa0bf9278a177a12e6d9bef621ce37a1d24fa35168b5ae9c13ebcbe01e3686cf',
+    'The Tanzil source file changed',
+);
+assert.equal(verses.length, 6236);
+assert.equal(words.length, 77881);
+assert.equal(layout.version, 1);
+assert.equal(layout.pages.length, 604);
+
+let cursor = 0;
+let headers = 0;
+let basmalas = 0;
+let textLines = 0;
+
+layout.pages.forEach((page, pageIndex) => {
+    assert.ok(page.length >= 8 && page.length <= 16, `page ${pageIndex + 1} line count`);
+    for (const line of page) {
+        if (line[0] === 'h') {
+            assert.equal(line[1], ++headers, `page ${pageIndex + 1} surah header`);
+            continue;
+        }
+        assert.ok(line[0] === 'l' || line[0] === 'b');
+        assert.equal(line[1], cursor, `page ${pageIndex + 1} contiguous start`);
+        assert.ok(line[2] > line[1], `page ${pageIndex + 1} nonempty line`);
+        cursor = line[2];
+        if (line[0] === 'b') {
+            basmalas++;
+            const opening = words.slice(line[1], line[2]);
+            assert.equal(opening.length, 4);
+            assert.equal(opening[0].ayah, 1);
+            assert.notEqual(opening[0].surah, 1);
+            assert.notEqual(opening[0].surah, 9);
+        } else {
+            textLines++;
+        }
+    }
+});
+
+assert.equal(cursor, words.length);
+assert.equal(headers, 114);
+assert.equal(basmalas, 112);
+assert.ok(textLines > 8500);
+
+console.log(
+    `PASS: ${layout.pages.length} pages; ${verses.length} verses; ` +
+    `${words.length} source words covered once in order; ` +
+    `${headers} headers; ${basmalas} separate basmalas; Tanzil SHA-256 unchanged.`,
+);
