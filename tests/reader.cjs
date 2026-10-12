@@ -87,6 +87,30 @@ const root = path.join(__dirname, '..');
         });
         await page.reload();
         await page.waitForSelector('#loading-screen', { state: 'detached' });
+        await page.evaluate(() => document.fonts.ready);
+        await page.waitForTimeout(80);
+
+        const readerGeometry = () => page.evaluate(() => {
+            const snapshot = element => {
+                const rect = element.getBoundingClientRect();
+                return [rect.x, rect.y, rect.width, rect.height];
+            };
+            return {
+                page: snapshot(document.querySelector('#mushaf-page')),
+                rows: [...document.querySelector('#quran-text').children].map(snapshot),
+            };
+        });
+        const beforeSettings = await readerGeometry();
+        await page.evaluate(() => document.querySelector('#open-settings').click());
+        await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+        await page.waitForTimeout(140);
+        assert.deepEqual(await readerGeometry(), beforeSettings);
+        assert.equal(await page.locator('#font-size-range').count(), 0);
+        assert.equal(await page.locator('#line-height-range').count(), 0);
+        await page.evaluate(() => document.querySelector('#close-settings').click());
+        await page.waitForTimeout(230);
+        assert.deepEqual(await readerGeometry(), beforeSettings);
+
         await page.evaluate(() => window.dispatchEvent(
             new KeyboardEvent('keydown', { key: 'ArrowLeft' }),
         ));
@@ -95,7 +119,7 @@ const root = path.join(__dirname, '..');
             3,
         );
         assert.deepEqual(errors, []);
-        console.log(`PASS: ${checks} responsive page checks; navigation persistence; no page errors.`);
+        console.log(`PASS: ${checks} responsive page checks; stable settings overlay; navigation persistence; no page errors.`);
     } finally {
         await browser.close();
         server.close();
