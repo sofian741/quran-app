@@ -26,7 +26,7 @@
         <section class="mushaf-page" id="mushaf-page">
             <div class="page-heading" aria-hidden="true">
                 <span id="page-surah">سورة الفاتحة</span>
-                <span id="page-range">الآيات ١–٧</span>
+                <span id="page-range">الجزء الأول</span>
             </div>
             <article class="quran-text" id="quran-text" aria-live="polite"></article>
             <div class="page-foot" aria-hidden="true">
@@ -37,14 +37,33 @@
         </section>
     </main>
 
-    <nav class="reader-nav reader-overlay" aria-label="التنقل بين الصفحات">
-        <button type="button" id="prev-page" class="nav-button">الصفحة السابقة</button>
+    <nav class="reader-nav reader-overlay" aria-label="أدوات المصحف">
+        <button type="button" id="open-index" class="index-open-button" aria-haspopup="dialog" aria-controls="index-sheet">
+            <span aria-hidden="true">☷</span> الفهرس
+        </button>
         <div class="nav-center">
-            <small>صفحة العرض</small>
+            <small>الصفحة</small>
             <strong id="nav-page-number">١</strong>
         </div>
-        <button type="button" id="next-page" class="nav-button">الصفحة التالية</button>
+        <span class="nav-placeholder" aria-hidden="true"></span>
     </nav>
+
+    <div class="index-backdrop" id="index-backdrop" hidden></div>
+    <aside class="index-sheet" id="index-sheet" role="dialog" aria-modal="true" aria-label="فهرس المصحف" aria-hidden="true">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-title-row">
+            <div>
+                <small>الانتقال السريع</small>
+                <h2>فهرس المصحف</h2>
+            </div>
+            <button class="close-settings" id="close-index" type="button" aria-label="إغلاق الفهرس">×</button>
+        </div>
+        <div class="index-tabs" role="group" aria-label="نوع الفهرس">
+            <button type="button" class="index-tab is-active" data-index-tab="surahs" aria-pressed="true">السور</button>
+            <button type="button" class="index-tab" data-index-tab="juz" aria-pressed="false">الأجزاء</button>
+        </div>
+        <div class="index-list" id="index-list"></div>
+    </aside>
 
     <div class="settings-backdrop" id="settings-backdrop" hidden></div>
     <aside class="settings-sheet" id="settings-sheet" aria-label="إعدادات القراءة" aria-hidden="true">
@@ -65,11 +84,6 @@
                 <button type="button" class="theme-swatch" data-theme-choice="mint"><span class="swatch mint"></span>أخضر</button>
                 <button type="button" class="theme-swatch" data-theme-choice="dark"><span class="swatch dark"></span>ليلي</button>
             </div>
-        </div>
-
-        <div class="setting-block custom-colors">
-            <label>لون مخصص للصفحة <input type="color" id="paper-color" value="#fbf7ec"></label>
-            <label>لون النص <input type="color" id="text-color" value="#191b18"></label>
         </div>
 
         <button type="button" class="reset-settings" id="reset-settings">إعادة الإعدادات الافتراضية</button>
