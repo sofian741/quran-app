@@ -1,20 +1,39 @@
-# مصادر المصحف
+# مصادر المصحف والتراخيص
 
 ## نص القرآن الكريم
+
 - الملف: `data/quran-uthmani.txt`
-- المصدر: Tanzil Project — https://tanzil.net
-- النوع: Uthmani, Version 1.1
-- الترخيص الوارد داخل الملف: Creative Commons Attribution 3.0
-- يجب إبقاء كتلة حقوق النشر الموجودة في نهاية الملف كما هي، وعدم تغيير النص القرآني.
+- المصدر: [Tanzil Project](https://tanzil.net)، نص Uthmani إصدار 1.1.
+- الترخيص المرفق داخل الملف: Creative Commons Attribution 3.0.
+- الملف هو المصدر الوحيد للنص المعروض. لا يعرض التطبيق النص الموجود في بيانات التخطيط.
+- بصمة SHA-256 المعتمدة أثناء هذا التغيير:
+  `aa0bf9278a177a12e6d9bef621ce37a1d24fa35168b5ae9c13ebcbe01e3686cf`.
 
-## الخط العثماني
-- الملف: `assets/fonts/UthmanicHafs1Ver18.woff2`
-- الملف supplied by the project owner for local use in this project.
-- قبل النشر العام على Google Play يجب التأكد من شروط إعادة توزيع الخط من مصدره الأصلي والالتزام بها.
+## تخطيط صفحات مصحف المدينة
 
-## حدود صفحات مصحف المدينة (604 صفحة)
-- المصدر: https://github.com/ouryhamdalaye/madinah-mushaf-json/blob/main/pages/verse-to-page.json
-- تم استخدام أول آية لكل صفحة (604 مدخلًا) وتحويلها إلى فهارس آيات رقمية مضغوطة داخل `app.js`.
-- ترخيص الحزمة المنشور: CC BY-SA 4.0، مع ضرورة مراجعة ترخيص المصدر الأعلى لتوزيع الصفحات قبل النشر التجاري.
-- المرجع للتحقق: https://api-docs.quran.com/docs/tutorials/fonts/page-layout/
-- لا يجري تعديل النص القرآني الأصلي، والتقسيم لا يعتمد على حجم الشاشة.
+- الملف الناتج: `data/mushaf-layout.json`.
+- المصدر: [zonetecde/mushaf-layout](https://github.com/zonetecde/mushaf-layout)، الالتزام
+  `72116ce4d405d67823804f0eed795c1e6409b4af`.
+- يعلن `package.json` في المصدر ترخيص ISC.
+- لا يحتوي الملف المحلي على نص قرآني أو رموز QPC؛ بل يحتوي حدود 604 صفحات، وترتيب
+  الأسطر، ونطاق فهارس كلمات Tanzil، ومواضع عناوين السور والبسملة فقط.
+- أنشئ `scripts/build-mushaf-layout.cjs` الملف المحلي بعد مطابقة كل سطر مع Tanzil.
+  عولج موضعان اختلفت فيهما الكتابة الإملائية في وصف المصدر بدرجة حرف واحد؛ لم يُنسخ
+  ذلك النص ولم يتغير نص Tanzil.
+- نُقلت عناوين السور الموجودة منفردة في نهاية صفحة إلى أول الصفحة التالية حتى تبقى مع
+  البسملة أو أول آية. هذا تعديل عرض موثق على البيانات المشتقة.
+
+## الخط القرآني
+
+- الملف: `assets/fonts/amiri-quran-arabic-400-normal.woff2`.
+- الخط: Amiri Quran Regular.
+- المصدر الأصلي: [Amiri Font](https://www.amirifont.org/)، والملف موزع بصيغة WOFF2.
+- الترخيص: SIL Open Font License 1.1، محفوظ كاملًا في
+  `assets/fonts/amiri-quran-LICENSE.txt`.
+- اختير لأنه خط Unicode متوافق مباشرة مع نص Tanzil وعلامات الوقف والتشكيل، ويعمل في
+  Chromium وAndroid من دون ربط رموز QPC بخطوط خاصة بكل صفحة.
+
+## الزخارف
+
+زخارف عناوين السور وعلامات الآيات مرسومة داخل المشروع باستخدام CSS وSVG بسيط مستقل،
+ولا تستخدم صورًا أو أصولًا خارجية.
