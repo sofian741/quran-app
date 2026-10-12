@@ -1,0 +1,74 @@
+/* Small reader refinements layered on top of style.css. */
+.reader-stage {
+    position: relative;
+    isolation: isolate;
+}
+
+.mushaf-page {
+    z-index: 2;
+}
+
+/* Pages containing several short surahs need a slightly smaller cartouche. */
+.quran-text.multi-surah-page .surah-heading {
+    width: 93%;
+}
+
+.quran-text.dense-surah-page .surah-heading {
+    width: 88%;
+}
+
+.quran-text.multi-surah-page .surah-name {
+    font-size: clamp(15px, 5.8cqi, 38px);
+    padding-bottom: .3em;
+}
+
+.quran-text.dense-surah-page .surah-name {
+    font-size: clamp(14px, 5.4cqi, 35px);
+}
+
+/* Keep ayah numbers readable in night mode instead of leaving them dark teal. */
+.reader-page[data-theme='dark'] .ayah-marker .ayah-number {
+    color: var(--page-text);
+}
+
+/* The target page sits beside the current page while the finger is dragging. */
+.swipe-preview {
+    position: absolute;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0;
+    pointer-events: none;
+    will-change: transform;
+}
+
+.swipe-preview.is-front {
+    z-index: 4;
+}
+
+.preview-heading-fallback {
+    display: grid;
+    place-items: center;
+    min-height: 2.2em;
+    width: 88%;
+    border: 1px solid color-mix(in srgb, var(--reader-accent) 45%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--reader-accent) 8%, var(--page-paper));
+}
+
+.preview-heading-fallback .surah-name {
+    position: static;
+    inset: auto;
+    padding: 0;
+    font-size: .92em;
+}
+
+.preview-marker-fallback {
+    border: 1px solid var(--reader-accent);
+    border-radius: 50%;
+    color: var(--page-text);
+}
+
+@media (max-width: 420px) {
+    .quran-text.multi-surah-page .surah-heading { width: 91%; }
+    .quran-text.dense-surah-page .surah-heading { width: 86%; }
+}
