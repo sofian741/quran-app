@@ -133,6 +133,8 @@
     function syncMeta() {
         metaQueued = false;
         const headers = text.querySelectorAll('.surah-heading');
+        // Let the ornament fill its allocated row without overlapping adjacent verses.
+        headers.forEach(header => header.querySelector('.surah-ornament')?.setAttribute('preserveAspectRatio', 'none'));
         text.classList.toggle('multi-surah-page', headers.length >= 2);
         text.classList.toggle('dense-surah-page', headers.length >= 3);
         if (headers[0]) headingTemplate = headers[0].cloneNode(true);
@@ -166,6 +168,7 @@
             heading.dataset.surah = String(surah);
             const title = heading.querySelector('.surah-name');
             if (title) title.textContent = `سورة ${SURAH_NAMES[surah - 1]}`;
+            heading.querySelector('.surah-ornament')?.setAttribute('preserveAspectRatio', 'none');
             return heading;
         }
         const heading = document.createElement('header');
