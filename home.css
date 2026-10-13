@@ -671,3 +671,6 @@
         animation: none !important;
     }
 }
+/* Reliable vector marks: avoid font-dependent Quran ornament glyph rendering. */
+.home-brand-mark svg { width: 26px; height: 26px; display: block; }
+.home-verse-emblem svg { width: 25px; height: 25px; display: block; }
