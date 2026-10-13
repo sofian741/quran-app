@@ -3,71 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#176B63">
+    <meta name="theme-color" content="#f7f8f3">
     <meta name="color-scheme" content="light dark">
-    <title>القرآن الكريم</title>
+    <meta name="description" content="القرآن الكريم: مصحف المدينة، تفسير الآيات، التلاوات، ومتابعة القراءة في مكان واحد.">
+    <title>الرئيسية | القرآن الكريم</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="home.css">
 </head>
-<body class="home-page">
-    <main class="home-shell">
-        <section class="home-hero" aria-labelledby="app-title">
-            <div class="hero-orb" aria-hidden="true">۞</div>
-            <p class="eyebrow">صدقة جارية</p>
-            <h1 id="app-title">القرآن الكريم</h1>
-            <p class="hero-copy">قراءة هادئة بتخطيط مصحف المدينة، وخط عثماني واضح يتكيّف مع شاشة هاتفك أو جهازك اللوحي.</p>
-            <a class="primary-action" id="continue-reading" href="quran.html">
-                <span id="continue-title">ابدأ القراءة</span>
-                <small id="continue-subtitle">من سورة الفاتحة</small>
+<body class="home-page" data-home-theme="light">
+    <div class="home-app">
+        <header class="home-topbar">
+            <a class="home-brand" href="index.html" aria-label="الرئيسية">
+                <span class="home-brand-mark" aria-hidden="true">۞</span>
+                <span><strong>القرآن الكريم</strong><small>رفيقك في التلاوة والذكر</small></span>
             </a>
-        </section>
+            <button id="home-theme-toggle" class="home-icon-button" type="button"
+                    aria-label="تفعيل الوضع الليلي" title="تبديل المظهر">
+                <svg class="home-moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.1 15.5A8.5 8.5 0 0 1 8.5 3.9 8.5 8.5 0 1 0 20.1 15.5Z"/></svg>
+                <svg class="home-sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </header>
 
-        <section class="home-content" aria-label="أقسام التطبيق">
-            <a class="feature-card quran-card" href="quran.html">
-                <span class="feature-icon" aria-hidden="true">۝</span>
-                <span class="feature-copy">
-                    <strong>المصحف الشريف</strong>
-                    <small>٦٠٤ صفحات بأسطر ثابتة، مع تغيير حجم الخط والألوان.</small>
-                </span>
-                <span class="feature-arrow" aria-hidden="true">‹</span>
-            </a>
+        <main class="home-main">
+            <section class="home-welcome" aria-labelledby="welcome-title">
+                <div>
+                    <p id="home-date" class="home-date" aria-label="التاريخ الهجري">يوم مبارك بإذن الله</p>
+                    <h1 id="welcome-title">السلام عليكم <span aria-hidden="true">✦</span></h1>
+                    <p>كل آية تقرؤها، خطوة إلى طمأنينة القلب.</p>
+                </div>
+                <div class="home-welcome-ornament" aria-hidden="true">۞</div>
+            </section>
 
-            <a class="feature-card quran-card" href="recitations.html" style="margin-top:14px">
-                <span class="feature-icon" aria-hidden="true">
-                    <svg viewBox="0 0 40 40" width="35" height="35" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
-                        <path d="M7 23V19a13 13 0 0 1 26 0v4M7 22v9a4 4 0 0 0 4 4h3V22h-3a4 4 0 0 0-4 4m26-4v9a4 4 0 0 1-4 4h-3V22h3a4 4 0 0 1 4 4"/>
-                    </svg>
-                </span>
-                <span class="feature-copy">
-                    <strong>مكتبة التلاوات</strong>
-                    <small>استمع إلى القرّاء المتاحين واختر السورة والرواية المفضلة.</small>
-                </span>
-                <span class="feature-arrow" aria-hidden="true">‹</span>
-            </a>
+            <section class="home-reading" aria-labelledby="home-reading-title">
+                <div class="home-reading-pattern" aria-hidden="true"></div>
+                <div class="home-reading-top">
+                    <span class="home-pill"><span class="home-live-dot"></span> رحلتك مع القرآن</span>
+                    <span class="home-reading-symbol" aria-hidden="true">۝</span>
+                </div>
+                <div class="home-reading-body">
+                    <p class="home-reading-eyebrow">من حيث توقفت</p>
+                    <h2 id="home-reading-title">ابدأ رحلتك مع القرآن</h2>
+                    <p id="home-reading-location">سورة الفاتحة • الصفحة ١</p>
+                    <div class="home-reading-progress">
+                        <div class="home-progress-meta">
+                            <span>موضعك في المصحف</span>
+                            <strong id="home-progress-label">١ من ٦٠٤ صفحة</strong>
+                        </div>
+                        <div id="home-progress-track" class="home-progress-track" role="progressbar"
+                             aria-label="موضع القراءة في المصحف" aria-valuemin="0" aria-valuemax="604" aria-valuenow="1">
+                            <span id="home-progress-fill"></span>
+                        </div>
+                    </div>
+                    <a class="home-reading-action" id="continue-reading" href="quran.html">
+                        <span id="continue-title">ابدأ القراءة</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>
+                    </a>
+                </div>
+            </section>
 
-            <div class="mini-grid" aria-label="مميزات القراءة">
-                <article class="mini-card">
-                    <span aria-hidden="true">Aa</span>
-                    <strong>حجم مرن</strong>
-                    <small>كبّر وصغّر الخط</small>
-                </article>
-                <article class="mini-card">
-                    <span aria-hidden="true">◐</span>
-                    <strong>ألوان مريحة</strong>
-                    <small>ورقي، أبيض، أخضر وليلي</small>
-                </article>
-                <article class="mini-card">
-                    <span aria-hidden="true">↔</span>
-                    <strong>تقليب صفحات</strong>
-                    <small>بالسحب يمينًا ويسارًا</small>
-                </article>
-            </div>
-        </section>
+            <section class="home-explore" aria-labelledby="home-explore-title">
+                <div class="home-section-head">
+                    <div>
+                        <span class="home-section-kicker">في رحاب القرآن</span>
+                        <h2 id="home-explore-title">ماذا تحب أن تفعل اليوم؟</h2>
+                    </div>
+                    <span class="home-section-sparkle" aria-hidden="true">✧</span>
+                </div>
+                <div class="home-feature-grid">
+                    <a class="home-feature home-feature-quran" href="quran.html">
+                        <span class="home-feature-icon" aria-hidden="true">
+                            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8C12 5 7 5 3 7v19c5-2 9-2 13 1 4-3 8-3 13-1V7c-4-2-9-2-13 1Z"/><path d="M16 8v19M7 12c2-.6 4-.5 6 .4m6 0c2-.9 4-1 6-.4M7 17c2-.6 4-.5 6 .4m6 0c2-.9 4-1 6-.4"/></svg>
+                        </span>
+                        <span class="home-feature-text"><strong>المصحف الشريف</strong><small>اقرأ وتدبّر آيات الله</small></span>
+                        <span class="home-feature-arrow" aria-hidden="true">↗</span>
+                    </a>
+                    <a class="home-feature home-feature-audio" href="recitations.html">
+                        <span class="home-feature-icon" aria-hidden="true">
+                            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18v-2a11 11 0 0 1 22 0v2M5 17h3a3 3 0 0 1 3 3v6H8a3 3 0 0 1-3-3v-6Zm22 0h-3a3 3 0 0 0-3 3v6h3a3 3 0 0 0 3-3v-6Z"/><path d="M15 14v8m3-6v4"/></svg>
+                        </span>
+                        <span class="home-feature-text"><strong>مكتبة التلاوات</strong><small>استمع بصوت قارئك المفضل</small></span>
+                        <span class="home-feature-arrow" aria-hidden="true">↗</span>
+                    </a>
+                    <div class="home-feature home-feature-azkar" aria-label="الأذكار، قريبًا">
+                        <span class="home-feature-icon" aria-hidden="true">
+                            <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3.5c5 5 8.5 9 8.5 14.5a8.5 8.5 0 0 1-17 0C7.5 12.5 11 8.5 16 3.5Z"/><path d="M16 10v12m-4-6h8"/></svg>
+                        </span>
+                        <span class="home-feature-text"><strong>الأذكار اليومية</strong><small>أذكار الصباح والمساء والنوم</small></span>
+                        <span class="home-soon">قريبًا</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="home-verse" aria-labelledby="home-verse-title">
+                <div class="home-verse-head">
+                    <span class="home-verse-star" aria-hidden="true">✦</span>
+                    <h2 id="home-verse-title">آية للتدبّر</h2>
+                    <span class="home-verse-line" aria-hidden="true"></span>
+                </div>
+                <blockquote lang="ar">﴿ أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ ﴾</blockquote>
+                <p>سورة الرعد • الآية ٢٨</p>
+            </section>
+        </main>
 
         <footer class="home-footer">
-            <span>نص القرآن الكريم من</span>
-            <a href="https://tanzil.net" target="_blank" rel="noopener noreferrer">Tanzil Project</a>
+            <span>نص القرآن الكريم من <a href="https://tanzil.net" target="_blank" rel="noopener noreferrer">Tanzil Project</a></span>
+            <span>صدقة جارية، نسأل الله القبول</span>
         </footer>
-    </main>
+    </div>
+
+    <nav class="home-bottom-nav" aria-label="التنقل الرئيسي">
+        <a class="home-nav-item is-active" href="index.html" aria-current="page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z"/></svg>
+            <span>الرئيسية</span>
+        </a>
+        <a class="home-nav-item" href="quran.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5C9 3 5 3 2 5v15c4-2 7-2 10 0 3-2 6-2 10 0V5c-3-2-7-2-10 0ZM12 5v15"/></svg>
+            <span>المصحف</span>
+        </a>
+        <a class="home-nav-item" href="recitations.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14v-2a9 9 0 0 1 18 0v2M3 13h3a2 2 0 0 1 2 2v5H6a3 3 0 0 1-3-3v-4Zm18 0h-3a2 2 0 0 0-2 2v5h2a3 3 0 0 0 3-3v-4Z"/></svg>
+            <span>التلاوات</span>
+        </a>
+        <span class="home-nav-item is-disabled" aria-label="الأذكار، قريبًا">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2c4 4 7 8 7 12a7 7 0 0 1-14 0c0-4 3-8 7-12Z"/><path d="M12 9v10"/></svg>
+            <span>الأذكار</span>
+        </span>
+    </nav>
     <script src="home.js"></script>
 </body>
 </html>
