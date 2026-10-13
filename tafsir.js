@@ -13,8 +13,12 @@
     const status = document.getElementById('tafsir-status');
     const retry = document.getElementById('tafsir-retry');
     const content = document.getElementById('tafsir-content');
+    const previousButton = document.getElementById('tafsir-previous');
+    const nextButton = document.getElementById('tafsir-next');
+    const navPosition = document.getElementById('tafsir-nav-position');
     if (!sheet || !backdrop || !closeButton || !action || !reference ||
-        !ayahText || !explanation || !status || !retry || !content) return;
+        !ayahText || !explanation || !status || !retry || !content ||
+        !previousButton || !nextButton || !navPosition) return;
 
     const DIGITS = '٠١٢٣٤٥٦٧٨٩';
     let dataPromise = null;
@@ -46,6 +50,44 @@
         return dataPromise;
     }
 
+    function adjacentVerse(verse, step) {
+        // The audio module already includes the canonical 114 surah lengths.
+        // Reuse it rather than duplicating a second, possibly divergent table.
+        const counts = window.QuranAudio?.VERSE_COUNTS;
+        if (!counts || !verse || (step !== 1 && step !== -1)) return null;
+        let surah = verse.surah;
+        let ayah = verse.ayah + step;
+        if (ayah > counts[surah - 1]) {
+            if (surah === counts.length) return null;
+            surah++;
+            ayah = 1;
+        } else if (ayah < 1) {
+            if (surah === 1) return null;
+            surah--;
+            ayah = counts[surah - 1];
+        }
+        return { surah, ayah, verseKey: `${surah}:${ayah}` };
+    }
+
+    function updateNavigation() {
+        previousButton.disabled = !adjacentVerse(activeVerse, -1);
+        nextButton.disabled = !adjacentVerse(activeVerse, 1);
+        if (!activeVerse) {
+            navPosition.textContent = '';
+            return;
+        }
+        const total = window.QuranAudio?.VERSE_COUNTS?.[activeVerse.surah - 1];
+        navPosition.textContent = total
+            ? `الآية ${digits(activeVerse.ayah)} من ${digits(total)}`
+            : `الآية ${digits(activeVerse.ayah)}`;
+    }
+
+    function navigate(step) {
+        if (!sheet.classList.contains('is-open')) return;
+        const verse = adjacentVerse(activeVerse, step);
+        if (verse) showVerse(verse);
+    }
+
     function showStatus(message, failed = false) {
         status.textContent = message;
         status.hidden = false;
@@ -57,6 +99,7 @@
         const token = ++requestToken;
         const key = verse.verseKey;
         activeVerse = verse;
+        updateNavigation();
         const name = window.mushafReader?.getSurahName?.(verse.surah);
         reference.textContent = `سورة ${name || digits(verse.surah)} • الآية ${digits(verse.ayah)}`;
         ayahText.textContent = '';
@@ -98,6 +141,7 @@
         if (!sheet.classList.contains('is-open')) return;
         ++requestToken;
         activeVerse = null;
+        updateNavigation();
         sheet.classList.remove('is-open');
         sheet.setAttribute('aria-hidden', 'true');
         backdrop.classList.remove('is-open');
@@ -115,6 +159,27 @@
     retry.addEventListener('click', () => {
         if (activeVerse) showVerse(activeVerse);
     });
+    previousButton.addEventListener('click', () => navigate(-1));
+    nextButton.addEventListener('click', () => navigate(1));
+
+    // In the right-to-left mushaf, swiping left advances to the next ayah;
+    // swiping right goes back. Vertical scrolling stays untouched.
+    let swipeStart = null;
+    content.addEventListener('touchstart', event => {
+        swipeStart = event.touches.length === 1
+            ? { x: event.touches[0].clientX, y: event.touches[0].clientY }
+            : null;
+    }, { passive: true });
+    content.addEventListener('touchend', event => {
+        if (!swipeStart || !event.changedTouches.length) return;
+        const dx = event.changedTouches[0].clientX - swipeStart.x;
+        const dy = event.changedTouches[0].clientY - swipeStart.y;
+        swipeStart = null;
+        if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+            navigate(dx < 0 ? 1 : -1);
+        }
+    }, { passive: true });
+    content.addEventListener('touchcancel', () => { swipeStart = null; }, { passive: true });
     closeButton.addEventListener('click', close);
     backdrop.addEventListener('click', close);
     document.addEventListener('keydown', event => {
@@ -123,10 +188,15 @@
             event.preventDefault();
             event.stopImmediatePropagation();
             close();
+        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            navigate(event.key === 'ArrowLeft' ? 1 : -1);
         } else if (event.key === 'Tab') {
-            // Keep keyboard focus inside the tafsir dialog.
-            const controls = [closeButton, retry, ...sheet.querySelectorAll('a[href]')]
-                .filter(element => !element.hidden && element.getClientRects().length);
+            // Keep keyboard focus inside the tafsir dialog, including navigation.
+            const controls = [closeButton, retry, previousButton, nextButton,
+                ...sheet.querySelectorAll('a[href]')]
+                .filter(element => !element.hidden && !element.disabled && element.getClientRects().length);
             if (!controls.length) return;
             const first = controls[0];
             const last = controls[controls.length - 1];
