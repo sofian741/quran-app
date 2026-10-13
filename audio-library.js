@@ -15,7 +15,7 @@ function source(item){
 async function play(item){
  const s=source(item);
  if(!s){ui.status.textContent='تعذّر تحديد مصدر التسجيل المحفوظ.';return;}
- const ok=await e.selectMp3(s.reciter,s.moshaf,{surah:Number(item.surah),autoplay:true,position:0});
+ const ok=await (window.quranSelectReciter ? window.quranSelectReciter(s.reciter,s.moshaf.id,true,0,Number(item.surah)) : e.selectMp3(s.reciter,s.moshaf,{surah:Number(item.surah),autoplay:true,position:0}));
  if(!ok){ui.status.textContent='تعذّر تشغيل التلاوة المحفوظة.';return;}
  ui.player.scrollIntoView({behavior:'smooth',block:'start'});
 }
