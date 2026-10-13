@@ -6,7 +6,8 @@
     const STORAGE_KEY = 'quranReaderState';
     const SETTINGS_KEY = 'quranReaderSettings';
     const TOTAL_PAGES = 604;
-    const MIN_FONT_SIZE = 18;
+    // Very short 320px phones need a small final step so the fixed player never covers a row.
+    const MIN_FONT_SIZE = 14;
     // Start pages of the 30 juz in the standard 604-page Madinah mushaf.
     const JUZ_START_PAGES = [1,22,42,62,82,102,121,142,162,182,201,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582];
     const FIXED_FONT_SIZE = 34;
@@ -59,7 +60,6 @@
         toolbarSurah: $('toolbar-surah'),
         toolbarRange: $('toolbar-range'),
         displayPageNumber: $('display-page-number'),
-        navPageNumber: $('nav-page-number'),
         openIndex: $('open-index'),
         closeIndex: $('close-index'),
         indexSheet: $('index-sheet'),
@@ -228,6 +228,9 @@
         }));
         // Complete sizing before paint, never show the temporary small text.
         fitPage();
+        window.dispatchEvent(new CustomEvent('mushaf:page-ready', {
+            detail: { page: displayPage }
+        }));
     }
 
     function createMushafLine(start, end) {
@@ -491,7 +494,6 @@
         els.toolbarSurah.textContent = title;
         els.toolbarRange.textContent = range;
         els.displayPageNumber.textContent = toArabicDigits(displayPage);
-        els.navPageNumber.textContent = toArabicDigits(displayPage);
 
     }
 

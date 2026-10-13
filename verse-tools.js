@@ -512,7 +512,7 @@
     window.addEventListener('mushaf:page-changed', updatePageMarkerButton);
     updatePageMarkerButton();
     saved.open.addEventListener('click', () => {
-        // The reader toolbar is visible only when the user opens its controls.
+        document.getElementById('close-settings')?.click();
         openSaved();
     });
     saved.close.addEventListener('click', closeSaved);

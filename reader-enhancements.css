@@ -287,17 +287,6 @@
 }
 
 /* Saved verses, reading marker, and share preview */
-.saved-open-button {
-    justify-self: end;
-    min-height: 38px;
-    padding: 8px 12px;
-    border: 1px solid rgba(255,255,255,.19);
-    border-radius: 12px;
-    background: rgba(255,255,255,.10);
-    color: white;
-    font-size: 12px;
-    cursor: pointer;
-}
 .saved-backdrop, .share-backdrop {
     position: fixed;
     inset: 0;
@@ -464,9 +453,6 @@
 }
 
 /* Inline-SVG page bookmark, independent of device emoji and icon fonts. */
-.reader-toolbar {
-    grid-template-columns: 44px minmax(0, 1fr) 92px;
-}
 .reader-toolbar-actions {
     display: flex;
     align-items: center;
@@ -486,32 +472,4 @@
     padding: 8px 4px;
     font-size: 12px;
     line-height: 1.4;
-}
-
-/* Recitation library entry in the reading toolbar */
-.reader-nav {
-    grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) minmax(0,1fr);
-    gap: 7px;
-}
-.recitations-nav-link {
-    min-height: 38px;
-    padding: 8px 7px;
-    border: 1px solid rgba(255,255,255,.19);
-    border-radius: 12px;
-    background: rgba(255,255,255,.10);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    font-size: 12px;
-    text-decoration: none;
-    white-space: nowrap;
-}
-.recitations-nav-link svg { flex-shrink: 0; }
-@media(max-width:390px){
-    .reader-nav { gap: 4px; padding-left: 6px; padding-right: 6px; }
-    .reader-nav .index-open-button,
-    .reader-nav .saved-open-button,
-    .reader-nav .recitations-nav-link { font-size: 11px; padding: 7px 5px; }
 }
