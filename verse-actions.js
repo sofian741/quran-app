@@ -35,19 +35,46 @@
         return { surah, ayah, verseKey: `${surah}:${ayah}` };
     }
 
+    // Draw one continuous highlight per physical line without changing the mushaf layout.
+    // Individual word backgrounds would leave visible gaps between justified words.
     function clearHighlights() {
-        text.querySelectorAll('.is-verse-selected').forEach(element => {
-            element.classList.remove('is-verse-selected');
-        });
+        text.querySelectorAll('.verse-highlight-band').forEach(band => band.remove());
     }
 
     function highlightVerse(verseKey) {
         clearHighlights();
+        const rows = new Map();
         text.querySelectorAll('.mushaf-word[data-verse]').forEach(word => {
             if (word.dataset.verse !== verseKey) return;
-            word.classList.add('is-verse-selected');
-            const group = word.closest('.ayah-end-group');
-            if (group && text.contains(group)) group.classList.add('is-verse-selected');
+            const row = word.closest('.mushaf-line, .surah-basmala');
+            if (!row) return;
+            if (!rows.has(row)) rows.set(row, []);
+            rows.get(row).push(word);
+        });
+
+        rows.forEach((words, row) => {
+            const rowRect = row.getBoundingClientRect();
+            const bounds = words.map(word => word.getBoundingClientRect());
+            const marker = words[words.length - 1].closest('.ayah-end-group');
+            if (marker && marker.contains(words[words.length - 1])) {
+                bounds.push(marker.getBoundingClientRect());
+            }
+            const left = Math.min(...bounds.map(rect => rect.left));
+            const right = Math.max(...bounds.map(rect => rect.right));
+            const top = Math.min(...bounds.map(rect => rect.top));
+            const bottom = Math.max(...bounds.map(rect => rect.bottom));
+            const band = document.createElement('span');
+            band.className = 'verse-highlight-band';
+            band.setAttribute('aria-hidden', 'true');
+            // Coordinates are measured in the actual rendered row, so justified
+            // and scaled lines remain accurate without touching word positions.
+            const scaleX = rowRect.width / Math.max(1, row.offsetWidth);
+            const scaleY = rowRect.height / Math.max(1, row.offsetHeight);
+            band.style.left = `${(left - rowRect.left) / scaleX}px`;
+            band.style.top = `${(top - rowRect.top) / scaleY}px`;
+            band.style.width = `${(right - left) / scaleX}px`;
+            band.style.height = `${(bottom - top) / scaleY}px`;
+            row.appendChild(band);
         });
     }
 
