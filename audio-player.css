@@ -625,3 +625,10 @@
     .audio-repeat-settings { gap: 9px; padding: 10px; }
     .audio-number-stepper button { flex-basis: 34px; }
 }
+
+/* Override legacy label positions after moving repeat mode into its own picker. */
+.audio-repeat-settings label:first-of-type { grid-column: auto; }
+.audio-repeat-settings.is-verse label.audio-repeat-number-field:nth-of-type(3) {
+    display: flex;
+    grid-column: 1 / -1;
+}
