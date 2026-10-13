@@ -635,3 +635,14 @@
     display: flex;
     grid-column: 1 / -1;
 }
+
+.audio-starter-card{margin:14px 0;padding:15px;border:1px solid #cce6d7;border-radius:17px;background:#edf7f0;color:#245646}
+.audio-starter-head{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.audio-starter-head>div{display:flex;flex-direction:column;gap:4px}
+.audio-starter-head strong{font-size:15px}
+.audio-starter-head small,.audio-starter-card p{color:#527968;font-size:12px;line-height:1.8}
+.audio-starter-icon{display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;border-radius:13px;color:white;background:#176b63;font-size:24px}
+.audio-starter-card audio{display:block;width:100%;height:48px}
+.audio-starter-card p{margin:9px 0 0}
+.reader-page[data-theme='dark'] .audio-starter-card{background:#294336;color:#d5efdf;border-color:#436551}
+.reader-page[data-theme='dark'] .audio-starter-head small,.reader-page[data-theme='dark'] .audio-starter-card p{color:#bad7c5}
