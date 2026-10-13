@@ -91,8 +91,32 @@
         <p class="settings-note">صفحات المصحف وأسطرها ثابتة (٦٠٤ صفحة)، ويُضبط حجم الخط تلقائيًا لعرض السطر كاملًا. نص القرآن من <a href="https://tanzil.net" target="_blank" rel="noopener noreferrer">Tanzil Project</a>.</p>
     </aside>
 
+
+    <!-- Reserved verse action slots, including future tafsir support. -->
+    <div class="verse-actions-backdrop" id="verse-actions-backdrop" hidden></div>
+    <aside class="verse-actions-sheet" id="verse-actions-sheet" role="dialog" aria-modal="true"
+           aria-labelledby="verse-actions-title" aria-hidden="true" tabindex="-1">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-title-row">
+            <div>
+                <small class="verse-actions-reference" id="verse-actions-reference"></small>
+                <h2 id="verse-actions-title">خيارات الآية</h2>
+            </div>
+            <button class="close-settings" id="close-verse-actions" type="button" aria-label="إغلاق خيارات الآية">×</button>
+        </div>
+        <p class="verse-actions-hint">تم تحديد الآية. خياراتها هتكون متاحة قريبًا.</p>
+        <div class="verse-actions-grid" aria-label="خيارات الآية القادمة">
+            <button class="verse-action" type="button" data-verse-action="tafsir" disabled><span>التفسير</span><small>قريبًا</small></button>
+            <button class="verse-action" type="button" data-verse-action="listen" disabled><span>الاستماع</span><small>قريبًا</small></button>
+            <button class="verse-action" type="button" data-verse-action="bookmark" disabled><span>حفظ الآية</span><small>قريبًا</small></button>
+            <button class="verse-action" type="button" data-verse-action="copy" disabled><span>نسخ الآية</span><small>قريبًا</small></button>
+            <button class="verse-action" type="button" data-verse-action="share" disabled><span>مشاركة</span><small>قريبًا</small></button>
+        </div>
+    </aside>
+
     <script src="app.js"></script>
     <script src="reader-enhancements.js"></script>
     <script src="reader-layout-polish.js"></script>
+    <script src="verse-actions.js"></script>
 </body>
 </html>
