@@ -46,7 +46,7 @@
             <small>الصفحة</small>
             <strong id="nav-page-number">١</strong>
         </div>
-        <span class="nav-placeholder" aria-hidden="true"></span>
+        <button type="button" id="open-saved" class="saved-open-button" aria-haspopup="dialog" aria-controls="saved-sheet" aria-label="المفضلة والفاصلة">المحفوظات</button>
     </nav>
 
     <div class="index-backdrop" id="index-backdrop" hidden></div>
@@ -108,9 +108,10 @@
         <div class="verse-actions-grid" aria-label="خيارات الآية">
             <button class="verse-action" type="button" data-verse-action="tafsir"><span>التفسير</span><small>اقرأ</small></button>
             <button class="verse-action" type="button" data-verse-action="listen" disabled><span>الاستماع</span><small>قريبًا</small></button>
-            <button class="verse-action" type="button" data-verse-action="bookmark" disabled><span>إضافة للمفضلة</span><small>قريبًا</small></button>
-            <button class="verse-action" type="button" data-verse-action="copy" disabled><span>نسخ الآية</span><small>قريبًا</small></button>
-            <button class="verse-action" type="button" data-verse-action="share" disabled><span>مشاركة</span><small>قريبًا</small></button>
+            <button class="verse-action" type="button" data-verse-action="bookmark"><span>إضافة للمفضلة</span><small>☆</small></button>
+            <button class="verse-action" type="button" data-verse-action="copy"><span>نسخ الآية</span><small>نسخ</small></button>
+            <button class="verse-action" type="button" data-verse-action="share"><span>مشاركة كصورة</span><small>صورة</small></button>
+            <button class="verse-action" type="button" data-verse-action="reading-marker"><span>ضع فاصلة هنا</span><small>۞</small></button>
         </div>
     </aside>
 
@@ -141,10 +142,51 @@
         </div>
     </aside>
 
+
+    <!-- Saved verses and a single independent reading-position marker. -->
+    <div class="saved-backdrop" id="saved-backdrop" hidden></div>
+    <aside class="saved-sheet" id="saved-sheet" role="dialog" aria-modal="true"
+           aria-labelledby="saved-title" aria-hidden="true" tabindex="-1">
+        <div class="saved-header">
+            <div>
+                <small>ارجع لآياتك في أي وقت</small>
+                <h2 id="saved-title">المحفوظات</h2>
+            </div>
+            <button type="button" class="saved-close" id="close-saved" aria-label="إغلاق المحفوظات">×</button>
+        </div>
+        <div class="saved-tabs" role="tablist" aria-label="المحفوظات">
+            <button type="button" id="saved-tab-favorites" class="is-active" role="tab" aria-selected="true">المفضلة</button>
+            <button type="button" id="saved-tab-marker" role="tab" aria-selected="false">الفاصلة</button>
+        </div>
+        <div class="saved-list" id="saved-list" role="tabpanel"></div>
+    </aside>
+
+    <div class="share-backdrop" id="share-backdrop" hidden></div>
+    <aside class="share-sheet" id="share-sheet" role="dialog" aria-modal="true"
+           aria-labelledby="share-title" aria-hidden="true" tabindex="-1">
+        <div class="saved-header">
+            <div>
+                <small>بطاقة قرآنية</small>
+                <h2 id="share-title">مشاركة الآية</h2>
+            </div>
+            <button type="button" class="saved-close" id="close-share" aria-label="إغلاق المشاركة">×</button>
+        </div>
+        <div class="share-preview-wrap">
+            <img id="share-preview" class="share-preview" alt="معاينة بطاقة الآية" />
+        </div>
+        <p class="share-message" id="share-message" role="status" aria-live="polite"></p>
+        <div class="share-buttons">
+            <button type="button" id="share-image" class="share-primary">مشاركة الصورة</button>
+            <button type="button" id="download-image" class="share-secondary">حفظ الصورة</button>
+        </div>
+    </aside>
+    <div class="verse-toast" id="verse-toast" role="status" aria-live="polite" hidden></div>
+
     <script src="app.js"></script>
     <script src="reader-enhancements.js"></script>
     <script src="reader-layout-polish.js"></script>
     <script src="verse-actions.js"></script>
     <script src="tafsir.js"></script>
+    <script src="verse-tools.js"></script>
 </body>
 </html>
