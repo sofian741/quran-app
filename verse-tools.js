@@ -31,6 +31,7 @@
     let favorites = readFavorites();
     let marker = readMarker();
     let activeShare = null;
+    let shareRequestId = 0;
     let toastTimer = null;
     const closeTimers = new WeakMap();
 
@@ -224,6 +225,7 @@
             fragment.appendChild(empty);
         }
         saved.list.replaceChildren(fragment);
+        saved.list.scrollTop = 0;
     }
 
     async function copyVerse(verse) {
@@ -254,7 +256,20 @@
 
     function roundRect(ctx, x, y, w, h, r) {
         ctx.beginPath();
-        ctx.roundRect(x, y, w, h, r);
+        if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(x, y, w, h, r);
+        } else {
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+        }
+        ctx.closePath();
     }
 
     function wrapLines(ctx, text, maxWidth) {
@@ -347,12 +362,17 @@
     }
 
     function closeShare() {
+        ++shareRequestId;
         closeSheet(share.sheet, share.backdrop);
+        if (activeShare?.url) URL.revokeObjectURL(activeShare.url);
         activeShare = null;
+        share.preview.removeAttribute('src');
     }
 
     async function openShare(verse) {
         window.mushafVerseActions?.close();
+        const requestId = ++shareRequestId;
+        if (activeShare?.url) URL.revokeObjectURL(activeShare.url);
         activeShare = null;
         share.preview.removeAttribute('src');
         share.message.textContent = 'جاري تصميم بطاقة الآية…';
@@ -362,10 +382,10 @@
         share.close.focus({ preventScroll: true });
         try {
             if (document.fonts?.load) await document.fonts.load('42px "Amiri Quran"');
-            if (!share.sheet.classList.contains('is-open')) return;
+            if (requestId !== shareRequestId || !share.sheet.classList.contains('is-open')) return;
             const canvas = buildImage(verse);
             const blob = await canvasBlob(canvas);
-            if (!share.sheet.classList.contains('is-open')) return;
+            if (requestId !== shareRequestId || !share.sheet.classList.contains('is-open')) return;
             const url = URL.createObjectURL(blob);
             activeShare = { blob, url, filename: `quran-${verse.surah}-${verse.ayah}.png`, verse };
             share.preview.src = url;
@@ -422,7 +442,10 @@
         const verse = selectedVerse();
         if (verse) openShare(verse);
     });
-    saved.open.addEventListener('click', () => openSaved());
+    saved.open.addEventListener('click', () => {
+        // The reader toolbar is visible only when the user opens its controls.
+        openSaved();
+    });
     saved.close.addEventListener('click', closeSaved);
     saved.backdrop.addEventListener('click', closeSaved);
     saved.favoritesTab.addEventListener('click', () => { savedTab = 'favorites'; renderSaved(); });
