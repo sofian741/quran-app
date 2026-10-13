@@ -80,7 +80,6 @@
     let displayPage = 1;
     let settings = loadSettings();
     let resizeTimer = null;
-    let fitRevision = 0;
     let pointerStart = null;
     let suppressStageClick = false;
     let indexTab = 'surahs';
@@ -224,7 +223,8 @@
         els.text.style.setProperty('--mushaf-line-count', pageLayout.length);
         updatePageMeta(pageLayout);
         saveReaderState();
-        requestAnimationFrame(() => requestAnimationFrame(fitPage));
+        // Complete sizing before paint, never show the temporary small text.
+        fitPage();
     }
 
     function createMushafLine(start, end) {
@@ -348,107 +348,127 @@
         return marker;
     }
 
-    function fitPage() {
-        if (!tokens.length || !els.text.clientWidth || isSettingsOpen()) return;
-        const revision = ++fitRevision;
-        els.text.dataset.layoutState = 'pending';
-        const lines = Array.from(els.text.querySelectorAll('.mushaf-line'));
+    // Cache the exact measured typography for each page and viewport.
+    // Swipe previews and the visible page share these measurements.
+    const pageFitCache = new Map();
+    const MAX_FIT_CACHE = 48;
+
+    function applyFitResult(container, lines, result) {
+        const fontSize = `${result.fontSize.toFixed(2)}px`;
+        container.style.fontSize = fontSize;
+        container.style.setProperty('--mushaf-font-size', fontSize);
+        container.style.setProperty('--mushaf-min-row-height',
+            `${(result.fontSize * settings.lineHeight).toFixed(2)}px`);
+        lines.forEach((line, index) => {
+            line.classList.remove('is-measuring', 'is-full-line', 'is-short-line', 'is-crowded-line');
+            line.classList.add(result.lineClasses[index]);
+            line.style.transform = result.transforms[index];
+        });
+        container.dataset.layoutState = 'ready';
+    }
+
+    function fitElement(container, pageNumber) {
+        if (!tokens.length || !container.clientWidth || !container.clientHeight) return;
+        const lines = Array.from(container.querySelectorAll('.mushaf-line'));
+        const key = [
+            pageNumber, container.clientWidth, container.clientHeight,
+            settings.fontSize, settings.lineHeight
+        ].join(':');
+        const cached = pageFitCache.get(key);
+        if (cached && cached.lineClasses.length === lines.length) {
+            applyFitResult(container, lines, cached);
+            return;
+        }
+
+        container.dataset.layoutState = 'pending';
         const preferred = settings.fontSize;
-        els.text.style.fontSize = `${preferred}px`;
-        els.text.style.setProperty('--mushaf-font-size', `${preferred}px`);
-        els.text.style.setProperty('--mushaf-min-row-height', '0px');
+        container.style.fontSize = `${preferred}px`;
+        container.style.setProperty('--mushaf-font-size', `${preferred}px`);
+        container.style.setProperty('--mushaf-min-row-height', '0px');
         lines.forEach(line => {
             line.style.transform = '';
             line.classList.add('is-measuring');
             line.classList.remove('is-full-line', 'is-short-line', 'is-crowded-line');
         });
 
-        requestAnimationFrame(() => {
-            if (revision !== fitRevision || isSettingsOpen()) return;
-            const lineWidth = lines.reduce(
-                (smallest, line) => Math.min(smallest, line.clientWidth),
-                els.text.clientWidth,
-            );
-            const availableWidth = Math.max(1, lineWidth - 12);
-            const measureLineWidths = () => new Map(lines.map(line => {
-                const children = Array.from(line.children);
-                const gap = parseFloat(getComputedStyle(line).columnGap) || 0;
-                return [line, children.reduce(
-                    (sum, child) => sum + child.getBoundingClientRect().width,
-                    0,
-                ) + Math.max(0, children.length - 1) * gap];
-            }));
-            let lineWidths = measureLineWidths();
-            const widest = Math.max(1, ...lineWidths.values());
-            const widthLimit = preferred * availableWidth / widest;
-            const textStyle = getComputedStyle(els.text);
-            const verticalPadding = parseFloat(textStyle.paddingTop) +
-                parseFloat(textStyle.paddingBottom);
-            const structuralHeight = Array.from(els.text.children)
-                .filter(element => !element.classList.contains('mushaf-line'))
-                .reduce((height, element) => height + element.getBoundingClientRect().height, 0);
-            const usableHeight = Math.max(
-                1,
-                els.text.clientHeight - verticalPadding - structuralHeight,
-            );
-            const rowHeight = Math.max(1, usableHeight / Math.max(1, lines.length));
-            const heightLimit = rowHeight / settings.lineHeight;
-            let fitted = Math.max(
-                MIN_FONT_SIZE,
-                Math.min(preferred, widthLimit * 0.985, heightLimit * 0.985),
-            );
-            const applyFittedSize = () => {
-                els.text.style.fontSize = `${fitted.toFixed(2)}px`;
-                els.text.style.setProperty('--mushaf-font-size', `${fitted.toFixed(2)}px`);
-                els.text.style.setProperty('--mushaf-min-row-height', `${(fitted * settings.lineHeight).toFixed(2)}px`);
-            };
-            const finish = () => {
-                if (revision !== fitRevision || isSettingsOpen()) return;
-                lineWidths = measureLineWidths();
-                for (const line of lines) {
-                    const children = Array.from(line.children);
-                    const ratio = lineWidths.get(line) / availableWidth;
-                    line.classList.remove('is-measuring');
-                    line.classList.add(
-                        ratio > 1
-                            ? 'is-crowded-line'
-                            : children.length >= 4 && ratio >= 0.7
-                                ? 'is-full-line'
-                                : 'is-short-line',
-                    );
-                }
-                for (const line of lines) {
-                    const childBounds = Array.from(line.children)
-                        .map(child => child.getBoundingClientRect());
-                    const contentWidth = childBounds.length
-                        ? Math.max(...childBounds.map(rect => rect.right)) -
-                            Math.min(...childBounds.map(rect => rect.left))
-                        : 0;
-                    const scale = Math.min(
-                        1,
-                        availableWidth / Math.max(1, contentWidth) * 0.985,
-                    );
-                    line.style.transform = scale < 0.998
-                        ? `scaleX(${scale.toFixed(4)})`
-                        : '';
-                }
-                els.text.dataset.layoutState = 'ready';
-            };
+        const lineWidth = lines.reduce(
+            (smallest, line) => Math.min(smallest, line.clientWidth),
+            container.clientWidth
+        );
+        const availableWidth = Math.max(1, lineWidth - 12);
+        const measureLineWidths = () => new Map(lines.map(line => {
+            const children = Array.from(line.children);
+            const gap = parseFloat(getComputedStyle(line).columnGap) || 0;
+            return [line, children.reduce(
+                (sum, child) => sum + child.getBoundingClientRect().width, 0
+            ) + Math.max(0, children.length - 1) * gap];
+        }));
+        let lineWidths = measureLineWidths();
+        const widest = Math.max(1, ...lineWidths.values());
+        const widthLimit = preferred * availableWidth / widest;
+        const textStyle = getComputedStyle(container);
+        const verticalPadding = parseFloat(textStyle.paddingTop) +
+            parseFloat(textStyle.paddingBottom);
+        const structuralHeight = Array.from(container.children)
+            .filter(element => !element.classList.contains('mushaf-line'))
+            .reduce((height, element) => height + element.getBoundingClientRect().height, 0);
+        const usableHeight = Math.max(
+            1, container.clientHeight - verticalPadding - structuralHeight
+        );
+        const rowHeight = Math.max(1, usableHeight / Math.max(1, lines.length));
+        const heightLimit = rowHeight / settings.lineHeight;
+        let fitted = Math.max(
+            MIN_FONT_SIZE, Math.min(preferred, widthLimit * 0.985, heightLimit * 0.985)
+        );
+        const applySize = () => {
+            container.style.fontSize = `${fitted.toFixed(2)}px`;
+            container.style.setProperty('--mushaf-font-size', `${fitted.toFixed(2)}px`);
+            container.style.setProperty('--mushaf-min-row-height',
+                `${(fitted * settings.lineHeight).toFixed(2)}px`);
+        };
+        applySize();
+        lineWidths = measureLineWidths();
+        const overflowRatio = Math.max(1, ...lineWidths.values()) / availableWidth;
+        if (overflowRatio > 1.001 && fitted > MIN_FONT_SIZE) {
+            fitted = Math.max(MIN_FONT_SIZE, fitted / overflowRatio * 0.985);
+            applySize();
+            lineWidths = measureLineWidths();
+        }
 
-            applyFittedSize();
-            requestAnimationFrame(() => {
-                if (revision !== fitRevision || isSettingsOpen()) return;
-                lineWidths = measureLineWidths();
-                const overflowRatio = Math.max(...lineWidths.values()) / availableWidth;
-                if (overflowRatio > 1.001 && fitted > MIN_FONT_SIZE) {
-                    fitted = Math.max(MIN_FONT_SIZE, fitted / overflowRatio * 0.985);
-                    applyFittedSize();
-                    requestAnimationFrame(finish);
-                } else {
-                    finish();
-                }
-            });
+        const lineClasses = [];
+        for (const line of lines) {
+            const children = Array.from(line.children);
+            const ratio = lineWidths.get(line) / availableWidth;
+            const lineClass = ratio > 1
+                ? 'is-crowded-line'
+                : children.length >= 4 && ratio >= 0.7
+                    ? 'is-full-line'
+                    : 'is-short-line';
+            line.classList.remove('is-measuring', 'is-full-line', 'is-short-line', 'is-crowded-line');
+            line.classList.add(lineClass);
+            lineClasses.push(lineClass);
+        }
+        const transforms = lines.map(line => {
+            const childBounds = Array.from(line.children)
+                .map(child => child.getBoundingClientRect());
+            const contentWidth = childBounds.length
+                ? Math.max(...childBounds.map(rect => rect.right)) -
+                    Math.min(...childBounds.map(rect => rect.left))
+                : 0;
+            const scale = Math.min(1, availableWidth / Math.max(1, contentWidth) * 0.985);
+            return scale < 0.998 ? `scaleX(${scale.toFixed(4)})` : '';
         });
+        const result = { fontSize: fitted, lineClasses, transforms };
+        pageFitCache.set(key, result);
+        if (pageFitCache.size > MAX_FIT_CACHE) {
+            pageFitCache.delete(pageFitCache.keys().next().value);
+        }
+        applyFitResult(container, lines, result);
+    }
+
+    function fitPage() {
+        if (isSettingsOpen()) return;
+        fitElement(els.text, displayPage);
     }
 
     function updatePageMeta(pageLayout) {
@@ -765,7 +785,6 @@
         if (isSettingsOpen()) return;
         clearTimeout(settingsCloseTimer);
         clearTimeout(resizeTimer);
-        fitRevision++;
         const rect = els.page.getBoundingClientRect();
         settingsPageSize = { width: rect.width, height: rect.height };
         els.page.style.width = `${rect.width}px`;
@@ -830,6 +849,20 @@
     function clamp(value, min, max) {
         return Math.min(max, Math.max(min, value));
     }
+
+    // Shared interface for the interactive swipe layer.
+    window.mushafReader = {
+        fitElement,
+        turnPageInstant(direction) {
+            if (isTurningPage || isSettingsOpen() || isIndexOpen()) return false;
+            const target = displayPage + direction;
+            if (target < 1 || target > TOTAL_PAGES) return false;
+            displayPage = target;
+            els.text.scrollTop = 0;
+            renderCurrentPage();
+            return true;
+        }
+    };
 
     function wait(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
