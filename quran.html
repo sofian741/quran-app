@@ -302,12 +302,25 @@
         <p class="audio-repeat-hint" id="audio-repeat-hint">اختر تكرار السورة أو الآية أو نطاقًا من الآيات. التكرار الدقيق يحتاج تسجيلًا متزامنًا.</p>
         <fieldset class="audio-repeat-settings">
             <legend>نوع التكرار</legend>
-            <label>التكرار
-                <select id="audio-repeat-mode"><option value="off">بدون تكرار</option><option value="surah">تكرار السورة كاملة</option><option value="verse">تكرار الآية الحالية</option><option value="range">تكرار آيات من رقم إلى رقم</option></select>
+            <div class="audio-repeat-mode-field">
+                <span class="audio-repeat-field-label">نوع التكرار</span>
+                <div class="audio-picker" data-audio-picker="repeat">
+                    <button id="audio-repeat-mode-trigger" class="audio-picker-trigger" type="button" aria-expanded="false" aria-controls="audio-repeat-mode-panel" aria-label="اختيار نوع التكرار"><span id="audio-repeat-mode-selected">بدون تكرار</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+                    <div id="audio-repeat-mode-panel" class="audio-picker-panel" hidden>
+                        <div id="audio-repeat-mode-results" class="audio-picker-results" role="group" aria-label="أنواع التكرار"></div>
+                    </div>
+                </div>
+                <select id="audio-repeat-mode" hidden aria-label="نوع التكرار"><option value="off">بدون تكرار</option><option value="surah">تكرار السورة كاملة</option><option value="verse">تكرار الآية الحالية</option><option value="range">تكرار آيات من رقم إلى رقم</option></select>
+            </div>
+            <label class="audio-repeat-number-field">من الآية
+                <span class="audio-number-stepper"><button type="button" data-audio-step="audio-repeat-start:-1" aria-label="تقليل رقم آية البداية">−</button><input id="audio-repeat-start" type="number" min="1" value="1" inputmode="numeric"><button type="button" data-audio-step="audio-repeat-start:1" aria-label="زيادة رقم آية البداية">+</button></span>
             </label>
-            <label>من الآية<input id="audio-repeat-start" type="number" min="1" value="1" inputmode="numeric"></label>
-            <label>إلى الآية<input id="audio-repeat-end" type="number" min="1" value="1" inputmode="numeric"></label>
-            <label>عدد مرات التكرار<input id="audio-repeat-count" type="number" min="1" max="99" value="3" inputmode="numeric"></label>
+            <label class="audio-repeat-number-field">إلى الآية
+                <span class="audio-number-stepper"><button type="button" data-audio-step="audio-repeat-end:-1" aria-label="تقليل رقم آية النهاية">−</button><input id="audio-repeat-end" type="number" min="1" value="1" inputmode="numeric"><button type="button" data-audio-step="audio-repeat-end:1" aria-label="زيادة رقم آية النهاية">+</button></span>
+            </label>
+            <label class="audio-repeat-number-field">عدد مرات التكرار
+                <span class="audio-number-stepper"><button type="button" data-audio-step="audio-repeat-count:-1" aria-label="تقليل مرات التكرار">−</button><input id="audio-repeat-count" type="number" min="1" max="99" value="3" inputmode="numeric"><button type="button" data-audio-step="audio-repeat-count:1" aria-label="زيادة مرات التكرار">+</button></span>
+            </label>
         </fieldset>
         <button id="audio-apply-repeat" class="audio-apply-repeat" type="button">تطبيق التكرار</button>
     </aside>
