@@ -25,6 +25,133 @@
     let activeVerse = null;
     let requestToken = 0;
     let hideTimer = null;
+    let gesture = null;
+    let preview = null;
+    let turning = false;
+    let turnTimer = null;
+    const SWIPE_THRESHOLD = 10;
+    const TURN_DURATION = 175;
+
+    function reducedMotion() {
+        return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
+    }
+
+    function resetCardStyles(node) {
+        if (!node) return;
+        node.style.transition = '';
+        node.style.transform = '';
+    }
+
+    function removePreview() {
+        preview?.remove();
+        preview = null;
+    }
+
+    function resetGesture(animate = true) {
+        const card = content;
+        const other = preview;
+        const direction = gesture?.direction || 1;
+        const width = card.getBoundingClientRect().width;
+        gesture = null;
+        if (!other) {
+            resetCardStyles(card);
+            return;
+        }
+        if (!animate || reducedMotion()) {
+            resetCardStyles(card);
+            removePreview();
+            return;
+        }
+        card.style.transition = 'transform 180ms ease-out';
+        other.style.transition = 'transform 180ms ease-out';
+        card.style.transform = 'translateX(0)';
+        other.style.transform = `translateX(${-direction * width}px)`;
+        clearTimeout(turnTimer);
+        turnTimer = setTimeout(() => {
+            resetCardStyles(card);
+            removePreview();
+        }, 190);
+    }
+
+    function buildPreview(target, direction) {
+        removePreview();
+        const clone = content.cloneNode(true);
+        clone.id = '';
+        clone.setAttribute('aria-hidden', 'true');
+        clone.classList.add('tafsir-swipe-preview');
+        clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+        const width = content.getBoundingClientRect().width;
+        clone.style.transform = `translateX(${-direction * width}px)`;
+        sheet.insertBefore(clone, content.nextSibling);
+        preview = clone;
+        // The offline dataset is already cached in memory. Fill the preview
+        // without changing the active ayah or triggering any requests.
+        loadData().then(verses => {
+            if (preview !== clone) return;
+            const record = verses[target.verseKey];
+            if (!record) return;
+            const name = window.mushafReader?.getSurahName?.(target.surah);
+            const ref = clone.querySelector('.tafsir-reference');
+            const ayah = clone.querySelector('.tafsir-ayah-text');
+            const explanationNode = clone.querySelector('.tafsir-explanation');
+            if (ref) ref.textContent = `سورة ${name || digits(target.surah)} • الآية ${digits(target.ayah)}`;
+            if (ayah) ayah.textContent = record.arabic_text || '';
+            if (explanationNode) {
+                explanationNode.textContent = record.translation || '';
+                explanationNode.hidden = false;
+            }
+            const state = clone.querySelector('.tafsir-status');
+            if (state) state.hidden = true;
+            const retryNode = clone.querySelector('.tafsir-retry');
+            if (retryNode) retryNode.hidden = true;
+        }).catch(() => {});
+    }
+
+    function animateTurn(step) {
+        if (turning || !sheet.classList.contains('is-open')) return;
+        const target = adjacentVerse(activeVerse, step);
+        if (!target) return;
+        if (reducedMotion()) { showVerse(target); return; }
+        turning = true;
+        const width = content.getBoundingClientRect().width;
+        const direction = step > 0 ? 1 : -1;
+        buildPreview(target, direction);
+        content.style.transition = `transform ${TURN_DURATION}ms ease-out`;
+        if (preview) preview.style.transition = `transform ${TURN_DURATION}ms ease-out`;
+        requestAnimationFrame(() => {
+            content.style.transform = `translateX(${direction * width}px)`;
+            if (preview) preview.style.transform = 'translateX(0)';
+        });
+        clearTimeout(turnTimer);
+        turnTimer = setTimeout(() => {
+            showVerse(target);
+            resetCardStyles(content);
+            removePreview();
+            turning = false;
+        }, TURN_DURATION + 20);
+    }
+
+    function finishGesture(current) {
+        const target = current.target;
+        const width = content.getBoundingClientRect().width;
+        if (!target || Math.abs(current.dx) < Math.min(84, width * .2)) {
+            gesture = current;
+            resetGesture(true);
+            return;
+        }
+        turning = true;
+        content.style.transition = `transform ${TURN_DURATION}ms ease-out`;
+        if (preview) preview.style.transition = `transform ${TURN_DURATION}ms ease-out`;
+        content.style.transform = `translateX(${current.direction * width}px)`;
+        if (preview) preview.style.transform = 'translateX(0)';
+        clearTimeout(turnTimer);
+        turnTimer = setTimeout(() => {
+            showVerse(target);
+            resetCardStyles(content);
+            removePreview();
+            turning = false;
+        }, TURN_DURATION + 20);
+    }
 
     function digits(value) {
         return String(value).replace(/\d/g, digit => DIGITS[Number(digit)]);
@@ -83,9 +210,7 @@
     }
 
     function navigate(step) {
-        if (!sheet.classList.contains('is-open')) return;
-        const verse = adjacentVerse(activeVerse, step);
-        if (verse) showVerse(verse);
+        animateTurn(step);
     }
 
     function showStatus(message, failed = false) {
@@ -140,6 +265,11 @@
     function close() {
         if (!sheet.classList.contains('is-open')) return;
         ++requestToken;
+        clearTimeout(turnTimer);
+        turning = false;
+        gesture = null;
+        resetCardStyles(content);
+        removePreview();
         activeVerse = null;
         updateNavigation();
         sheet.classList.remove('is-open');
@@ -162,24 +292,60 @@
     previousButton.addEventListener('click', () => navigate(-1));
     nextButton.addEventListener('click', () => navigate(1));
 
-    // In the right-to-left mushaf, swiping left advances to the next ayah;
-    // swiping right goes back. Vertical scrolling stays untouched.
-    let swipeStart = null;
-    content.addEventListener('touchstart', event => {
-        swipeStart = event.touches.length === 1
-            ? { x: event.touches[0].clientX, y: event.touches[0].clientY }
-            : null;
-    }, { passive: true });
-    content.addEventListener('touchend', event => {
-        if (!swipeStart || !event.changedTouches.length) return;
-        const dx = event.changedTouches[0].clientX - swipeStart.x;
-        const dy = event.changedTouches[0].clientY - swipeStart.y;
-        swipeStart = null;
-        if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.4) {
-            navigate(dx < 0 ? 1 : -1);
+    // Mirror the mushaf's interactive page swipe: drag the current tafsir
+    // and the neighboring tafsir follows your finger. Release to complete
+    // or bounce back, without interfering with vertical explanation scrolling.
+    content.addEventListener('pointerdown', event => {
+        if (turning || !sheet.classList.contains('is-open') ||
+            !['touch', 'pen'].includes(event.pointerType) ||
+            event.target.closest('button, a, input')) return;
+        gesture = { id: event.pointerId, x: event.clientX, y: event.clientY,
+            dx: 0, dragging: false, direction: 0, target: null };
+    });
+    content.addEventListener('pointermove', event => {
+        if (!gesture || gesture.id !== event.pointerId || turning) return;
+        const dx = event.clientX - gesture.x;
+        const dy = event.clientY - gesture.y;
+        if (!gesture.dragging) {
+            if (Math.abs(dy) > 16 && Math.abs(dy) > Math.abs(dx)) {
+                gesture = null;
+                return;
+            }
+            if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy) * 1.15) return;
+            gesture.dragging = true;
+            content.setPointerCapture?.(event.pointerId);
         }
-    }, { passive: true });
-    content.addEventListener('touchcancel', () => { swipeStart = null; }, { passive: true });
+        if (event.cancelable) event.preventDefault();
+        const direction = dx > 0 ? 1 : -1;
+        const target = adjacentVerse(activeVerse, direction);
+        const effectiveDx = target ? dx : dx * .16;
+        if (target && (!preview || gesture.direction !== direction)) {
+            buildPreview(target, direction);
+        } else if (!target) {
+            removePreview();
+        }
+        gesture.dx = effectiveDx;
+        gesture.direction = direction;
+        gesture.target = target;
+        content.style.transition = 'none';
+        content.style.transform = `translateX(${effectiveDx}px)`;
+        if (preview) {
+            preview.style.transition = 'none';
+            const width = content.getBoundingClientRect().width;
+            preview.style.transform = `translateX(${effectiveDx - direction * width}px)`;
+        }
+    }, { passive: false });
+    content.addEventListener('pointerup', event => {
+        if (!gesture || gesture.id !== event.pointerId) return;
+        const current = gesture;
+        gesture = null;
+        if (!current.dragging) return;
+        finishGesture(current);
+    });
+    content.addEventListener('pointercancel', event => {
+        if (!gesture || gesture.id !== event.pointerId) return;
+        resetGesture(true);
+    });
     closeButton.addEventListener('click', close);
     backdrop.addEventListener('click', close);
     document.addEventListener('keydown', event => {
