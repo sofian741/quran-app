@@ -123,6 +123,7 @@
         }
 
         renderCurrentPage();
+        window.dispatchEvent(new Event('mushaf:data-ready'));
         els.loading.classList.add('is-hidden');
         setTimeout(() => els.loading?.remove(), 260);
     }
@@ -860,6 +861,7 @@
         fitElement,
         getSurahName(surah) { return SURAH_NAMES[surah - 1] || ""; },
         getCurrentPage() { return displayPage; },
+        getSearchVerses() { return verses; },
         goToPage(page) {
             if (isTurningPage || isSettingsOpen() || isIndexOpen() ||
                 !Number.isInteger(page) || page < 1 || page > TOTAL_PAGES) return false;
