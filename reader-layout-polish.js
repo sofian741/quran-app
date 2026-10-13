@@ -155,7 +155,7 @@
     }
 
     function openTafsirWhenReady(verse, attempts = 0) {
-        if (window.mushafTafsir?.open) {
+        if (window.mushafTafsir?.open && window.QuranAudio?.VERSE_COUNTS) {
             window.mushafTafsir.open(verse);
             return;
         }
