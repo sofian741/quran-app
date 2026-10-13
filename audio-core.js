@@ -574,7 +574,10 @@
                 if (repeat.completed < repeat.count) {
                     this.trackUrl = ''; await this.prepare({ autoplay: true }); return;
                 }
+                // "Repeat current verse" is a finite practice action, not every next verse.
                 repeat.completed = 0;
+                repeat.mode = 'off';
+                this.persist();
                 await this.next({ autoplay: true });
                 return;
             }
@@ -587,6 +590,8 @@
                         await this.goTo(this.state.surah, repeat.start, { autoplay: true, preserveRepeat: true });
                     } else {
                         repeat.completed = 0;
+                        repeat.mode = 'off';
+                        this.persist();
                         await this.next({ autoplay: true });
                     }
                 }
