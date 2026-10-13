@@ -1,408 +1,221 @@
 (() => {
   'use strict';
-
-  const API_URL = 'https://mp3quran.net/api/v3/reciters?language=ar';
-  const CATALOG_KEY = 'quranRecitationCatalogV1';
-  const PLAYER_KEY = 'quranRecitationPlayerV1';
+  const core = window.QuranAudio;
+  const downloadsApi = window.QuranDownloads;
   const $ = id => document.getElementById(id);
-  const audio = $('recitation-audio');
-  const list = $('reciter-list');
-  const search = $('reciter-search');
-  const completeOnly = $('complete-only');
-  const moshafSelect = $('moshaf-select');
-  const surahSelect = $('surah-select');
-  const playButton = $('play-pause');
-  const playIcon = $('play-icon');
-  const playLabel = $('play-label');
-  const previous = $('previous');
-  const next = $('next');
-  const seek = $('seek');
-  const speed = $('speed');
-  const repeat = $('repeat');
-  const status = $('player-status');
-  const catalogStatus = $('catalog-status');
-  const count = $('reader-count');
-  const title = $('player-title');
-  const subtitle = $('player-subtitle');
-  const duration = $('duration');
-  const currentTime = $('current-time');
-  const connectionLabel = $('connection-label');
-  const reload = $('reload-catalog');
+  if (!core || !downloadsApi) return;
 
-  const SURAH_NAMES = [
-    'الفاتحة','البقرة','آل عمران','النساء','المائدة','الأنعام','الأعراف','الأنفال','التوبة','يونس',
-    'هود','يوسف','الرعد','إبراهيم','الحجر','النحل','الإسراء','الكهف','مريم','طه',
-    'الأنبياء','الحج','المؤمنون','النور','الفرقان','الشعراء','النمل','القصص','العنكبوت','الروم',
-    'لقمان','السجدة','الأحزاب','سبأ','فاطر','يس','الصافات','ص','الزمر','غافر',
-    'فصلت','الشورى','الزخرف','الدخان','الجاثية','الأحقاف','محمد','الفتح','الحجرات','ق',
-    'الذاريات','الطور','النجم','القمر','الرحمن','الواقعة','الحديد','المجادلة','الحشر','الممتحنة',
-    'الصف','الجمعة','المنافقون','التغابن','الطلاق','التحريم','الملك','القلم','الحاقة','المعارج',
-    'نوح','الجن','المزمل','المدثر','القيامة','الإنسان','المرسلات','النبأ','النازعات','عبس',
-    'التكوير','الانفطار','المطففين','الانشقاق','البروج','الطارق','الأعلى','الغاشية','الفجر',
-    'البلد','الشمس','الليل','الضحى','الشرح','التين','العلق','القدر','البينة','الزلزلة',
-    'العاديات','القارعة','التكاثر','العصر','الهمزة','الفيل','قريش','الماعون','الكوثر','الكافرون',
-    'النصر','المسد','الإخلاص','الفلق','الناس'
-  ];
-  const DIGITS = '٠١٢٣٤٥٦٧٨٩';
-  const arabic = value => String(value).replace(/\d/g, digit => DIGITS[Number(digit)]);
-  const timeText = seconds => {
-    if (!Number.isFinite(seconds) || seconds < 0) return '٠:٠٠';
-    const s = Math.floor(seconds);
-    return arabic(`${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`);
+  const ui = {
+    audio: $('recitation-audio'), list: $('reciter-list'), search: $('reciter-search'),
+    completeOnly: $('complete-only'), moshaf: $('moshaf-select'), surah: $('surah-select'),
+    play: $('play-pause'), playIcon: $('play-icon'), playLabel: $('play-label'),
+    previous: $('previous'), next: $('next'), seek: $('seek'), speed: $('speed'), repeat: $('repeat'),
+    status: $('player-status'), catalogStatus: $('catalog-status'), count: $('reader-count'),
+    title: $('player-title'), subtitle: $('player-subtitle'), duration: $('duration'),
+    current: $('current-time'), connection: $('connection-label'), reload: $('reload-catalog'),
+    download: $('download-current')
   };
+  if (Object.values(ui).some(value => !value)) return;
 
-  function readJson(key) {
-    try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; }
-  }
-  function store(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) { /* private browsing */ }
-  }
-
-  // The API owns the server URLs. Never use arbitrary catalog values as audio sources.
-  function validServer(server) {
-    try {
-      const url = new URL(server);
-      return url.protocol === 'https:' &&
-        (url.hostname === 'mp3quran.net' || url.hostname.endsWith('.mp3quran.net')) &&
-        !url.username && !url.password;
-    } catch (_) { return false; }
-  }
-  function normalizeCatalog(raw) {
-    if (!raw || !Array.isArray(raw.reciters)) throw new Error('Invalid reciter catalog');
-    const seen = new Set();
-    return raw.reciters.map(item => {
-      const id = Number(item.id);
-      const name = typeof item.name === 'string' ? item.name.trim() : '';
-      if (!Number.isInteger(id) || id <= 0 || !name || seen.has(id)) return null;
-      seen.add(id);
-      const moshaf = (Array.isArray(item.moshaf) ? item.moshaf : []).map(m => {
-        const server = typeof m.server === 'string' ? m.server.trim() : '';
-        if (!validServer(server)) return null;
-        const id = Number(m.id);
-        if (!Number.isInteger(id) || id <= 0) return null;
-        const surahs = [...new Set(String(m.surah_list || '').split(',')
-          .map(n => Number(n.trim()))
-          .filter(n => Number.isInteger(n) && n >= 1 && n <= 114))].sort((a,b) => a-b);
-        if (!surahs.length) return null;
-        return { id, name: String(m.name || 'التلاوة').trim(), server, surahs };
-      }).filter(Boolean);
-      return moshaf.length ? { id, name, moshaf } : null;
-    }).filter(Boolean).sort((a,b) => a.name.localeCompare(b.name, 'ar'));
-  }
-
+  const engine = new core.AudioEngine(ui.audio);
+  const catalogService = new core.CatalogService();
+  const downloads = new downloadsApi.DownloadManager();
   let catalog = [];
-  let chosen = null;
-  let chosenMoshaf = null;
-  let chosenSurah = 1;
-  let trackUrl = '';
-  let pendingResume = 0;
-  let lastSavedAt = 0;
-  const lastState = readJson(PLAYER_KEY) || {};
-  if ([0.75, 1, 1.25, 1.5, 2].includes(Number(lastState.speed))) {
-    speed.value = String(lastState.speed);
-  }
-  audio.playbackRate = Number(speed.value);
-  repeat.checked = !!lastState.repeat;
+  let selectedReciter = null;
+  let selectedMoshaf = null;
+  let applying = false;
+  window.quranAudioEngine = engine;
 
-  function setStatus(message) { status.textContent = message; }
-  function setPlaying(isPlaying) {
-    playButton.setAttribute('aria-label', isPlaying ? 'إيقاف مؤقت' : 'تشغيل');
-    playLabel.textContent = isPlaying ? 'إيقاف مؤقت' : 'تشغيل';
-    playIcon.innerHTML = isPlaying
-      ? '<path d="M7 5h4v14H7zm6 0h4v14h-4z"/>'
-      : '<path d="m8 5 12 7-12 7V5Z"/>';
-  }
-  function saveState() {
-    if (!chosen || !chosenMoshaf) return;
-    store(PLAYER_KEY, {
-      reciter: chosen.id, moshaf: chosenMoshaf.id, surah: chosenSurah,
-      position: Number.isFinite(audio.currentTime) ? audio.currentTime : 0,
-      speed: Number(speed.value), repeat: repeat.checked
-    });
+  function option(select, value, label) {
+    const item = document.createElement('option');
+    item.value = String(value); item.textContent = label; select.appendChild(item);
   }
 
-  function bestMoshaf(reciter) {
-    return [...reciter.moshaf].sort((a,b) => {
-      const score = m => m.surahs.length * 10 +
-        (/حفص/.test(m.name) ? 2 : 0) + (/مرتل|مرتّل/.test(m.name) ? 1 : 0);
-      return score(b) - score(a);
-    })[0];
+  function fillMoshaf(reciter, preferredId) {
+    selectedReciter = reciter;
+    ui.moshaf.replaceChildren();
+    reciter.moshaf.forEach(moshaf => option(ui.moshaf, moshaf.id,
+      `${moshaf.name} (${core.arabicDigits(moshaf.surahs.length)} سورة${moshaf.complete ? ' • كامل' : ' • مختارات'})`));
+    selectedMoshaf = reciter.moshaf.find(item => item.id === Number(preferredId)) || core.bestMoshaf(reciter);
+    ui.moshaf.value = String(selectedMoshaf.id);
+    fillSurahs(selectedMoshaf, engine.state.surah);
   }
 
-  function chooseReciter(reciter, moshafId = null, surah = null, restorePosition = 0) {
+  function fillSurahs(moshaf, selected) {
+    ui.surah.replaceChildren();
+    moshaf.surahs.forEach(number => option(ui.surah, number,
+      `${core.arabicDigits(number)}. سورة ${core.SURAH_NAMES[number - 1]}`));
+    ui.surah.value = String(moshaf.surahs.includes(Number(selected)) ? selected : moshaf.surahs[0]);
+  }
+
+  async function chooseReciter(reciter, preferredMoshaf, autoplay = false, position = 0) {
     if (!reciter) return;
-    audio.pause();
-    audio.removeAttribute('src');
-    audio.load();
-    trackUrl = '';
-    pendingResume = Math.max(0, Number(restorePosition) || 0);
-    chosen = reciter;
-    chosenMoshaf = reciter.moshaf.find(m => m.id === Number(moshafId)) || bestMoshaf(reciter);
-    chosenSurah = chosenMoshaf.surahs.includes(Number(surah)) ? Number(surah) : chosenMoshaf.surahs[0];
-    moshafSelect.replaceChildren();
-    reciter.moshaf.forEach(m => {
-      const option = new Option(`${m.name} (${arabic(m.surahs.length)} سورة)`, String(m.id));
-      moshafSelect.add(option);
+    fillMoshaf(reciter, preferredMoshaf);
+    await engine.selectMp3(reciter, selectedMoshaf, {
+      surah: Number(ui.surah.value), autoplay, position
     });
-    moshafSelect.value = String(chosenMoshaf.id);
-    fillSurahs();
-    updateDisplay();
-    renderList();
-    saveState();
+    renderCatalog();
   }
 
-  function fillSurahs() {
-    surahSelect.replaceChildren();
-    chosenMoshaf.surahs.forEach(n => {
-      surahSelect.add(new Option(`${arabic(n)}. سورة ${SURAH_NAMES[n-1]}`, String(n)));
-    });
-    surahSelect.value = String(chosenSurah);
-  }
-
-  function updateDisplay() {
-    title.textContent = `سورة ${SURAH_NAMES[chosenSurah-1]}`;
-    subtitle.textContent = `${chosen.name} • ${chosenMoshaf.name}`;
-    duration.textContent = '٠:٠٠';
-    currentTime.textContent = '٠:٠٠';
-    seek.value = '0';
-    seek.disabled = true;
-    playButton.disabled = false;
-    setPlaying(false);
-    setStatus('جاهز للتشغيل. اضغط تشغيل للاستماع.');
-    if ('mediaSession' in navigator) {
-      try {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: `سورة ${SURAH_NAMES[chosenSurah-1]}`,
-          artist: chosen.name, album: 'القرآن الكريم'
-        });
-      } catch (_) { /* MediaSession is optional */ }
-    }
-  }
-
-  function urlForTrack() {
-    if (!chosenMoshaf || !chosenMoshaf.surahs.includes(chosenSurah)) return null;
-    const base = chosenMoshaf.server.endsWith('/') ? chosenMoshaf.server : chosenMoshaf.server + '/';
-    return base + String(chosenSurah).padStart(3,'0') + '.mp3';
-  }
-
-  function prepareTrack() {
-    const url = urlForTrack();
-    if (!url) return false;
-    if (url !== trackUrl) {
-      trackUrl = url;
-      audio.src = url;
-      audio.load();
-    }
-    return true;
-  }
-
-  async function play() {
-    if (!chosen || !prepareTrack()) return;
-    try {
-      setStatus('جاري الاتصال بالتلاوة…');
-      await audio.play();
-      setStatus('يتم تشغيل التلاوة');
-    } catch (error) {
-      if (error?.name !== 'AbortError') {
-        console.error('Recitation playback failed', error);
-        setStatus('تعذّر تشغيل الصوت. تحقق من اتصال الإنترنت أو جرّب قارئًا آخر.');
-      }
-    }
-  }
-
-  function switchSurah(surah, autoplay = false) {
-    if (!chosenMoshaf?.surahs.includes(surah)) return;
-    audio.pause();
-    audio.removeAttribute('src');
-    audio.load();
-    trackUrl = '';
-    pendingResume = 0;
-    chosenSurah = surah;
-    surahSelect.value = String(surah);
-    updateDisplay();
-    saveState();
-    if (autoplay) play();
-  }
-
-  function adjacent(direction) {
-    if (!chosenMoshaf) return;
-    const surahs = chosenMoshaf.surahs;
-    const i = surahs.indexOf(chosenSurah);
-    const nextIndex = i + direction;
-    if (nextIndex < 0 || nextIndex >= surahs.length) {
-      setStatus('وصلت إلى آخر السور المتاحة لهذا القارئ.');
-      return;
-    }
-    switchSurah(surahs[nextIndex], !audio.paused);
-  }
-
-  function renderList() {
-    const query = search.value.trim().normalize('NFKC').replace(/[أإآ]/g, 'ا');
+  function renderCatalog() {
+    const query = core.normalizeArabic(ui.search.value);
     const visible = catalog.filter(reciter =>
-      (!completeOnly.checked || reciter.moshaf.some(m => m.surahs.length === 114)) &&
-      (!query || reciter.name.normalize('NFKC').replace(/[أإآ]/g, 'ا').includes(query))
+      (!ui.completeOnly.checked || reciter.moshaf.some(item => item.complete)) &&
+      (!query || core.normalizeArabic(reciter.name).includes(query))
     );
     const fragment = document.createDocumentFragment();
     visible.forEach(reciter => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'reciter-card' + (chosen?.id === reciter.id ? ' is-selected' : '');
-      button.setAttribute('aria-pressed', String(chosen?.id === reciter.id));
-      const name = document.createElement('strong');
-      name.textContent = reciter.name;
+      button.className = `reciter-card${selectedReciter?.id === reciter.id ? ' is-selected' : ''}`;
+      button.setAttribute('aria-pressed', String(selectedReciter?.id === reciter.id));
+      const name = document.createElement('strong'); name.textContent = reciter.name;
       const detail = document.createElement('small');
-      const most = bestMoshaf(reciter);
-      detail.textContent = `${arabic(reciter.moshaf.length)} تسجيل • ${arabic(most.surahs.length)} سورة في أكبر تسجيل`;
+      const complete = reciter.moshaf.filter(item => item.complete).length;
+      detail.textContent = complete
+        ? `${core.arabicDigits(reciter.moshaf.length)} تسجيل • ${core.arabicDigits(complete)} مصحف كامل`
+        : `${core.arabicDigits(reciter.moshaf.length)} تسجيل • تلاوات مختارة`;
       button.append(name, detail);
-      button.addEventListener('click', () => {
-        chooseReciter(reciter);
+      button.addEventListener('click', async () => {
+        await chooseReciter(reciter);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
       fragment.appendChild(button);
     });
-    list.replaceChildren(fragment);
-    catalogStatus.textContent = visible.length
-      ? `يظهر ${arabic(visible.length)} قارئًا. اضغط على اسم القارئ لاختياره.`
+    ui.list.replaceChildren(fragment);
+    ui.catalogStatus.textContent = visible.length
+      ? `يظهر ${core.arabicDigits(visible.length)} قارئًا، مرتبين بالأكثر طلبًا ثم أبجديًا.`
       : 'لا توجد نتائج مطابقة. جرّب اسمًا آخر أو ألغِ فلتر المصاحف الكاملة.';
   }
 
-  function applyCatalog(data, fromCache) {
-    const normalized = normalizeCatalog(data);
-    if (!normalized.length) throw new Error('Empty reciter catalog');
-    catalog = normalized;
-    count.textContent = `${arabic(catalog.length)} قارئًا متاحًا`;
-    const preferred = catalog.find(r => r.id === Number(lastState.reciter)) ||
-      catalog.find(r => /العفاسي/.test(r.name)) ||
-      catalog.find(r => /المعيقلي/.test(r.name)) || catalog[0];
-    chooseReciter(preferred, lastState.reciter === preferred.id ? lastState.moshaf : null,
-      lastState.reciter === preferred.id ? lastState.surah : null,
-      lastState.reciter === preferred.id ? lastState.position : 0);
-    catalogStatus.textContent = fromCache ? 'تم عرض آخر قائمة محفوظة، جاري تحديثها…' : '';
+  function setPlay(playing) {
+    ui.play.setAttribute('aria-label', playing ? 'إيقاف مؤقت' : 'تشغيل');
+    ui.playLabel.textContent = playing ? 'إيقاف مؤقت' : 'تشغيل';
+    ui.playIcon.innerHTML = playing
+      ? '<path d="M7 5h4v14H7zm6 0h4v14h-4z"/>'
+      : '<path d="m8 5 12 7-12 7V5Z"/>';
   }
+
+  function stateStatus(state) {
+    if (state.error) return state.error;
+    if (state.loading) return 'جاري تحميل التسجيل…';
+    if (state.playing) return 'يتم تشغيل التلاوة';
+    if (state.status === 'paused') return 'متوقف مؤقتًا';
+    return navigator.onLine === false ? 'أنت غير متصل. التسجيلات المحفوظة فقط متاحة.' : 'جاهز للتشغيل.';
+  }
+
+  function applyState(state, full = true) {
+    applying = true;
+    ui.title.textContent = `سورة ${core.SURAH_NAMES[state.surah - 1]}`;
+    ui.subtitle.textContent = `${state.reciterName} • ${state.moshafName}`;
+    ui.current.textContent = core.timeText(state.currentTime);
+    ui.duration.textContent = core.timeText(state.duration);
+    ui.seek.disabled = state.duration <= 0;
+    ui.seek.value = state.duration > 0 ? String(Math.round(state.currentTime / state.duration * 1000)) : '0';
+    ui.status.textContent = stateStatus(state);
+    ui.play.disabled = false;
+    setPlay(state.playing);
+    if (full) {
+      ui.speed.value = String(state.speed);
+      ui.repeat.checked = state.repeat.mode === 'surah';
+      if (state.provider === 'mp3quran' && selectedMoshaf?.surahs.includes(state.surah)) ui.surah.value = String(state.surah);
+    }
+    applying = false;
+  }
+
+  engine.addEventListener('state', event => applyState(event.detail, true));
+  engine.addEventListener('time', event => applyState(event.detail, false));
+  ui.play.addEventListener('click', () => engine.toggle());
+  ui.previous.addEventListener('click', () => engine.previous());
+  ui.next.addEventListener('click', () => engine.next());
+  ui.moshaf.addEventListener('change', async () => {
+    if (applying || !selectedReciter) return;
+    selectedMoshaf = selectedReciter.moshaf.find(item => item.id === Number(ui.moshaf.value));
+    fillSurahs(selectedMoshaf, engine.state.surah);
+    await engine.selectMp3(selectedReciter, selectedMoshaf, { surah: Number(ui.surah.value) });
+  });
+  ui.surah.addEventListener('change', () => { if (!applying) engine.goTo(Number(ui.surah.value), 1); });
+  ui.speed.addEventListener('change', () => engine.setSpeed(ui.speed.value));
+  ui.repeat.addEventListener('change', () => engine.setRepeat({
+    mode: ui.repeat.checked ? 'surah' : 'off', start: 1, end: 1, count: 1, completed: 0
+  }));
+  ui.seek.addEventListener('input', () => {
+    const state = engine.snapshot();
+    if (state.duration > 0) ui.current.textContent = core.timeText(Number(ui.seek.value) / 1000 * state.duration);
+  });
+  ui.seek.addEventListener('change', () => {
+    const state = engine.snapshot();
+    if (state.duration > 0) engine.seek(Number(ui.seek.value) / 1000 * state.duration);
+  });
+  ui.search.addEventListener('input', renderCatalog);
+  ui.completeOnly.addEventListener('change', renderCatalog);
+  ui.reload.addEventListener('click', loadCatalog);
+
+  ui.download.addEventListener('click', async () => {
+    const state = engine.snapshot();
+    const url = core.mp3Url({ server: state.server, surahs: state.availableSurahs }, state.surah);
+    if (!url || state.provider !== 'mp3quran') {
+      ui.status.textContent = 'اختر تسجيلًا من مكتبة MP3Quran لتنزيل السورة كاملة.';
+      return;
+    }
+    ui.download.disabled = true;
+    ui.status.textContent = 'جاري تنزيل السورة. لا تغلق الصفحة…';
+    try {
+      await downloads.downloadTrack({
+        url, provider: state.provider, reciterId: state.reciterId, reciterName: state.reciterName,
+        surah: state.surah, surahName: core.SURAH_NAMES[state.surah - 1]
+      });
+      ui.status.textContent = 'اكتمل تنزيل السورة للاستماع دون إنترنت.';
+    } catch (error) { ui.status.textContent = error.message; }
+    finally { ui.download.disabled = false; }
+  });
 
   async function loadCatalog() {
-    reload.disabled = true;
-    connectionLabel.textContent = 'جاري تحديث المكتبة…';
+    ui.reload.disabled = true;
+    ui.connection.textContent = 'جاري تحديث المكتبة…';
+    const cached = catalogService.cached();
+    if (cached.length && !catalog.length) { catalog = cached; renderCatalog(); }
     try {
-      const response = await fetch(API_URL, { cache: 'no-cache' });
-      if (!response.ok) throw new Error('API HTTP ' + response.status);
-      const data = await response.json();
-      const normalized = normalizeCatalog(data);
-      if (!normalized.length) throw new Error('No available reciters');
-      const preserve = chosen ? {
-        reciter: chosen.id, moshaf: chosenMoshaf?.id,
-        surah: chosenSurah, position: audio.currentTime
-      } : lastState;
-      catalog = normalized;
-      store(CATALOG_KEY, data);
-      count.textContent = `${arabic(catalog.length)} قارئًا متاحًا`;
-      // Do not interrupt playback when refreshing the catalog.
-      if (!chosen) {
-        const preferred = catalog.find(r => r.id === Number(preserve.reciter)) ||
-          catalog.find(r => /العفاسي/.test(r.name)) ||
-          catalog.find(r => /المعيقلي/.test(r.name)) || catalog[0];
-        chooseReciter(preferred, preserve.moshaf, preserve.surah, preserve.position);
+      catalog = await catalogService.load();
+      ui.count.textContent = `${core.arabicDigits(catalog.length)} قارئًا متاحًا`;
+      const saved = engine.state;
+      const preferred = catalog.find(item => saved.provider === 'mp3quran' && item.id === Number(saved.reciterId)) || catalogService.preferred(catalog);
+      if (saved.provider === 'mp3quran') {
+        await chooseReciter(preferred, saved.moshafId, false, saved.position);
       } else {
-        renderList();
+        fillMoshaf(preferred);
+        selectedReciter = null;
+        renderCatalog();
+        applyState(engine.snapshot(), true);
       }
-      connectionLabel.textContent = 'التشغيل عبر الإنترنت';
-      catalogStatus.textContent = `تم تحديث القائمة من MP3Quran. ${arabic(catalog.length)} قارئًا متاحًا.`;
-    } catch (error) {
-      console.error('Reciter catalog request failed:', error);
-      connectionLabel.textContent = 'تعذّر تحديث القائمة';
-      catalogStatus.textContent = catalog.length
-        ? 'تعذّر التحديث. يمكنك تصفح القائمة المحفوظة، لكن التشغيل يحتاج اتصالًا بالإنترنت.'
-        : 'تعذّر جلب القرّاء. تأكد من الإنترنت ثم اضغط تحديث القائمة.';
-      if (!catalog.length) count.textContent = 'المكتبة غير متاحة حاليًا';
-    } finally {
-      reload.disabled = false;
-    }
+      ui.connection.textContent = 'التشغيل عبر الإنترنت والتنزيل الاختياري';
+      ui.catalogStatus.textContent = `تم تحديث القائمة من MP3Quran: ${core.arabicDigits(catalog.length)} قارئًا.`;
+    } catch (_) {
+      if (catalog.length) {
+        ui.count.textContent = `${core.arabicDigits(catalog.length)} قارئًا في القائمة المحفوظة`;
+        const preferred = catalog.find(item => engine.state.provider === 'mp3quran' &&
+          item.id === Number(engine.state.reciterId)) || catalogService.preferred(catalog);
+        if (engine.state.provider === 'mp3quran') {
+          await chooseReciter(preferred, engine.state.moshafId, false, engine.state.position);
+        } else {
+          fillMoshaf(preferred);
+          selectedReciter = null;
+          renderCatalog();
+          applyState(engine.snapshot(), true);
+        }
+        ui.catalogStatus.textContent = 'تعذّر التحديث؛ تُعرض آخر قائمة محفوظة.';
+      } else {
+        ui.count.textContent = 'المكتبة غير متاحة حاليًا';
+        ui.catalogStatus.textContent = 'تعذّر جلب القرّاء. تحقق من الإنترنت ثم اضغط تحديث القائمة.';
+      }
+      ui.connection.textContent = 'تعذّر تحديث القائمة';
+    } finally { ui.reload.disabled = false; }
   }
 
-  playButton.addEventListener('click', () => {
-    if (!chosen) return;
-    if (audio.paused) play();
-    else audio.pause();
-  });
-  previous.addEventListener('click', () => adjacent(-1));
-  next.addEventListener('click', () => adjacent(1));
-  moshafSelect.addEventListener('change', () => {
-    if (!chosen) return;
-    chooseReciter(chosen, Number(moshafSelect.value), chosenSurah);
-  });
-  surahSelect.addEventListener('change', () => switchSurah(Number(surahSelect.value), !audio.paused));
-  search.addEventListener('input', renderList);
-  completeOnly.addEventListener('change', renderList);
-  reload.addEventListener('click', loadCatalog);
-  speed.addEventListener('change', () => {
-    audio.playbackRate = Number(speed.value);
-    saveState();
-  });
-  repeat.addEventListener('change', saveState);
-  seek.addEventListener('input', () => {
-    if (Number.isFinite(audio.duration) && audio.duration > 0) {
-      currentTime.textContent = timeText(Number(seek.value) / 1000 * audio.duration);
-    }
-  });
-  seek.addEventListener('change', () => {
-    if (Number.isFinite(audio.duration) && audio.duration > 0) {
-      audio.currentTime = Number(seek.value) / 1000 * audio.duration;
-      saveState();
-    }
-  });
-
-  audio.addEventListener('loadedmetadata', () => {
-    duration.textContent = timeText(audio.duration);
-    seek.disabled = !Number.isFinite(audio.duration);
-    if (pendingResume > 0 && Number.isFinite(audio.duration)) {
-      audio.currentTime = Math.min(pendingResume, Math.max(0, audio.duration - 2));
-      pendingResume = 0;
-    }
-  });
-  audio.addEventListener('timeupdate', () => {
-    currentTime.textContent = timeText(audio.currentTime);
-    if (Number.isFinite(audio.duration) && audio.duration > 0) {
-      seek.value = String(Math.round(audio.currentTime / audio.duration * 1000));
-    }
-    const now = Date.now();
-    if (now - lastSavedAt > 4000) { lastSavedAt = now; saveState(); }
-  });
-  audio.addEventListener('play', () => setPlaying(true));
-  audio.addEventListener('pause', () => { setPlaying(false); saveState(); });
-  audio.addEventListener('waiting', () => setStatus('جاري تحميل الصوت…'));
-  audio.addEventListener('playing', () => setStatus('يتم تشغيل التلاوة'));
-  audio.addEventListener('error', () => {
-    setPlaying(false);
-    setStatus('تعذّر تحميل التسجيل. جرّب سورة أو قارئًا آخر، وتأكد من الإنترنت.');
-  });
-  audio.addEventListener('ended', () => {
-    if (repeat.checked) { audio.currentTime = 0; play(); }
-    else {
-      const index = chosenMoshaf?.surahs.indexOf(chosenSurah) ?? -1;
-      if (index >= 0 && index < chosenMoshaf.surahs.length - 1) {
-        switchSurah(chosenMoshaf.surahs[index+1], true);
-      } else setStatus('انتهت التلاوة. بارك الله فيك.');
-    }
-  });
-  window.addEventListener('pagehide', saveState);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) saveState(); });
-
-  if ('mediaSession' in navigator) {
-    try {
-      navigator.mediaSession.setActionHandler('play', play);
-      navigator.mediaSession.setActionHandler('pause', () => audio.pause());
-      navigator.mediaSession.setActionHandler('previoustrack', () => adjacent(-1));
-      navigator.mediaSession.setActionHandler('nexttrack', () => adjacent(1));
-      navigator.mediaSession.setActionHandler('seekto', details => {
-        if (Number.isFinite(details.seekTime)) audio.currentTime = details.seekTime;
-      });
-    } catch (_) { /* Some browsers expose only part of MediaSession. */ }
-  }
-
-  // A saved catalog works for browsing if the API is temporarily unavailable.
-  const cached = readJson(CATALOG_KEY);
-  if (cached) {
-    try { applyCatalog(cached, true); } catch (_) { /* stale catalog */ }
-  }
+  window.addEventListener('online', () => { ui.connection.textContent = 'عاد الاتصال بالإنترنت'; });
+  window.addEventListener('offline', () => { ui.connection.textContent = 'وضع عدم الاتصال'; });
+  window.addEventListener('pagehide', () => engine.destroy());
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
+  applyState(engine.snapshot(), true);
   loadCatalog();
 })();
