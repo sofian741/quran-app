@@ -42,6 +42,20 @@
         </div>
       </section>
 
+      <section class="downloads-section audio-library" id="audio-library" aria-labelledby="downloads-title">
+        <div class="downloads-heading">
+          <span class="downloads-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3"/></svg>
+          </span>
+          <div><span class="eyebrow">استمع بدون إنترنت</span><h2 id="downloads-title">مكتبتي الصوتية</h2><p>تلاواتك مرتبة حسب القارئ، ثم ترتيب السور في المصحف.</p></div>
+          <span id="downloads-count" class="downloads-count">٠</span>
+        </div>
+        <div class="library-stats"><span id="library-readers">٠ قرّاء</span><span id="library-size">٠ ميجابايت</span></div>
+        <label class="library-search"><span aria-hidden="true">⌕</span><input id="library-search" type="search" placeholder="ابحث في مكتبتي عن قارئ أو سورة…" autocomplete="off" aria-label="البحث في التلاوات المحفوظة"></label>
+        <div id="downloads-list" class="downloads-list"></div>
+        <p id="downloads-status" class="downloads-status" role="status" aria-live="polite"></p>
+      </section>
+
       <section class="player-card" id="main-player" aria-labelledby="player-title">
         <div class="player-section-label"><span class="live-mark"></span> مشغل القرآن الكريم <span class="player-section-rule"></span><span class="player-section-ornament">۞</span></div>
         <div class="player-head">
@@ -90,6 +104,14 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3"/></svg>
             <span>تنزيل السورة</span>
           </button>
+          <button id="download-all" class="download-current download-all" type="button" aria-label="حفظ كل سور القارئ المتاحة للاستماع دون إنترنت">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3M3 7h3m-3 4h3"/></svg>
+            <span>تنزيل مصحف القارئ</span>
+          </button>
+        </div>
+        <div class="batch-progress" id="batch-progress" hidden>
+          <div class="batch-progress-top"><strong id="batch-label">جاري تجهيز التنزيل…</strong><button id="cancel-batch" type="button">إيقاف بعد السورة الحالية</button></div>
+          <progress id="batch-bar" max="100" value="0"></progress>
         </div>
         <p id="player-status" class="status" role="status" aria-live="polite">اختر القارئ المفضل لديك.</p>
         <audio id="recitation-audio" preload="none"></audio>
@@ -112,18 +134,6 @@
         </div>
         <div id="reciter-list" class="reciter-grid" aria-live="polite"></div>
         <p id="catalog-status" class="catalog-status" role="status"></p>
-      </section>
-
-      <section class="downloads-section" aria-labelledby="downloads-title">
-        <div class="downloads-heading">
-          <span class="downloads-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3"/></svg>
-          </span>
-          <div><h2 id="downloads-title">التلاوات المحفوظة</h2><p>استمع إليها حتى بدون إنترنت.</p></div>
-          <span id="downloads-count" class="downloads-count">٠</span>
-        </div>
-        <div id="downloads-list" class="downloads-list"></div>
-        <p id="downloads-status" class="downloads-status" role="status" aria-live="polite"></p>
       </section>
 
       <footer class="attribution">
