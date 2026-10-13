@@ -41,7 +41,7 @@
             .toLowerCase();
     }
 
-    function normalizedWithMap(raw, expandSmallAlif = false) {
+    function normalizedWithMap(raw, expandSmallAlif = false, standardWawAlif = false) {
         let text = '';
         const map = [];
         let offset = 0;
@@ -50,7 +50,10 @@
             offset += char.length;
             // Some Uthmani spellings write a small alif where standard
             // Arabic uses a full alif (e.g. الصِّرَٰط). Search both forms.
-            for (const folded of (expandSmallAlif && char === '\u0670' ? 'ا' : foldChar(char))) {
+            const wawAlif = standardWawAlif && char === 'و' &&
+                /^و[\u064B-\u065F]*\u0670(?=[\u064B-\u065F]*ة)/.test(raw.slice(start));
+            for (const folded of (wawAlif ? 'ا' :
+                expandSmallAlif && char === '\u0670' ? 'ا' : foldChar(char))) {
                 if (/\s/.test(folded)) {
                     if (text && text[text.length - 1] !== ' ') {
                         text += ' ';
@@ -82,7 +85,8 @@
             ayah: verse.ayah,
             text: verse.text,
             normalized: normalize(verse.text),
-            normalizedAlif: normalizedWithMap(verse.text, true).text
+            normalizedAlif: normalizedWithMap(verse.text, true).text,
+            normalizedWaw: normalizedWithMap(verse.text, false, true).text
         }));
         for (let surah = 1; surah <= 114; surah++) {
             const option = document.createElement('option');
@@ -140,6 +144,10 @@
         let start = text.indexOf(activeQuery);
         if (start < 0) {
             ({ text, map } = normalizedWithMap(verse.text, true));
+            start = text.indexOf(activeQuery);
+        }
+        if (start < 0) {
+            ({ text, map } = normalizedWithMap(verse.text, false, true));
             start = text.indexOf(activeQuery);
         }
         if (start < 0 || !map.length) {
@@ -219,7 +227,9 @@
         const scope = surahSelect.value;
         matches = indexedVerses.filter(verse =>
             (scope === 'all' || verse.surah === Number(scope)) &&
-            (verse.normalized.includes(activeQuery) || verse.normalizedAlif.includes(activeQuery)));
+            (verse.normalized.includes(activeQuery) ||
+                verse.normalizedAlif.includes(activeQuery) ||
+                verse.normalizedWaw.includes(activeQuery)));
         status.textContent = matches.length
             ? `تم العثور على ${digits(matches.length)} آية مطابقة`
             : 'لا توجد نتائج مطابقة. جرّب كلمة أخرى أو ابحث في جميع السور.';
