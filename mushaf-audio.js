@@ -27,7 +27,7 @@
         repeatEnd: $('audio-repeat-end'), repeatCount: $('audio-repeat-count'),
         download: $('audio-download'), downloadAll: $('audio-download-all'),
         cancelDownload: $('audio-cancel-download'), downloadProgress: $('audio-download-progress'),
-        downloadList: $('audio-download-list'),
+        downloadList: $('audio-download-list'), storageInfo: $('audio-storage-info'),
         listenAction: document.querySelector('[data-verse-action="listen"]'),
         text: $('quran-text')
     };
@@ -55,6 +55,7 @@
         ui.sheet.setAttribute('aria-hidden', 'false');
         requestAnimationFrame(() => ui.backdrop.classList.add('is-open'));
         renderDownloads();
+        refreshStorage();
     }
 
     function closeOptions() {
@@ -604,6 +605,16 @@
         ui.downloadProgress.textContent = 'سيتم إيقاف التنزيل بعد انتهاء الملف الحالي…';
     });
 
+    async function refreshStorage() {
+        const savedBytes = downloads.list().reduce((sum, item) => sum + (Number(item.bytes) || 0), 0);
+        const estimate = await downloads.estimate();
+        const free = estimate ? Math.max(0, estimate.quota - estimate.usage) : null;
+        ui.storageInfo.textContent = `التلاوات المحفوظة: ${downloadsApi.humanSize(savedBytes)}` +
+            (free === null ? ' • المساحة المتاحة غير معروفة' :
+                ` • مساحة تخزين متاحة تقريبًا: ${downloadsApi.humanSize(free)}`) +
+            ' • يُفضّل استخدام Wi-Fi لتنزيل المصحف كاملًا.';
+    }
+
     function renderDownloads() {
         const groups = new Map();
         downloads.list().forEach(item => {
@@ -617,7 +628,11 @@
             row.className = 'audio-download-item';
             const bytes = items.reduce((sum, item) => sum + (Number(item.bytes) || 0), 0);
             const label = document.createElement('span');
-            label.textContent = `${items[0].reciterName} • سورة ${items[0].surahName} • ${downloadsApi.humanSize(bytes)}`;
+            const first = items[0];
+            const count = first.provider === 'quran-foundation'
+                ? ` • ${core.arabicDigits(items.length)}/${core.arabicDigits(core.VERSE_COUNTS[first.surah - 1])} آية`
+                : ' • تسجيل السورة';
+            label.textContent = `${first.reciterName} • سورة ${first.surahName}${count} • ${downloadsApi.humanSize(bytes)}`;
             const remove = document.createElement('button');
             remove.type = 'button'; remove.textContent = 'حذف';
             remove.addEventListener('click', async () => {
@@ -628,6 +643,7 @@
             row.append(label, remove); fragment.appendChild(row);
         });
         ui.downloadList.replaceChildren(fragment);
+        refreshStorage();
     }
 
     downloads.addEventListener('change', event => {
