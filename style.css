@@ -381,7 +381,7 @@ a { -webkit-tap-highlight-color: transparent; }
 
 .surah-name {
     position: absolute;
-    inset: 24% 31%;
+    inset:18% 31% 30%;
     display: grid;
     place-items: center;
     margin: 0;
