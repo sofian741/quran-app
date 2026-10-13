@@ -205,3 +205,44 @@ body[data-theme="dark"] { background: radial-gradient(ellipse at 95% -10%, #1e38
   .mini-next, .mini-play { flex-basis: 36px; width: 36px; height: 36px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+
+
+/* Offline audio library: grouped, searchable and ordered by reciter/surah. */
+.audio-library { margin-top: 20px; margin-bottom: 22px; }
+.audio-library .downloads-heading { align-items: flex-start; }
+.audio-library .downloads-heading .eyebrow { display: block; margin-bottom: 4px; }
+.library-stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0 12px; }
+.library-stats span { padding: 7px 11px; border-radius: 9px; background: var(--surface-soft); color: var(--muted); font-size: 11px; font-weight: 700; }
+.library-search { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--surface-soft); border-radius: 12px; padding: 0 12px; color: var(--green); }
+.library-search:focus-within { border-color: var(--green); }
+.library-search > span { font-size: 24px; line-height: 1; }
+.library-search input { width: 100%; min-width: 0; height: 43px; background: transparent; color: var(--text); border: 0; outline: 0; font: inherit; font-size: 12px; }
+.library-search input::placeholder { color: var(--muted); }
+.library-group { border: 1px solid var(--border); border-radius: 15px; overflow: hidden; background: var(--surface); }
+.library-group summary { list-style: none; display: flex; align-items: center; gap: 11px; padding: 13px; cursor: pointer; user-select: none; }
+.library-group summary::-webkit-details-marker { display: none; }
+.library-group summary:focus-visible { outline: 2px solid var(--green); outline-offset: -3px; }
+.library-group .group-avatar { flex: 0 0 42px; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: var(--surface-soft); color: var(--green); font-size: 21px; }
+.library-group .group-name { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.library-group .group-name strong { font-size: 13px; line-height: 1.5; }
+.library-group .group-name small { font-size: 10px; line-height: 1.6; color: var(--muted); }
+.library-group .group-arrow { color: var(--green); font-size: 20px; transition: transform .2s ease; }
+.library-group[open] .group-arrow { transform: rotate(-90deg); }
+.library-group .group-tracks { border-top: 1px solid var(--border); padding: 9px; display: grid; gap: 7px; }
+.library-group .download-row { background: var(--surface-soft); }
+.library-group .download-row-info small { line-height: 1.7; }
+.library-group .download-row button { min-height: 34px; }
+.download-all { background: var(--surface); }
+.batch-progress { margin: 13px 0 0; padding: 13px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-soft); }
+.batch-progress[hidden] { display: none; }
+.batch-progress-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.batch-progress-top strong { font-size: 11px; line-height: 1.8; color: var(--text); }
+.batch-progress-top button { border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: #a35248; padding: 8px 10px; font-size: 11px; font-weight: 700; }
+.batch-progress progress { display: block; width: 100%; height: 8px; margin-top: 12px; accent-color: var(--green); }
+@media (max-width: 430px) {
+ .audio-library { padding: 15px; }
+ .library-group .download-row { flex-wrap: wrap; }
+ .library-group .download-row-info { flex-basis: 100%; }
+ .library-group .download-row button { flex: 1; }
+ .library-group summary { padding: 10px; }
+}
