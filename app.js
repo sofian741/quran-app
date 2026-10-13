@@ -635,8 +635,6 @@
             }
             if (event.target.closest('button, a, input') || isSettingsOpen() || isIndexOpen()) return;
             els.body.classList.toggle('tools-visible');
-            // The audio player shares the reader chrome. Refit the page when its height changes.
-            window.dispatchEvent(new Event('resize'));
         });
         els.stage.addEventListener('pointerdown', event => {
             if (event.pointerType === 'mouse' && event.button !== 0) return;
