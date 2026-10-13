@@ -37,6 +37,7 @@
     let headingTemplate = null;
     let markerTemplate = null;
     let metaQueued = false;
+    let suppressSwipeClick = false;
 
     preload().catch(error => console.warn('Swipe preview data unavailable:', error));
 
@@ -277,6 +278,8 @@
         clone.dataset.direction = String(direction);
         clone.style.transform = `translateX(${-direction * pageRect.width}px)`;
         stage.appendChild(clone);
+        // The target is fitted while offscreen, before the drag reveals it.
+        window.mushafReader?.fitElement(cloneText, targetPage);
         preview = clone;
         return clone;
     }
@@ -328,14 +331,15 @@
             page.style.transition = '';
             page.style.transform = '';
             dispatchPageTurn(direction);
-            setTimeout(() => {
+            requestAnimationFrame(() => {
                 removePreview();
                 queueMetaSync();
-            }, 340);
+            });
         }, 180);
     }
 
     function dispatchPageTurn(direction) {
+        if (window.mushafReader?.turnPageInstant(direction)) return;
         window.dispatchEvent(new KeyboardEvent('keydown', {
             key: direction > 0 ? 'ArrowLeft' : 'ArrowRight',
             bubbles: true
@@ -343,7 +347,9 @@
     }
 
     stage.addEventListener('pointerdown', event => {
-        if (!previewReady || !['touch', 'pen'].includes(event.pointerType)) return;
+        if (!previewReady || !['touch', 'pen', 'mouse'].includes(event.pointerType)) return;
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        if (event.target.closest('button, a, input, [role="button"]')) return;
         if (document.querySelector('.settings-sheet.is-open, .index-sheet.is-open')) return;
         gesture = {
             id: event.pointerId,
@@ -368,6 +374,7 @@
             }
             if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.15) return;
             gesture.dragging = true;
+            suppressSwipeClick = true;
             stage.setPointerCapture?.(event.pointerId);
         }
         event.stopImmediatePropagation();
@@ -418,5 +425,13 @@
         event.stopImmediatePropagation();
         gesture = null;
         resetSwipe(true);
+    }, true);
+
+    // Suppress the click generated after a drag (which otherwise toggles the toolbar).
+    stage.addEventListener('click', event => {
+        if (!suppressSwipeClick) return;
+        suppressSwipeClick = false;
+        event.preventDefault();
+        event.stopImmediatePropagation();
     }, true);
 })();
