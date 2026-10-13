@@ -2,7 +2,7 @@
 'use strict';
 const c=window.QuranAudio,d=window.QuranDownloads,e=window.quranAudioEngine,$=id=>document.getElementById(id);
 if(!c||!d||!e||!$('library-search'))return;
-const dm=new d.DownloadManager(), opened=new Set();
+const dm=new d.DownloadManager(), opened=new Set(), originalPlay=new Map();
 const ui={list:$('downloads-list'),count:$('downloads-count'),readers:$('library-readers'),size:$('library-size'),search:$('library-search'),status:$('downloads-status'),player:$('main-player')};
 const tracks=()=>dm.list().filter(t=>t.provider==='mp3quran'&&Number(t.surah)>=1&&Number(t.surah)<=114);
 function source(item){
@@ -13,6 +13,8 @@ function source(item){
  return {reciter:{id:Number(item.reciterId)||0,name:item.reciterName||'قارئ القرآن',moshaf:[moshaf]},moshaf};
 }
 async function play(item){
+ const original=originalPlay.get(item.url);
+ if(original){original.click();return;}
  const s=source(item);
  if(!s){ui.status.textContent='تعذّر تحديد مصدر التسجيل المحفوظ.';return;}
  const ok=await (window.quranSelectReciter ? window.quranSelectReciter(s.reciter,s.moshaf.id,true,0,Number(item.surah)) : e.selectMp3(s.reciter,s.moshaf,{surah:Number(item.surah),autoplay:true,position:0}));
@@ -20,7 +22,14 @@ async function play(item){
  ui.player.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function render(){
- const items=tracks(),groups=new Map();
+ // Preserve the original player's click handlers before replacing its flat rows.
+ const previous=[...ui.list.querySelectorAll(':scope > .download-row')];
+ const indexed=tracks();
+ if(previous.length===indexed.length)previous.forEach((row,i)=>{
+  const playButton=row.querySelector('button');
+  if(playButton)originalPlay.set(indexed[i].url,playButton);
+ });
+ const items=indexed,groups=new Map();
  items.forEach(t=>{const key=String(t.reciterId||t.reciterName||'unknown');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(t);});
  ui.count.textContent=c.arabicDigits(items.length);
  ui.readers.textContent=c.arabicDigits(groups.size)+' قرّاء';
