@@ -58,6 +58,7 @@
     }
 
     function closeOptions() {
+        closePickers();
         if (!ui.sheet.classList.contains('is-open')) return;
         ui.sheet.classList.remove('is-open');
         ui.sheet.setAttribute('aria-hidden', 'true');
@@ -75,48 +76,120 @@
     function fillSurahs(state) {
         const available = state.provider === 'mp3quran' ? state.availableSurahs :
             Array.from({ length: 114 }, (_, index) => index + 1);
-        const search = core.normalizeArabic(ui.surahSearch.value);
         ui.surah.replaceChildren();
-        available.filter(number => !search ||
-            core.normalizeArabic(core.SURAH_NAMES[number - 1]).includes(search) ||
-            String(number).includes(search) || number === state.surah)
-            .forEach(number => option(ui.surah, number,
-                `${core.arabicDigits(number)}. سورة ${core.SURAH_NAMES[number - 1]}`));
+        available.forEach(number => option(ui.surah, number,
+            `${core.arabicDigits(number)}. سورة ${core.SURAH_NAMES[number - 1]}`));
         ui.surah.value = String(state.surah);
+        updatePicker('surah');
     }
 
     function fillReciters(state) {
-        const search = core.normalizeArabic(ui.reciterSearch.value);
         ui.reciter.replaceChildren();
         const alignedName = 'مشاري راشد العفاسي • تظليل الكلمات';
         const selectedValue = state.provider === 'quran-foundation' ? 'aligned:7' : `mp3:${state.reciterId}`;
-        if (!search || core.normalizeArabic(alignedName).includes(search) || selectedValue === 'aligned:7') {
-            option(ui.reciter, 'aligned:7', alignedName);
-        }
-        // Keep Mashary's precisely aligned recording as the normal one-tap choice.
-        // Show an old MP3 Mashary selection only when restoring that saved recording.
+        option(ui.reciter, 'aligned:7', alignedName);
+        // Keep the word-aligned Mashary option first instead of showing two Mashary choices.
         catalog.filter(reciter =>
-            (!core.normalizeArabic(reciter.name).includes(core.normalizeArabic('العفاسي')) ||
-                selectedValue === `mp3:${reciter.id}`) &&
-            (!search || core.normalizeArabic(reciter.name).includes(search) ||
-                selectedValue === `mp3:${reciter.id}`))
+            !core.normalizeArabic(reciter.name).includes(core.normalizeArabic('العفاسي')) ||
+            selectedValue === `mp3:${reciter.id}`)
             .forEach(reciter => option(ui.reciter, `mp3:${reciter.id}`, reciter.name));
         ui.reciter.value = selectedValue;
         if (!ui.reciter.value) ui.reciter.selectedIndex = 0;
         const selected = catalog.find(reciter => reciter.id === Number(state.reciterId)) ||
             catalogService.preferred(catalog);
         fillMoshaf(selected, state.moshafId);
+        updatePicker('reciter');
     }
 
     function fillMoshaf(reciter, selectedId) {
         activeReciter = reciter || null;
         ui.moshaf.replaceChildren();
-        if (!reciter) return;
+        if (!reciter) { updatePicker('moshaf'); return; }
         reciter.moshaf.forEach(moshaf => option(ui.moshaf, moshaf.id,
             `${moshaf.name} (${core.arabicDigits(moshaf.surahs.length)} سورة${moshaf.complete ? ' • كامل' : ''})`));
         const selected = reciter.moshaf.find(item => item.id === Number(selectedId)) || core.bestMoshaf(reciter);
         if (selected) ui.moshaf.value = String(selected.id);
+        updatePicker('moshaf');
     }
+
+    const pickerConfig = {
+        reciter: { select: ui.reciter, trigger: $('audio-reciter-trigger'),
+            label: $('audio-reciter-selected'), panel: $('audio-reciter-panel'),
+            search: ui.reciterSearch, results: $('audio-reciter-results') },
+        moshaf: { select: ui.moshaf, trigger: $('audio-moshaf-trigger'),
+            label: $('audio-moshaf-selected'), panel: $('audio-moshaf-panel'),
+            search: null, results: $('audio-moshaf-results') },
+        surah: { select: ui.surah, trigger: $('audio-surah-trigger'),
+            label: $('audio-surah-selected'), panel: $('audio-surah-panel'),
+            search: ui.surahSearch, results: $('audio-surah-results') }
+    };
+
+    function updatePicker(kind) {
+        const picker = pickerConfig[kind];
+        const chosen = [...picker.select.options].find(item => item.value === picker.select.value);
+        picker.label.textContent = chosen?.textContent || 'اختر من القائمة';
+        if (!picker.panel.hidden) renderPicker(kind);
+    }
+
+    function renderPicker(kind) {
+        const picker = pickerConfig[kind];
+        const search = core.normalizeArabic(picker.search?.value || '');
+        const options = [...picker.select.options].filter(item =>
+            !search || core.normalizeArabic(item.textContent).includes(search) ||
+            String(item.value).includes(search));
+        const fragment = document.createDocumentFragment();
+        options.forEach(item => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'audio-picker-option';
+            button.textContent = item.textContent;
+            button.dataset.value = item.value;
+            button.setAttribute('aria-current', String(item.value === picker.select.value));
+            button.addEventListener('click', () => {
+                if (picker.select.value !== item.value) {
+                    picker.select.value = item.value;
+                    picker.select.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                updatePicker(kind);
+                closePickers();
+                picker.trigger.focus({ preventScroll: true });
+            });
+            fragment.appendChild(button);
+        });
+        if (!options.length) {
+            const empty = document.createElement('p');
+            empty.className = 'audio-picker-empty';
+            empty.textContent = 'لا توجد نتائج. جرّب اسمًا آخر.';
+            fragment.appendChild(empty);
+        }
+        picker.results.replaceChildren(fragment);
+    }
+
+    function closePickers() {
+        Object.values(pickerConfig).forEach(picker => {
+            picker.panel.hidden = true;
+            picker.trigger.setAttribute('aria-expanded', 'false');
+        });
+    }
+
+    Object.entries(pickerConfig).forEach(([kind, picker]) => {
+        picker.trigger.addEventListener('click', () => {
+            const opening = picker.panel.hidden;
+            closePickers();
+            if (!opening) return;
+            picker.panel.hidden = false;
+            picker.trigger.setAttribute('aria-expanded', 'true');
+            if (picker.search) picker.search.value = '';
+            renderPicker(kind);
+            if (picker.search) picker.search.focus({ preventScroll: true });
+        });
+        picker.search?.addEventListener('input', () => renderPicker(kind));
+    });
+
+    // Close the open list when tapping elsewhere, without swallowing selection clicks.
+    document.addEventListener('pointerdown', event => {
+        if (!event.target.closest('.audio-picker')) closePickers();
+    });
 
     function repeatClasses(mode) {
         ui.repeatFieldset.classList.toggle('is-simple', mode === 'off' || mode === 'surah');
@@ -169,9 +242,8 @@
             const max = core.VERSE_COUNTS[state.surah - 1];
             ui.repeatStart.max = ui.repeatEnd.max = String(max);
             repeatClasses(state.repeat.mode);
-            [...ui.repeatMode.options].forEach(item => {
-                item.disabled = state.provider === 'mp3quran' && ['verse', 'range'].includes(item.value);
-            });
+            // Fine-grained repeat is always selectable; applying it can switch to
+            // the aligned recording because full-surah MP3s have no verse timings.
             fillSurahs(state);
             ui.surah.value = String(state.surah);
             fillReciters(state);
@@ -181,8 +253,8 @@
                 : `تحميل كل التلاوات المتاحة (${core.arabicDigits(state.availableSurahs.length)} سورة)`;
             ui.quickRepeat.setAttribute('aria-pressed', String(state.repeat.mode !== 'off'));
             ui.repeatHint.textContent = state.provider === 'mp3quran'
-                ? 'التسجيل الحالي سورة كاملة؛ تكرار آية أو نطاق يحتاج تسجيلًا متزامنًا. اختر مشاري العفاسي المتزامن من قائمة القرّاء.'
-                : 'تكرار الآية يعيد الآية المحددة. تكرار النطاق يعيد الآيات من البداية للنهاية حسب عدد المرات.';
+                ? 'تكرار الآية أو نطاق الآيات متاح. عند تطبيقه سننتقل تلقائيًا لتسجيل مشاري العفاسي المتزامن لتحديد الآيات بدقة.'
+                : 'تكرار الآية يعيد الآية الحالية، وتكرار النطاق يعيد الآيات من البداية للنهاية بعدد المرات المحدد.';
             ui.syncNote.classList.toggle('is-unavailable', state.provider !== 'quran-foundation');
             ui.syncNote.textContent = state.provider === 'quran-foundation'
                 ? 'المزامنة الدقيقة مفعّلة: توقيت الكلمة مأخوذ من ملف التسجيل نفسه عبر Quran Foundation. تُعطّل الكلمة تلقائيًا إذا لم يتطابق عدد كلمات الآية.'
@@ -288,8 +360,6 @@
         const next = SPEEDS[(SPEEDS.indexOf(engine.state.speed) + 1) % SPEEDS.length];
         engine.setSpeed(next);
     });
-    ui.reciterSearch.addEventListener('input', () => fillReciters(engine.snapshot()));
-    ui.surahSearch.addEventListener('input', () => fillSurahs(engine.snapshot()));
     ui.close.addEventListener('click', closeOptions);
     ui.backdrop.addEventListener('click', closeOptions);
     ui.play.addEventListener('click', () => engine.toggle());
@@ -339,27 +409,50 @@
     ui.speed.addEventListener('change', () => engine.setSpeed(ui.speed.value));
     ui.autoFollow.addEventListener('change', () => engine.setAutoFollow(ui.autoFollow.checked));
 
-    function applyRepeat() {
+    async function applyRepeat() {
         const mode = ui.repeatMode.value;
-        if (engine.state.provider === 'mp3quran' && ['verse', 'range'].includes(mode)) {
-            ui.repeatHint.textContent = 'تكرار الآية أو نطاق الآيات يحتاج تسجيلًا متزامنًا. اختر مشاري العفاسي المتزامن من القرّاء.';
-            return;
+        const start = Number(ui.repeatStart.value);
+        const end = Number(ui.repeatEnd.value);
+        const count = Number(ui.repeatCount.value);
+        const wasPlaying = !engine.audio.paused || engine.intentToPlay;
+        const switching = engine.state.provider === 'mp3quran' && (mode === 'verse' || mode === 'range');
+
+        if (switching) {
+            ui.applyRepeatButton.disabled = true;
+            ui.repeatHint.textContent = 'جاري تجهيز التسجيل المتزامن لمشاري العفاسي لتكرار الآيات بدقة…';
+            const changed = await engine.selectAligned(7, {
+                surah: engine.state.surah, ayah: mode === 'range' ? start : 1,
+                autoplay: false
+            });
+            ui.applyRepeatButton.disabled = false;
+            if (!changed) {
+                ui.repeatHint.textContent = 'تعذّر تجهيز تسجيل الآيات. تحقق من الإنترنت وحاول مرة أخرى.';
+                return;
+            }
         }
-        engine.setRepeat({
-            mode, start: Number(ui.repeatStart.value), end: Number(ui.repeatEnd.value),
-            count: Number(ui.repeatCount.value), completed: 0
-        });
+
+        engine.setRepeat({ mode, start, end, count, completed: 0 });
         repeatClasses(mode);
-        if (mode === 'range' &&
-            (engine.state.ayah < Number(ui.repeatStart.value) || engine.state.ayah > Number(ui.repeatEnd.value))) {
-            engine.goTo(engine.state.surah, Number(ui.repeatStart.value), { autoplay: !engine.audio.paused });
+        if (mode === 'range') {
+            const first = engine.state.repeat.start;
+            const started = await engine.goTo(engine.state.surah, first, { autoplay: wasPlaying });
+            if (!started) {
+                ui.repeatHint.textContent = 'تعذّر بدء تكرار نطاق الآيات. حاول مرة أخرى.';
+                return;
+            }
+        } else if (switching && wasPlaying) {
+            await engine.play();
         }
+        closeRepeat();
     }
-    ui.repeatMode.addEventListener('change', () => repeatClasses(ui.repeatMode.value));
-    ui.applyRepeatButton.addEventListener('click', () => {
-        applyRepeat();
-        if (engine.state.repeat.mode === ui.repeatMode.value) closeRepeat();
+    ui.repeatMode.addEventListener('change', () => {
+        repeatClasses(ui.repeatMode.value);
+        ui.repeatHint.textContent = engine.state.provider === 'mp3quran' &&
+            ['verse', 'range'].includes(ui.repeatMode.value)
+            ? 'سيتم استخدام تسجيل مشاري العفاسي المتزامن تلقائيًا حتى يعمل تكرار الآيات بدقة.'
+            : 'تكرار الآية يعيد الآية الحالية، وتكرار النطاق يعيد الآيات من البداية للنهاية بعدد المرات المحدد.';
     });
+    ui.applyRepeatButton.addEventListener('click', applyRepeat);
 
     ui.listenAction.addEventListener('click', async () => {
         const selected = window.mushafVerseActions?.getSelectedVerse?.();
@@ -495,6 +588,7 @@
 
     document.addEventListener('keydown', event => {
         if (event.key !== 'Escape') return;
+        closePickers();
         if (ui.sheet.classList.contains('is-open')) closeOptions();
         closeRepeat();
     });
@@ -508,8 +602,9 @@
             fillReciters(engine.state);
         } catch (_) {
             if (!catalog.length) {
-                ui.reciter.replaceChildren(new Option('تعذّر تحميل القرّاء', ''));
-                ui.reciter.disabled = true; ui.moshaf.disabled = true;
+                // Aligned Mashary remains available even when the MP3 catalog is offline.
+                ui.moshaf.disabled = true;
+                fillReciters(engine.snapshot());
             }
         }
     }
