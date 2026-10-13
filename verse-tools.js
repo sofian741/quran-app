@@ -3,6 +3,7 @@
 
     const FAVORITES_KEY = 'quranVerseFavoritesV1';
     const MARKER_KEY = 'quranReadingMarkerV1';
+    const PAGE_MARKER_KEY = 'quranPageMarkerV1';
     const $ = id => document.getElementById(id);
     const actions = {
         bookmark: document.querySelector('[data-verse-action="bookmark"]'),
@@ -13,23 +14,26 @@
     const saved = {
         open: $('open-saved'), sheet: $('saved-sheet'), backdrop: $('saved-backdrop'),
         close: $('close-saved'), list: $('saved-list'),
-        favoritesTab: $('saved-tab-favorites'), markerTab: $('saved-tab-marker')
+        favoritesTab: $('saved-tab-favorites'), markerTab: $('saved-tab-marker'),
+        pageTab: $('saved-tab-page')
     };
     const share = {
         sheet: $('share-sheet'), backdrop: $('share-backdrop'), close: $('close-share'),
         preview: $('share-preview'), message: $('share-message'),
         send: $('share-image'), download: $('download-image')
     };
+    const pageMarkerButton = $('toggle-page-marker');
     const toastElement = $('verse-toast');
     if (Object.values(actions).some(value => !value) ||
         Object.values(saved).some(value => !value) ||
-        Object.values(share).some(value => !value) || !toastElement) return;
+        Object.values(share).some(value => !value) || !toastElement || !pageMarkerButton) return;
 
     const DIGITS = '٠١٢٣٤٥٦٧٨٩';
     const reader = () => window.mushafReader;
     let savedTab = 'favorites';
     let favorites = readFavorites();
     let marker = readMarker();
+    let pageMarker = readPageMarker();
     let activeShare = null;
     let shareRequestId = 0;
     let toastTimer = null;
@@ -61,6 +65,36 @@
                 value.page >= 1 && value.page <= 604
                 ? { surah: value.surah, ayah: value.ayah, page: value.page } : null;
         } catch (_) { return null; }
+    }
+
+    function readPageMarker() {
+        try {
+            const page = JSON.parse(localStorage.getItem(PAGE_MARKER_KEY) || 'null');
+            return Number.isInteger(page) && page >= 1 && page <= 604 ? page : null;
+        } catch (_) { return null; }
+    }
+
+    function updatePageMarkerButton() {
+        const page = reader()?.getCurrentPage();
+        const isMarked = pageMarker !== null && pageMarker === page;
+        pageMarkerButton.setAttribute('aria-pressed', String(isMarked));
+        pageMarkerButton.setAttribute('aria-label', isMarked
+            ? 'إزالة فاصلة الصفحة الحالية' : 'حفظ فاصلة للصفحة الحالية');
+        pageMarkerButton.title = isMarked ? 'إزالة فاصلة الصفحة' : 'حفظ فاصلة الصفحة';
+    }
+
+    function togglePageMarker() {
+        const page = reader()?.getCurrentPage();
+        if (!Number.isInteger(page) || page < 1 || page > 604) {
+            notify('انتظر حتى تكتمل الصفحة');
+            return;
+        }
+        const next = pageMarker === page ? null : page;
+        if (!persist(PAGE_MARKER_KEY, next)) return;
+        pageMarker = next;
+        updatePageMarkerButton();
+        notify(next === null ? 'تمت إزالة فاصلة الصفحة' :
+            `تم حفظ فاصلة للصفحة ${digits(page)} ✓`);
     }
 
     function persist(key, value) {
@@ -201,10 +235,16 @@
 
     function renderSaved() {
         const isFavorites = savedTab === 'favorites';
-        saved.favoritesTab.classList.toggle('is-active', isFavorites);
-        saved.markerTab.classList.toggle('is-active', !isFavorites);
-        saved.favoritesTab.setAttribute('aria-selected', String(isFavorites));
-        saved.markerTab.setAttribute('aria-selected', String(!isFavorites));
+        const isVerseMarker = savedTab === 'marker';
+        const isPageMarker = savedTab === 'page';
+        for (const [tab, active] of [
+            [saved.favoritesTab, isFavorites],
+            [saved.markerTab, isVerseMarker],
+            [saved.pageTab, isPageMarker]
+        ]) {
+            tab.classList.toggle('is-active', active);
+            tab.setAttribute('aria-selected', String(active));
+        }
         const fragment = document.createDocumentFragment();
         if (isFavorites) {
             favorites.forEach(key => {
@@ -212,16 +252,42 @@
                 const verse = { surah, ayah, verseKey: key };
                 if (isVerse(verse) && verseText(verse)) fragment.appendChild(createSavedItem(verse));
             });
-        } else if (marker) {
+        } else if (isVerseMarker && marker) {
             const verse = { ...marker, verseKey: `${marker.surah}:${marker.ayah}` };
             fragment.appendChild(createSavedItem(verse, true));
+        } else if (isPageMarker && pageMarker !== null) {
+            const item = document.createElement('article');
+            item.className = 'saved-item';
+            const label = document.createElement('small');
+            label.textContent = `فاصلة الصفحة ${digits(pageMarker)}`;
+            const description = document.createElement('p');
+            description.textContent = 'ارجع إلى الصفحة المحفوظة واستكمل القراءة من مكانك.';
+            description.style.fontFamily = 'inherit';
+            description.style.fontSize = '15px';
+            const controls = document.createElement('div');
+            controls.className = 'saved-item-actions';
+            controls.appendChild(makeButton('اذهب للصفحة', () => {
+                const page = pageMarker;
+                closeSaved();
+                if (!reader()?.goToPage(page)) notify('تعذّر الانتقال إلى الصفحة');
+            }));
+            controls.appendChild(makeButton('إزالة الفاصلة', () => {
+                if (!persist(PAGE_MARKER_KEY, null)) return;
+                pageMarker = null;
+                updatePageMarkerButton();
+                renderSaved();
+            }));
+            item.append(label, description, controls);
+            fragment.appendChild(item);
         }
         if (!fragment.childNodes.length) {
             const empty = document.createElement('p');
             empty.className = 'saved-empty';
             empty.textContent = isFavorites
                 ? 'لسه مفيش آيات في المفضلة. اضغط مطولًا على آية وأضفها هنا.'
-                : 'لسه محطتش فاصلة. اختار آية واضغط «ضع فاصلة هنا».';
+                : isVerseMarker
+                    ? 'لسه محطتش فاصلة. اختار آية واضغط «ضع فاصلة هنا».'
+                    : 'لسه محطتش فاصلة صفحة. اضغط علامة الفاصلة جنب الإعدادات.';
             fragment.appendChild(empty);
         }
         saved.list.replaceChildren(fragment);
@@ -442,6 +508,9 @@
         const verse = selectedVerse();
         if (verse) openShare(verse);
     });
+    pageMarkerButton.addEventListener('click', togglePageMarker);
+    window.addEventListener('mushaf:page-changed', updatePageMarkerButton);
+    updatePageMarkerButton();
     saved.open.addEventListener('click', () => {
         // The reader toolbar is visible only when the user opens its controls.
         openSaved();
@@ -450,6 +519,7 @@
     saved.backdrop.addEventListener('click', closeSaved);
     saved.favoritesTab.addEventListener('click', () => { savedTab = 'favorites'; renderSaved(); });
     saved.markerTab.addEventListener('click', () => { savedTab = 'marker'; renderSaved(); });
+    saved.pageTab.addEventListener('click', () => { savedTab = 'page'; renderSaved(); });
     share.close.addEventListener('click', closeShare);
     share.backdrop.addEventListener('click', closeShare);
     share.download.addEventListener('click', downloadImage);
