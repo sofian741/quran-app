@@ -123,7 +123,12 @@
     applying = false;
   }
 
-  engine.addEventListener('state', event => applyState(event.detail, true));
+  const starterPlayer = $('offline-starter-player');
+  starterPlayer?.addEventListener('play', () => engine.pause());
+  engine.addEventListener('state', event => {
+    if (event.detail.playing && starterPlayer && !starterPlayer.paused) starterPlayer.pause();
+    applyState(event.detail, true);
+  });
   engine.addEventListener('time', event => applyState(event.detail, false));
   ui.play.addEventListener('click', () => engine.toggle());
   ui.previous.addEventListener('click', () => engine.previous());
