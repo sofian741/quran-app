@@ -117,10 +117,11 @@ for (let pageNumber = 1; pageNumber <= 604; pageNumber++) {
     for (let lineIndex = 0; lineIndex < rawPage.lines.length; lineIndex++) {
         const line = rawPage.lines[lineIndex];
 
-        if (line.type === 'surah-header') {
-            lines.push(['h', ++lastSurah]);
-            continue;
-        }
+        // The upstream rendered files contain heuristic header rows. Some of
+        // them repeat the previous surah on an otherwise empty source row
+        // (page 207 is the known example). Derive headings from the actual
+        // surah transition in the referenced Quran words instead.
+        if (line.type === 'surah-header') continue;
 
         if (line.type === 'basmala') {
             const following = rawPage.lines
@@ -198,15 +199,6 @@ for (let pageNumber = 1; pageNumber <= 604; pageNumber++) {
     }
 
     pages.push(lines);
-}
-
-// A heading must stay with the opening it introduces. A few upstream pages
-// place the heading as the final row and the basmala/text on the next page.
-for (let pageIndex = 0; pageIndex < pages.length - 1; pageIndex++) {
-    const trailing = pages[pageIndex].at(-1);
-    if (trailing?.[0] === 'h') {
-        pages[pageIndex + 1].unshift(pages[pageIndex].pop());
-    }
 }
 
 if (cursor !== sourceWords.length || lastSurah !== 114) {

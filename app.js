@@ -80,12 +80,12 @@
     let displayPage = 1;
     let settings = loadSettings();
     let resizeTimer = null;
+    let fitRevision = 0;
     let pointerStart = null;
     let suppressStageClick = false;
     let indexTab = 'surahs';
     let indexCloseTimer = null;
     let isTurningPage = false;
-    let fitRevision = 0;
     let settingsPageSize = null;
     let settingsCloseTimer = null;
 
@@ -219,6 +219,7 @@
             else if (line[0] === 'b') fragment.appendChild(createBasmala(line[1], line[2]));
             else fragment.appendChild(createMushafLine(line[1], line[2]));
         }
+        els.text.dataset.layoutState = 'pending';
         els.text.replaceChildren(fragment);
         els.text.style.setProperty('--mushaf-line-count', pageLayout.length);
         updatePageMeta(pageLayout);
@@ -350,53 +351,72 @@
     function fitPage() {
         if (!tokens.length || !els.text.clientWidth || isSettingsOpen()) return;
         const revision = ++fitRevision;
+        els.text.dataset.layoutState = 'pending';
         const lines = Array.from(els.text.querySelectorAll('.mushaf-line'));
-        const lineCount = Number(els.text.style.getPropertyValue('--mushaf-line-count')) || 15;
         const preferred = settings.fontSize;
+        els.text.style.fontSize = `${preferred}px`;
         els.text.style.setProperty('--mushaf-font-size', `${preferred}px`);
+        els.text.style.setProperty('--mushaf-min-row-height', '0px');
         lines.forEach(line => {
             line.style.transform = '';
             line.classList.add('is-measuring');
             line.classList.remove('is-full-line', 'is-short-line', 'is-crowded-line');
         });
 
-        const availableWidth = Math.max(1, els.text.clientWidth - 12);
-        let widest = 1;
-        for (const line of lines) {
-            const children = Array.from(line.children);
-            const naturalWidth = children.reduce((sum, child) => sum + child.getBoundingClientRect().width, 0) +
-                Math.max(0, children.length - 1) * preferred * 0.16;
-            widest = Math.max(widest, naturalWidth);
-        }
-
-        const widthLimit = preferred * availableWidth / widest;
-        const rowHeight = Math.max(1, els.text.clientHeight / lineCount);
-        const heightLimit = rowHeight / settings.lineHeight;
-        let fitted = Math.max(MIN_FONT_SIZE, Math.min(preferred, widthLimit * 0.985, heightLimit));
-
-        const applyFittedSize = () => {
-            els.text.style.setProperty('--mushaf-font-size', `${fitted.toFixed(2)}px`);
-            els.text.style.setProperty('--mushaf-min-row-height', `${(fitted * settings.lineHeight).toFixed(2)}px`);
-        };
-
-        const classifyLines = () => {
-            for (const line of lines) {
+        requestAnimationFrame(() => {
+            if (revision !== fitRevision || isSettingsOpen()) return;
+            const lineWidth = lines.reduce(
+                (smallest, line) => Math.min(smallest, line.clientWidth),
+                els.text.clientWidth,
+            );
+            const availableWidth = Math.max(1, lineWidth - 12);
+            const measureLineWidths = () => new Map(lines.map(line => {
                 const children = Array.from(line.children);
-                const naturalWidth = children.reduce((sum, child) => sum + child.getBoundingClientRect().width, 0) +
-                    Math.max(0, children.length - 1) * fitted * 0.16;
-                const ratio = naturalWidth / availableWidth;
-                const crowded = ratio > 1;
-                const full = children.length >= 4 && ratio >= 0.7;
-                line.classList.remove('is-measuring');
-                line.classList.add(
-                    crowded
-                        ? 'is-crowded-line'
-                        : full ? 'is-full-line' : 'is-short-line'
-                );
-            }
-
-            requestAnimationFrame(() => {
-                if (revision !== fitRevision) return;
+                const gap = parseFloat(getComputedStyle(line).columnGap) || 0;
+                return [line, children.reduce(
+                    (sum, child) => sum + child.getBoundingClientRect().width,
+                    0,
+                ) + Math.max(0, children.length - 1) * gap];
+            }));
+            let lineWidths = measureLineWidths();
+            const widest = Math.max(1, ...lineWidths.values());
+            const widthLimit = preferred * availableWidth / widest;
+            const textStyle = getComputedStyle(els.text);
+            const verticalPadding = parseFloat(textStyle.paddingTop) +
+                parseFloat(textStyle.paddingBottom);
+            const structuralHeight = Array.from(els.text.children)
+                .filter(element => !element.classList.contains('mushaf-line'))
+                .reduce((height, element) => height + element.getBoundingClientRect().height, 0);
+            const usableHeight = Math.max(
+                1,
+                els.text.clientHeight - verticalPadding - structuralHeight,
+            );
+            const rowHeight = Math.max(1, usableHeight / Math.max(1, lines.length));
+            const heightLimit = rowHeight / settings.lineHeight;
+            let fitted = Math.max(
+                MIN_FONT_SIZE,
+                Math.min(preferred, widthLimit * 0.985, heightLimit * 0.985),
+            );
+            const applyFittedSize = () => {
+                els.text.style.fontSize = `${fitted.toFixed(2)}px`;
+                els.text.style.setProperty('--mushaf-font-size', `${fitted.toFixed(2)}px`);
+                els.text.style.setProperty('--mushaf-min-row-height', `${(fitted * settings.lineHeight).toFixed(2)}px`);
+            };
+            const finish = () => {
+                if (revision !== fitRevision || isSettingsOpen()) return;
+                lineWidths = measureLineWidths();
+                for (const line of lines) {
+                    const children = Array.from(line.children);
+                    const ratio = lineWidths.get(line) / availableWidth;
+                    line.classList.remove('is-measuring');
+                    line.classList.add(
+                        ratio > 1
+                            ? 'is-crowded-line'
+                            : children.length >= 4 && ratio >= 0.7
+                                ? 'is-full-line'
+                                : 'is-short-line',
+                    );
+                }
                 for (const line of lines) {
                     const childBounds = Array.from(line.children)
                         .map(child => child.getBoundingClientRect());
@@ -406,33 +426,28 @@
                         : 0;
                     const scale = Math.min(
                         1,
-                        line.clientWidth / Math.max(1, contentWidth) * 0.965
+                        availableWidth / Math.max(1, contentWidth) * 0.985,
                     );
                     line.style.transform = scale < 0.998
                         ? `scaleX(${scale.toFixed(4)})`
                         : '';
                 }
+                els.text.dataset.layoutState = 'ready';
+            };
+
+            applyFittedSize();
+            requestAnimationFrame(() => {
+                if (revision !== fitRevision || isSettingsOpen()) return;
+                lineWidths = measureLineWidths();
+                const overflowRatio = Math.max(...lineWidths.values()) / availableWidth;
+                if (overflowRatio > 1.001 && fitted > MIN_FONT_SIZE) {
+                    fitted = Math.max(MIN_FONT_SIZE, fitted / overflowRatio * 0.985);
+                    applyFittedSize();
+                    requestAnimationFrame(finish);
+                } else {
+                    finish();
+                }
             });
-        };
-
-        applyFittedSize();
-        requestAnimationFrame(() => {
-            if (revision !== fitRevision) return;
-            const overflowRatio = lines.reduce(
-                (largest, line) => Math.max(
-                    largest,
-                    line.scrollWidth / Math.max(1, line.clientWidth)
-                ),
-                1
-            );
-
-            if (overflowRatio > 1.002) {
-                fitted = Math.max(MIN_FONT_SIZE, fitted / overflowRatio * 0.985);
-                applyFittedSize();
-                requestAnimationFrame(classifyLines);
-            } else {
-                classifyLines();
-            }
         });
     }
 
@@ -778,7 +793,9 @@
                 Math.abs(rect.height - settingsPageSize.height) > 1
             );
             settingsPageSize = null;
-            if (sizeChanged) requestAnimationFrame(fitPage);
+            if (sizeChanged || els.text.dataset.layoutState !== 'ready') {
+                requestAnimationFrame(fitPage);
+            }
         }, 200);
     }
 
