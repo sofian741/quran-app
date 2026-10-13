@@ -148,6 +148,9 @@ const surahNames = [
                             Math.abs(ornamentRect.height - rect.height) >= 0.6) {
                             fail(pageNumber, `ornament does not fill heading for surah ${surah}`);
                         }
+                        if (ornament.getAttribute('preserveAspectRatio') === 'none') {
+                            fail(pageNumber, `distorted ornament for surah ${surah}`);
+                        }
                     }
 
                     if (pageNumber === 208 && !pageHeadings.some(item => item.dataset.surah === '10')) {

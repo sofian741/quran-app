@@ -56,25 +56,9 @@
     }
 
     function applyAdaptiveRows(container) {
-        const rows = Array.from(container.children);
-        const headingCount = rows.filter(row => row.classList.contains('surah-heading')).length;
-
-        if (headingCount < 2) {
-            container.style.removeProperty('grid-template-rows');
-            return;
-        }
-
-        // Keep the total vertical budget almost unchanged: give the ornament more of
-        // the heading+basmala pair instead of using fixed pixels. This scales with
-        // phone/tablet height and avoids the header becoming flat on dense pages.
-        const headingWeight = headingCount >= 3 ? 1.36 : 1.25;
-        const basmalaWeight = headingCount >= 3 ? 0.64 : 0.75;
-        const tracks = rows.map(row => {
-            if (row.classList.contains('surah-heading')) return `minmax(0, ${headingWeight}fr)`;
-            if (row.classList.contains('surah-basmala')) return `minmax(0, ${basmalaWeight}fr)`;
-            return 'minmax(0, 1fr)';
-        });
-        container.style.gridTemplateRows = tracks.join(' ');
+        // The reader uses a flex column with fixed-ratio headings. Remove stale
+        // grid tracks from earlier builds so dense pages use the same layout path.
+        container.style.removeProperty('grid-template-rows');
     }
 
     function syncPageMeta() {

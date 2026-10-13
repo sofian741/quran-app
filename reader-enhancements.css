@@ -8,16 +8,16 @@
     z-index: 2;
 }
 
-/* Keep every surah cartouche full-width, including pages with 3+ short surahs.
-   The existing fixed-row grid supplies the available vertical space. */
+/* Keep the ornament at its authored ratio on regular and dense pages. */
 .quran-text .surah-heading,
 .quran-text.multi-surah-page .surah-heading,
 .quran-text.dense-surah-page .surah-heading {
     width: 100%;
-    height: 100%;
+    height: auto;
     min-height: 0;
-    align-self: stretch;
-    overflow: hidden;
+    aspect-ratio: 1000 / 224;
+    align-self: center;
+    overflow: visible;
 }
 
 .quran-text .surah-heading .surah-ornament {
@@ -30,7 +30,7 @@
 .quran-text.multi-surah-page .surah-name,
 .quran-text.dense-surah-page .surah-name {
     font-size: clamp(15px, 6.2cqi, 42px);
-    padding-bottom: .25em;
+    padding: 0;
 }
 
 /* Keep ayah numbers readable in night mode instead of leaving them dark teal. */
