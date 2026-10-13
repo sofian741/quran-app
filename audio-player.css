@@ -646,3 +646,6 @@
 .audio-starter-card p{margin:9px 0 0}
 .reader-page[data-theme='dark'] .audio-starter-card{background:#294336;color:#d5efdf;border-color:#436551}
 .reader-page[data-theme='dark'] .audio-starter-head small,.reader-page[data-theme='dark'] .audio-starter-card p{color:#bad7c5}
+
+.audio-storage-info{margin:12px 2px 4px;color:#577b6b;font-size:12px;line-height:1.8}
+.reader-page[data-theme='dark'] .audio-storage-info{color:#b8d5c5}
