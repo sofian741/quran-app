@@ -104,9 +104,9 @@
             </div>
             <button class="close-settings" id="close-verse-actions" type="button" aria-label="إغلاق خيارات الآية">×</button>
         </div>
-        <p class="verse-actions-hint">تم تحديد الآية. خياراتها هتكون متاحة قريبًا.</p>
-        <div class="verse-actions-grid" aria-label="خيارات الآية القادمة">
-            <button class="verse-action" type="button" data-verse-action="tafsir" disabled><span>التفسير</span><small>قريبًا</small></button>
+        <p class="verse-actions-hint">اختر ما تريد فعله بالآية المحددة.</p>
+        <div class="verse-actions-grid" aria-label="خيارات الآية">
+            <button class="verse-action" type="button" data-verse-action="tafsir"><span>التفسير</span><small>اقرأ</small></button>
             <button class="verse-action" type="button" data-verse-action="listen" disabled><span>الاستماع</span><small>قريبًا</small></button>
             <button class="verse-action" type="button" data-verse-action="bookmark" disabled><span>إضافة للمفضلة</span><small>قريبًا</small></button>
             <button class="verse-action" type="button" data-verse-action="copy" disabled><span>نسخ الآية</span><small>قريبًا</small></button>
@@ -114,9 +114,37 @@
         </div>
     </aside>
 
+
+    <!-- Tafsir is an independent layer so its layout can change without affecting verse actions. -->
+    <div class="tafsir-backdrop" id="tafsir-backdrop" hidden></div>
+    <aside class="tafsir-sheet" id="tafsir-sheet" role="dialog" aria-modal="true"
+           aria-labelledby="tafsir-title" aria-hidden="true" tabindex="-1">
+        <div class="tafsir-header">
+            <div>
+                <small class="tafsir-eyebrow">تدبّر الآيات</small>
+                <h2 id="tafsir-title">التفسير الميسر</h2>
+            </div>
+            <button class="tafsir-close" id="close-tafsir" type="button" aria-label="إغلاق التفسير">×</button>
+        </div>
+        <div class="tafsir-content" id="tafsir-content">
+            <div class="tafsir-verse-card">
+                <small class="tafsir-reference" id="tafsir-reference"></small>
+                <p class="tafsir-ayah-text" id="tafsir-ayah-text" lang="ar"></p>
+            </div>
+            <h3 class="tafsir-section-title">معنى الآية</h3>
+            <p class="tafsir-status" id="tafsir-status" role="status" aria-live="polite">جاري تحميل التفسير…</p>
+            <p class="tafsir-explanation" id="tafsir-explanation" hidden></p>
+            <button class="tafsir-retry" id="tafsir-retry" type="button" hidden>إعادة المحاولة</button>
+        </div>
+        <div class="tafsir-footer">
+            المصدر: <a href="https://quranenc.com/ar/browse/arabic_moyassar" target="_blank" rel="noopener noreferrer">موسوعة القرآن الكريم (QuranEnc)</a>
+        </div>
+    </aside>
+
     <script src="app.js"></script>
     <script src="reader-enhancements.js"></script>
     <script src="reader-layout-polish.js"></script>
     <script src="verse-actions.js"></script>
+    <script src="tafsir.js"></script>
 </body>
 </html>
