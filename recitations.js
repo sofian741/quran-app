@@ -48,10 +48,12 @@
     ui.surah.value = String(moshaf.surahs.includes(Number(selected)) ? selected : moshaf.surahs[0]);
   }
 
-  async function chooseReciter(reciter, preferredMoshaf, autoplay = false) {
+  async function chooseReciter(reciter, preferredMoshaf, autoplay = false, position = 0) {
     if (!reciter) return;
     fillMoshaf(reciter, preferredMoshaf);
-    await engine.selectMp3(reciter, selectedMoshaf, { surah: Number(ui.surah.value), autoplay });
+    await engine.selectMp3(reciter, selectedMoshaf, {
+      surah: Number(ui.surah.value), autoplay, position
+    });
     renderCatalog();
   }
 
@@ -178,13 +180,29 @@
       ui.count.textContent = `${core.arabicDigits(catalog.length)} قارئًا متاحًا`;
       const saved = engine.state;
       const preferred = catalog.find(item => saved.provider === 'mp3quran' && item.id === Number(saved.reciterId)) || catalogService.preferred(catalog);
-      await chooseReciter(preferred, saved.provider === 'mp3quran' ? saved.moshafId : null);
+      if (saved.provider === 'mp3quran') {
+        await chooseReciter(preferred, saved.moshafId, false, saved.position);
+      } else {
+        fillMoshaf(preferred);
+        selectedReciter = null;
+        renderCatalog();
+        applyState(engine.snapshot(), true);
+      }
       ui.connection.textContent = 'التشغيل عبر الإنترنت والتنزيل الاختياري';
       ui.catalogStatus.textContent = `تم تحديث القائمة من MP3Quran: ${core.arabicDigits(catalog.length)} قارئًا.`;
     } catch (_) {
       if (catalog.length) {
         ui.count.textContent = `${core.arabicDigits(catalog.length)} قارئًا في القائمة المحفوظة`;
-        await chooseReciter(catalogService.preferred(catalog));
+        const preferred = catalog.find(item => engine.state.provider === 'mp3quran' &&
+          item.id === Number(engine.state.reciterId)) || catalogService.preferred(catalog);
+        if (engine.state.provider === 'mp3quran') {
+          await chooseReciter(preferred, engine.state.moshafId, false, engine.state.position);
+        } else {
+          fillMoshaf(preferred);
+          selectedReciter = null;
+          renderCatalog();
+          applyState(engine.snapshot(), true);
+        }
         ui.catalogStatus.textContent = 'تعذّر التحديث؛ تُعرض آخر قائمة محفوظة.';
       } else {
         ui.count.textContent = 'المكتبة غير متاحة حاليًا';

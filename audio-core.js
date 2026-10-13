@@ -361,6 +361,15 @@
             this.audio.addEventListener('timeupdate', () => {
                 const now = Date.now();
                 if (now - this.lastSave > 3000) { this.lastSave = now; this.persist(); }
+                if (navigator.mediaSession?.setPositionState && Number.isFinite(this.audio.duration) && this.audio.duration > 0) {
+                    try {
+                        navigator.mediaSession.setPositionState({
+                            duration: this.audio.duration,
+                            playbackRate: this.audio.playbackRate,
+                            position: Math.min(this.audio.duration, Math.max(0, this.audio.currentTime))
+                        });
+                    } catch (_) { /* Some WebViews expose MediaSession without position state. */ }
+                }
                 this.emit('time');
             });
             this.audio.addEventListener('ratechange', () => this.emit());
@@ -477,7 +486,9 @@
                 provider: 'mp3quran', reciterId: reciter.id, reciterName: reciter.name,
                 moshafId: moshaf.id, moshafName: moshaf.name, server: moshaf.server,
                 availableSurahs: [...moshaf.surahs], surah, ayah: 1,
-                position: Number(options.position) || 0
+                position: Number(options.position) || 0,
+                repeat: ['off', 'surah'].includes(this.state.repeat.mode)
+                    ? this.state.repeat : { mode: 'off', start: 1, end: 1, count: 1, completed: 0 }
             });
             this.pendingResume = this.state.position;
             return this.prepare({ autoplay: !!options.autoplay });
@@ -490,6 +501,12 @@
             const sameTrack = this.state.provider === 'mp3quran' && this.state.surah === surah;
             this.state.surah = surah;
             this.state.ayah = this.state.provider === 'quran-foundation' ? ayah : 1;
+            const maxAyah = VERSE_COUNTS[surah - 1];
+            this.state.repeat.start = Math.min(maxAyah, Math.max(1, this.state.repeat.start));
+            this.state.repeat.end = Math.min(maxAyah, Math.max(1, this.state.repeat.end));
+            if (this.state.repeat.start > this.state.repeat.end) {
+                [this.state.repeat.start, this.state.repeat.end] = [this.state.repeat.end, this.state.repeat.start];
+            }
             this.state.position = Number(options.position) || 0;
             this.state.repeat.completed = 0;
             this.pendingResume = this.state.position;

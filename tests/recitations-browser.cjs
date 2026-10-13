@@ -49,12 +49,20 @@ const catalog = {
 
   const names = await page.locator('.reciter-card strong').allTextContents();
   assert.deepEqual(names, ['مشاري راشد العفاسي', 'عبد الرحمن السديس', 'قارئ تجريبي']);
-  assert.equal(await page.locator('.reciter-card.is-selected strong').textContent(), 'مشاري راشد العفاسي');
+  assert.match(await page.locator('#player-subtitle').textContent(), /مشاري راشد العفاسي/);
   assert.equal(await page.locator('#surah-select option').count(), 114);
+
+  await page.getByRole('button', { name: /مشاري راشد العفاسي/ }).click();
+  assert.equal(await page.evaluate(() => window.quranAudioEngine.state.provider), 'mp3quran');
 
   await page.getByRole('button', { name: /قارئ تجريبي/ }).click();
   assert.equal(await page.evaluate(() => window.quranAudioEngine.state.reciterId), 99);
   assert.equal(await page.locator('#surah-select option').count(), 2, 'partial recordings must keep their real chapter list');
+  const savedPosition = await page.evaluate(() => {
+    window.quranAudioEngine.seek(42);
+    return JSON.parse(localStorage.getItem('quranAudioStateV2')).position;
+  });
+  assert.equal(savedPosition, 42, 'listening position must be persisted');
   await page.click('#play-pause');
   assert.equal(await page.getAttribute('#play-pause', 'aria-label'), 'إيقاف مؤقت');
   await page.selectOption('#speed', '1.5');
