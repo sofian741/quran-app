@@ -16,11 +16,17 @@
         status: $('audio-mini-status'), syncNote: $('audio-sync-note'),
         provider: $('audio-provider'), reciter: $('audio-reciter'), moshaf: $('audio-moshaf'),
         reciterField: $('audio-reciter-field'), moshafField: $('audio-moshaf-field'),
+        reciterSearch: $('audio-reciter-search'), surahSearch: $('audio-surah-search'),
+        quickSpeed: $('audio-quick-speed'), speedLabel: $('audio-speed-label'),
+        quickRepeat: $('audio-quick-repeat'), repeatSheet: $('audio-repeat-sheet'),
+        repeatBackdrop: $('audio-repeat-backdrop'), closeRepeat: $('audio-close-repeat'),
+        applyRepeatButton: $('audio-apply-repeat'), repeatHint: $('audio-repeat-hint'),
         surah: $('audio-surah'), speed: $('audio-speed'), autoFollow: $('audio-auto-follow'),
         repeatFieldset: document.querySelector('.audio-repeat-settings'),
         repeatMode: $('audio-repeat-mode'), repeatStart: $('audio-repeat-start'),
         repeatEnd: $('audio-repeat-end'), repeatCount: $('audio-repeat-count'),
-        download: $('audio-download'), downloadProgress: $('audio-download-progress'),
+        download: $('audio-download'), downloadAll: $('audio-download-all'),
+        cancelDownload: $('audio-cancel-download'), downloadProgress: $('audio-download-progress'),
         downloadList: $('audio-download-list'),
         listenAction: document.querySelector('[data-verse-action="listen"]'),
         text: $('quran-text')
@@ -37,6 +43,8 @@
     let renderedWord = null;
     let applyingState = false;
     let downloadBatch = false;
+    let cancelRequested = false;
+    const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
 
     window.quranAudioEngine = engine;
 
@@ -67,19 +75,31 @@
     function fillSurahs(state) {
         const available = state.provider === 'mp3quran' ? state.availableSurahs :
             Array.from({ length: 114 }, (_, index) => index + 1);
-        const previous = Number(ui.surah.value) || state.surah;
+        const search = core.normalizeArabic(ui.surahSearch.value);
         ui.surah.replaceChildren();
-        available.forEach(number => option(ui.surah, number,
-            `${core.arabicDigits(number)}. سورة ${core.SURAH_NAMES[number - 1]}`));
-        ui.surah.value = String(available.includes(state.surah) ? state.surah : previous);
+        available.filter(number => !search ||
+            core.normalizeArabic(core.SURAH_NAMES[number - 1]).includes(search) ||
+            String(number).includes(search) || number === state.surah)
+            .forEach(number => option(ui.surah, number,
+                `${core.arabicDigits(number)}. سورة ${core.SURAH_NAMES[number - 1]}`));
+        ui.surah.value = String(state.surah);
     }
 
     function fillReciters(state) {
+        const search = core.normalizeArabic(ui.reciterSearch.value);
         ui.reciter.replaceChildren();
-        catalog.forEach(reciter => option(ui.reciter, reciter.id, reciter.name));
+        const alignedName = 'مشاري راشد العفاسي • تظليل الكلمات';
+        const selectedValue = state.provider === 'quran-foundation' ? 'aligned:7' : `mp3:${state.reciterId}`;
+        if (!search || core.normalizeArabic(alignedName).includes(search) || selectedValue === 'aligned:7') {
+            option(ui.reciter, 'aligned:7', alignedName);
+        }
+        catalog.filter(reciter => !search || core.normalizeArabic(reciter.name).includes(search) ||
+            selectedValue === `mp3:${reciter.id}`)
+            .forEach(reciter => option(ui.reciter, `mp3:${reciter.id}`, reciter.name));
+        ui.reciter.value = selectedValue;
+        if (!ui.reciter.value) ui.reciter.selectedIndex = 0;
         const selected = catalog.find(reciter => reciter.id === Number(state.reciterId)) ||
             catalogService.preferred(catalog);
-        if (selected) ui.reciter.value = String(selected.id);
         fillMoshaf(selected, state.moshafId);
     }
 
@@ -133,7 +153,7 @@
         updatePlayIcon(state.playing, state.loading);
         if (full) {
             ui.provider.value = state.provider;
-            ui.reciterField.hidden = state.provider !== 'mp3quran';
+            ui.reciterField.hidden = false;
             ui.moshafField.hidden = state.provider !== 'mp3quran';
             ui.speed.value = String(state.speed);
             ui.autoFollow.checked = state.autoFollow;
@@ -149,7 +169,12 @@
             });
             fillSurahs(state);
             ui.surah.value = String(state.surah);
-            if (state.provider === 'mp3quran' && catalog.length) fillReciters(state);
+            fillReciters(state);
+            ui.speedLabel.textContent = `${state.speed}×`;
+            ui.quickRepeat.setAttribute('aria-pressed', String(state.repeat.mode !== 'off'));
+            ui.repeatHint.textContent = state.provider === 'mp3quran'
+                ? 'التسجيل الحالي سورة كاملة؛ تكرار آية أو نطاق يحتاج تسجيلًا متزامنًا. اختر مشاري العفاسي المتزامن من قائمة القرّاء.'
+                : 'تكرار الآية يعيد الآية المحددة. تكرار النطاق يعيد الآيات من البداية للنهاية حسب عدد المرات.';
             ui.syncNote.classList.toggle('is-unavailable', state.provider !== 'quran-foundation');
             ui.syncNote.textContent = state.provider === 'quran-foundation'
                 ? 'المزامنة الدقيقة مفعّلة: توقيت الكلمة مأخوذ من ملف التسجيل نفسه عبر Quran Foundation. تُعطّل الكلمة تلقائيًا إذا لم يتطابق عدد كلمات الآية.'
@@ -237,6 +262,26 @@
     });
 
     ui.open.addEventListener('click', openOptions);
+    function openRepeat() {
+        closeOptions();
+        ui.repeatBackdrop.hidden = false;
+        ui.repeatSheet.hidden = false;
+        ui.repeatSheet.setAttribute('aria-hidden', 'false');
+    }
+    function closeRepeat() {
+        ui.repeatBackdrop.hidden = true;
+        ui.repeatSheet.hidden = true;
+        ui.repeatSheet.setAttribute('aria-hidden', 'true');
+    }
+    ui.quickRepeat.addEventListener('click', openRepeat);
+    ui.closeRepeat.addEventListener('click', closeRepeat);
+    ui.repeatBackdrop.addEventListener('click', closeRepeat);
+    ui.quickSpeed.addEventListener('click', () => {
+        const next = SPEEDS[(SPEEDS.indexOf(engine.state.speed) + 1) % SPEEDS.length];
+        engine.setSpeed(next);
+    });
+    ui.reciterSearch.addEventListener('input', () => fillReciters(engine.snapshot()));
+    ui.surahSearch.addEventListener('input', () => fillSurahs(engine.snapshot()));
     ui.close.addEventListener('click', closeOptions);
     ui.backdrop.addEventListener('click', closeOptions);
     ui.play.addEventListener('click', () => engine.toggle());
@@ -265,23 +310,33 @@
             }
         }
     });
-    ui.reciter.addEventListener('change', () => {
-        const reciter = catalog.find(item => item.id === Number(ui.reciter.value));
-        fillMoshaf(reciter);
-        ui.moshaf.dispatchEvent(new Event('change'));
+    ui.reciter.addEventListener('change', async () => {
+        const value = ui.reciter.value;
+        const wasPlaying = !engine.audio.paused;
+        if (value === 'aligned:7') {
+            await engine.selectAligned(7, { surah: Number(ui.surah.value) || 1, ayah: 1, autoplay: wasPlaying });
+            return;
+        }
+        const reciter = catalog.find(item => item.id === Number(value.replace('mp3:', '')));
+        if (!reciter) return;
+        const moshaf = core.bestMoshaf(reciter);
+        if (moshaf) await engine.selectMp3(reciter, moshaf, { surah: Number(ui.surah.value) || 1, autoplay: wasPlaying });
     });
     ui.moshaf.addEventListener('change', async () => {
         if (applyingState || !activeReciter) return;
         const moshaf = activeReciter.moshaf.find(item => item.id === Number(ui.moshaf.value));
-        if (moshaf) await engine.selectMp3(activeReciter, moshaf, { surah: Number(ui.surah.value) || 1 });
+        if (moshaf) await engine.selectMp3(activeReciter, moshaf, { surah: Number(ui.surah.value) || 1, autoplay: !engine.audio.paused });
     });
-    ui.surah.addEventListener('change', () => engine.goTo(Number(ui.surah.value), 1));
+    ui.surah.addEventListener('change', () => engine.goTo(Number(ui.surah.value), 1, { autoplay: !engine.audio.paused }));
     ui.speed.addEventListener('change', () => engine.setSpeed(ui.speed.value));
     ui.autoFollow.addEventListener('change', () => engine.setAutoFollow(ui.autoFollow.checked));
 
     function applyRepeat() {
         const mode = ui.repeatMode.value;
-        if (engine.state.provider === 'mp3quran' && ['verse', 'range'].includes(mode)) return;
+        if (engine.state.provider === 'mp3quran' && ['verse', 'range'].includes(mode)) {
+            ui.repeatHint.textContent = 'تكرار الآية أو نطاق الآيات يحتاج تسجيلًا متزامنًا. اختر مشاري العفاسي المتزامن من القرّاء.';
+            return;
+        }
         engine.setRepeat({
             mode, start: Number(ui.repeatStart.value), end: Number(ui.repeatEnd.value),
             count: Number(ui.repeatCount.value), completed: 0
@@ -289,11 +344,14 @@
         repeatClasses(mode);
         if (mode === 'range' &&
             (engine.state.ayah < Number(ui.repeatStart.value) || engine.state.ayah > Number(ui.repeatEnd.value))) {
-            engine.goTo(engine.state.surah, Number(ui.repeatStart.value));
+            engine.goTo(engine.state.surah, Number(ui.repeatStart.value), { autoplay: !engine.audio.paused });
         }
     }
-    [ui.repeatMode, ui.repeatStart, ui.repeatEnd, ui.repeatCount]
-        .forEach(element => element.addEventListener('change', applyRepeat));
+    ui.repeatMode.addEventListener('change', () => repeatClasses(ui.repeatMode.value));
+    ui.applyRepeatButton.addEventListener('click', () => {
+        applyRepeat();
+        if (engine.state.repeat.mode === ui.repeatMode.value) closeRepeat();
+    });
 
     ui.listenAction.addEventListener('click', async () => {
         const selected = window.mushafVerseActions?.getSelectedVerse?.();
@@ -389,7 +447,9 @@
     });
 
     document.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && ui.sheet.classList.contains('is-open')) closeOptions();
+        if (event.key !== 'Escape') return;
+        if (ui.sheet.classList.contains('is-open')) closeOptions();
+        closeRepeat();
     });
     window.addEventListener('pagehide', () => engine.destroy());
 
