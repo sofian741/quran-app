@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v1';
+const APP_CACHE = 'quran-reader-shell-v2';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html',
@@ -13,11 +13,24 @@ const APP_SHELL = [
 ];
 
 self.addEventListener('install', event => {
-    event.waitUntil(caches.open(APP_CACHE).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
+    event.waitUntil(caches.open(APP_CACHE).then(async cache => {
+        await cache.addAll(APP_SHELL);
+        // The starter audio is a package asset, not an optional online download.
+        // Cache it for browser/PWA use; if a deployment has not bundled it yet,
+        // don't break the offline Quran text and tafsir installation.
+        await cache.add('./assets/audio/starter-fatiha.ogg').catch(() => {});
+        await self.skipWaiting();
+    }));
 });
 
 self.addEventListener('activate', event => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil((async () => {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(key =>
+            key.startsWith('quran-reader-shell-') && key !== APP_CACHE
+        ).map(key => caches.delete(key)));
+        await self.clients.claim();
+    })());
 });
 
 self.addEventListener('fetch', event => {
