@@ -93,8 +93,13 @@
         if (!search || core.normalizeArabic(alignedName).includes(search) || selectedValue === 'aligned:7') {
             option(ui.reciter, 'aligned:7', alignedName);
         }
-        catalog.filter(reciter => !search || core.normalizeArabic(reciter.name).includes(search) ||
-            selectedValue === `mp3:${reciter.id}`)
+        // Keep Mashary's precisely aligned recording as the normal one-tap choice.
+        // Show an old MP3 Mashary selection only when restoring that saved recording.
+        catalog.filter(reciter =>
+            (!core.normalizeArabic(reciter.name).includes(core.normalizeArabic('العفاسي')) ||
+                selectedValue === `mp3:${reciter.id}`) &&
+            (!search || core.normalizeArabic(reciter.name).includes(search) ||
+                selectedValue === `mp3:${reciter.id}`))
             .forEach(reciter => option(ui.reciter, `mp3:${reciter.id}`, reciter.name));
         ui.reciter.value = selectedValue;
         if (!ui.reciter.value) ui.reciter.selectedIndex = 0;
