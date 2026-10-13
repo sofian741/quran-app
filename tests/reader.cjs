@@ -39,10 +39,12 @@ const root = path.join(__dirname, '..');
         const errors = [];
         page.on('pageerror', error => errors.push(error.message));
         const url = `http://127.0.0.1:${server.address().port}/quran.html`;
-        const samples = [1, 2, 50, 77, 223, 586, 587, 604];
+        const samples = [1, 2, 50, 77, 106, 207, 208, 223, 332, 446, 586, 587, 602, 604];
         let checks = 0;
 
-        for (const [width, height] of [[320, 568], [390, 844], [430, 932]]) {
+        for (const [width, height] of [
+            [320, 568], [390, 844], [430, 932], [768, 1024], [1024, 1366],
+        ]) {
             await page.setViewportSize({ width, height });
 
             for (const pageNumber of samples) {
@@ -56,12 +58,31 @@ const root = path.join(__dirname, '..');
                 await page.reload();
                 await page.waitForSelector('#loading-screen', { state: 'detached' });
                 await page.evaluate(() => document.fonts.ready);
-                await page.waitForTimeout(80);
+                await page.waitForFunction(() => (
+                    document.querySelector('#quran-text').dataset.layoutState === 'ready'
+                ));
 
                 const result = await page.evaluate(() => {
                     const text = document.querySelector('#quran-text');
                     const bounds = text.getBoundingClientRect();
                     const words = [...text.querySelectorAll('.mushaf-word')];
+                    const rows = [...text.children].map(element => element.getBoundingClientRect());
+                    const headings = [...text.querySelectorAll('.surah-heading')].map(heading => {
+                        const rect = heading.getBoundingClientRect();
+                        const titleElement = heading.querySelector('.surah-name');
+                        const title = titleElement.getBoundingClientRect();
+                        return {
+                            ratio: rect.width / rect.height,
+                            width: rect.width,
+                            centerDeltaX: Math.abs(
+                                (title.left + title.width / 2) - (rect.left + rect.width / 2),
+                            ),
+                            centerDeltaY: Math.abs(
+                                (title.top + title.height / 2) - (rect.top + rect.height / 2),
+                            ),
+                            titleFits: titleElement.scrollWidth <= titleElement.clientWidth + 1,
+                        };
+                    });
                     return {
                         rows: text.children.length,
                         words: words.length,
@@ -71,6 +92,14 @@ const root = path.join(__dirname, '..');
                             return rect.left < bounds.left - 1 || rect.right > bounds.right + 1;
                         }).length,
                         overflowX: getComputedStyle(text).overflowX,
+                        verticalOverflow: text.scrollHeight - text.clientHeight,
+                        outsideRowsVertical: rows.filter(rect => (
+                            rect.top < bounds.top - 1 || rect.bottom > bounds.bottom + 1
+                        )).length,
+                        rowOverlaps: rows.slice(1).filter((rect, index) => (
+                            rows[index].bottom > rect.top + 1
+                        )).length,
+                        headings,
                     };
                 });
 
@@ -78,6 +107,19 @@ const root = path.join(__dirname, '..');
                 assert.ok(result.words > 0 && result.markers > 0);
                 assert.equal(result.outside, 0);
                 assert.equal(result.overflowX, 'hidden');
+                assert.equal(
+                    result.outsideRowsVertical,
+                    0,
+                    `row outside page ${pageNumber} at ${width}x${height}`,
+                );
+                assert.equal(result.rowOverlaps, 0, `row overlap on page ${pageNumber} at ${width}x${height}`);
+                for (const heading of result.headings) {
+                    assert.ok(Math.abs(heading.ratio - (1000 / 224)) < 0.02);
+                    assert.ok(heading.width > 0);
+                    assert.ok(heading.centerDeltaX < 0.6);
+                    assert.ok(heading.centerDeltaY < 0.6);
+                    assert.equal(heading.titleFits, true);
+                }
                 checks++;
             }
         }
@@ -88,7 +130,9 @@ const root = path.join(__dirname, '..');
         await page.reload();
         await page.waitForSelector('#loading-screen', { state: 'detached' });
         await page.evaluate(() => document.fonts.ready);
-        await page.waitForTimeout(80);
+        await page.waitForFunction(() => (
+            document.querySelector('#quran-text').dataset.layoutState === 'ready'
+        ));
 
         const readerGeometry = () => page.evaluate(() => {
             const snapshot = element => {
