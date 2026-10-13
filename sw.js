@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v3';
+const APP_CACHE = 'quran-reader-shell-v4';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html',
@@ -9,14 +9,12 @@ const APP_SHELL = [
     './verse-actions.js', './tafsir.js', './verse-tools.js',
     './audio-core.js', './audio-downloads.js', './mushaf-audio.js', './recitations.js',
     './data/quran-uthmani.txt', './data/mushaf-layout.json',
-    './scripts/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2',
-    './assets/audio/starter-fatiha.ogg'
+    './scripts/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2'
 ];
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(APP_CACHE).then(async cache => {
         await cache.addAll(APP_SHELL);
-        // The CC0 starter recitation is bundled and required for offline installs.
         await self.skipWaiting();
     }));
 });
