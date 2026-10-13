@@ -347,8 +347,8 @@
     }
 
     stage.addEventListener('pointerdown', event => {
-        if (!previewReady || !['touch', 'pen', 'mouse'].includes(event.pointerType)) return;
-        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        // Keep the original desktop mouse animation in app.js; use the enhanced preview only for touch/pen.
+        if (!previewReady || !['touch', 'pen'].includes(event.pointerType)) return;
         if (event.target.closest('button, a, input, [role="button"]')) return;
         if (document.querySelector('.settings-sheet.is-open, .index-sheet.is-open')) return;
         gesture = {
