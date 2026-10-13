@@ -341,7 +341,7 @@
     try {
       await downloads.downloadTrack({
         url, provider: state.provider, reciterId: state.reciterId, reciterName: state.reciterName,
-        surah: state.surah, surahName: core.SURAH_NAMES[state.surah - 1]
+        moshafId: state.moshafId, moshafName: state.moshafName, surah: state.surah, surahName: core.SURAH_NAMES[state.surah - 1]
       });
       ui.status.textContent = 'اكتمل تنزيل السورة للاستماع دون إنترنت.';
     } catch (error) { ui.status.textContent = error.message; }
