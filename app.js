@@ -854,6 +854,28 @@
     window.mushafReader = {
         fitElement,
         getSurahName(surah) { return SURAH_NAMES[surah - 1] || ""; },
+        getCurrentPage() { return displayPage; },
+        getVerse(surah, ayah) {
+            const verse = verses.find(item => item.surah === surah && item.ayah === ayah);
+            return verse ? { ...verse } : null;
+        },
+        findVersePage(surah, ayah) {
+            const index = tokens.findIndex(token => token.surah === surah && token.ayah === ayah);
+            if (index < 0) return null;
+            const pageIndex = pages.findIndex(page => page.some(line => line[0] !== 'h' && index >= line[1] && index < line[2]));
+            return pageIndex < 0 ? null : pageIndex + 1;
+        },
+        goToVerse(surah, ayah, requestedPage) {
+            if (isTurningPage || isSettingsOpen() || isIndexOpen()) return false;
+            const page = Number.isInteger(requestedPage) && requestedPage >= 1 && requestedPage <= TOTAL_PAGES
+                ? requestedPage : this.findVersePage(surah, ayah);
+            if (!page) return false;
+            displayPage = page;
+            els.text.scrollTop = 0;
+            renderCurrentPage();
+            els.body.classList.remove('tools-visible');
+            return true;
+        },
         turnPageInstant(direction) {
             if (isTurningPage || isSettingsOpen() || isIndexOpen()) return false;
             const target = displayPage + direction;
