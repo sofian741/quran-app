@@ -853,6 +853,7 @@
     // Shared interface for the interactive swipe layer.
     window.mushafReader = {
         fitElement,
+        getSurahName(surah) { return SURAH_NAMES[surah - 1] || ""; },
         turnPageInstant(direction) {
             if (isTurningPage || isSettingsOpen() || isIndexOpen()) return false;
             const target = displayPage + direction;
