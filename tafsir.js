@@ -80,7 +80,14 @@
         clone.setAttribute('aria-hidden', 'true');
         clone.classList.add('tafsir-swipe-preview');
         clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
-        const width = content.getBoundingClientRect().width;
+        const rect = content.getBoundingClientRect();
+        const sheetRect = sheet.getBoundingClientRect();
+        const width = rect.width;
+        clone.style.left = `${rect.left - sheetRect.left}px`;
+        clone.style.top = `${rect.top - sheetRect.top}px`;
+        clone.style.width = `${width}px`;
+        clone.style.height = `${rect.height}px`;
+        clone.scrollTop = content.scrollTop;
         clone.style.transform = `translateX(${-direction * width}px)`;
         sheet.insertBefore(clone, content.nextSibling);
         preview = clone;
