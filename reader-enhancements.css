@@ -77,15 +77,17 @@
 
 
 
-/* Long-press verse highlighting does not change line dimensions. */
-.quran-text .mushaf-word.is-verse-selected {
-    color: var(--page-text);
+/* A single continuous highlight band per verse segment, never per word. */
+.quran-text .mushaf-line,
+.quran-text .surah-basmala { position: relative; }
+.quran-text .verse-highlight-band {
+    position: absolute;
+    display: block;
+    z-index: -1;
+    pointer-events: none;
+    border-radius: .22em;
     background: color-mix(in srgb, var(--reader-accent) 20%, transparent);
-    border-radius: .16em;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--reader-accent) 20%, transparent);
-}
-.quran-text .ayah-end-group.is-verse-selected .ayah-marker {
-    filter: drop-shadow(0 0 3px var(--reader-accent));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--reader-accent) 9%, transparent);
 }
 .verse-actions-backdrop {
     position: fixed;
