@@ -172,6 +172,7 @@
         constructor(fetcher = (...args) => fetch(...args)) {
             this.fetcher = fetcher;
             this.cache = new Map();
+            this.verseCache = new Map();
         }
 
         async chapter(recitationId, surah) {
@@ -185,17 +186,11 @@
             return promise;
         }
 
-        async fetchChapter(recitationId, surah) {
-            if (!ALIGNED_RECITERS.some(item => item.id === Number(recitationId))) {
-                throw new Error('Unsupported aligned recording');
-            }
-            const url = `${QURAN_API}/recitations/${recitationId}/by_chapter/${surah}?segments=true`;
-            const response = await this.fetcher(url, { cache: 'force-cache' });
-            if (!response.ok) throw new Error(`Quran audio HTTP ${response.status}`);
-            const payload = await response.json();
-            if (!Array.isArray(payload?.audio_files)) throw new Error('Invalid Quran audio response');
+        parseAudioFiles(payload, surah) {
+            const files = Array.isArray(payload?.audio_files) ? payload.audio_files :
+                payload?.audio_file ? [payload.audio_file] : [];
             const verses = new Map();
-            payload.audio_files.forEach(file => {
+            files.forEach(file => {
                 const match = /^(\d+):(\d+)$/.exec(String(file.verse_key || ''));
                 if (!match || Number(match[1]) !== Number(surah)) return;
                 const ayah = Number(match[2]);
@@ -222,8 +217,67 @@
                     source: 'Quran Foundation Audio API'
                 });
             });
-            if (!verses.size) throw new Error('No aligned verses returned');
             return verses;
+        }
+
+        async fetchChapter(recitationId, surah) {
+            if (!ALIGNED_RECITERS.some(item => item.id === Number(recitationId))) {
+                throw new Error('Unsupported aligned recording');
+            }
+            const verses = new Map();
+            const totalVerses = VERSE_COUNTS[surah - 1];
+            let page = 1;
+            // The Quran API paginates verse audio. Fetch all pages, not just the
+            // first page (otherwise "Read from here" fails later in a surah).
+            while (page <= totalVerses) {
+                const url = `${QURAN_API}/recitations/${recitationId}/by_chapter/${surah}?segments=true&per_page=100&page=${page}`;
+                const response = await this.fetcher(url, { cache: 'force-cache' });
+                if (!response.ok) throw new Error(`Quran audio HTTP ${response.status}`);
+                const payload = await response.json();
+                const current = this.parseAudioFiles(payload, surah);
+                if (!current.size) break;
+                current.forEach((timing, ayah) => verses.set(ayah, timing));
+                const pagination = payload.pagination || {};
+                const next = Number(pagination.next_page);
+                const totalPages = Number(pagination.total_pages);
+                if (next > page) { page = next; continue; }
+                if (totalPages > page) { page++; continue; }
+                // Some API responses omit pagination metadata. Never guess that
+                // 10/50/100 returned verses means the whole chapter is present.
+                if (!pagination.total_pages && verses.size < totalVerses && current.size >= 100) {
+                    page++;
+                    continue;
+                }
+                break;
+            }
+            if (!verses.size) throw new Error('No aligned verses returned');
+            verses.forEach((timing, ayah) =>
+                this.verseCache.set(`${recitationId}:${surah}:${ayah}`, timing));
+            return verses;
+        }
+
+        async verse(recitationId, surah, ayah) {
+            const key = `${recitationId}:${surah}:${ayah}`;
+            if (this.verseCache.has(key)) return this.verseCache.get(key);
+            const promise = (async () => {
+                // Prefer the chapter cache when available; fall back to the
+                // exact-ayah endpoint if the chapter response is incomplete.
+                let chapter;
+                try { chapter = await this.chapter(recitationId, surah); }
+                catch (_) { /* The exact ayah may still be available. */ }
+                if (chapter?.has(ayah)) return chapter.get(ayah);
+                const url = `${QURAN_API}/recitations/${recitationId}/by_ayah/${surah}:${ayah}?segments=true`;
+                const response = await this.fetcher(url, { cache: 'force-cache' });
+                if (!response.ok) throw new Error(`Quran ayah audio HTTP ${response.status}`);
+                const timing = this.parseAudioFiles(await response.json(), surah).get(ayah);
+                if (!timing) throw new Error('التسجيل الصوتي لهذه الآية غير متاح.');
+                return timing;
+            })().catch(error => {
+                this.verseCache.delete(key);
+                throw error;
+            });
+            this.verseCache.set(key, promise);
+            return promise;
         }
     }
 
@@ -394,12 +448,10 @@
             try {
                 let url;
                 if (this.state.provider === 'quran-foundation') {
-                    const chapter = await this.timing.chapter(this.state.reciterId, this.state.surah);
+                    const timing = await this.timing.verse(this.state.reciterId, this.state.surah, this.state.ayah);
                     if (version !== this.prepareVersion) return false;
-                    this.chapter = chapter;
-                    this.currentTiming = chapter.get(this.state.ayah) || null;
-                    if (!this.currentTiming) throw new Error('Verse timing is unavailable');
-                    url = this.currentTiming.audioUrl;
+                    this.currentTiming = timing;
+                    url = timing.audioUrl;
                 } else {
                     url = mp3Url({ server: this.state.server, surahs: this.state.availableSurahs }, this.state.surah);
                     if (!url) throw new Error('Surah is unavailable for this recording');
