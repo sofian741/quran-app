@@ -152,3 +152,136 @@
 @media (prefers-reduced-motion: reduce) {
     .verse-actions-sheet, .verse-actions-backdrop { transition: none; }
 }
+
+/* Offline Muyassar tafsir: a separate, scrollable reading surface. */
+.tafsir-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: rgba(12, 24, 20, .64);
+    opacity: 0;
+    transition: opacity .2s ease;
+}
+.tafsir-backdrop.is-open { opacity: 1; }
+.tafsir-sheet {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 81;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: min(90dvh, 860px);
+    color: #243a33;
+    background: #fcfdf9;
+    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -20px 70px rgba(0, 0, 0, .3);
+    transform: translateY(105%);
+    visibility: hidden;
+    transition: transform .24s ease, visibility .24s ease;
+}
+.tafsir-sheet.is-open { transform: translateY(0); visibility: visible; }
+.tafsir-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 23px 22px 16px;
+    border-bottom: 1px solid #e3ece5;
+}
+.tafsir-eyebrow { color: #668477; font-size: 12px; }
+.tafsir-header h2 { margin: 4px 0 0; font-size: 23px; line-height: 1.35; }
+.tafsir-close {
+    display: grid;
+    place-items: center;
+    flex: 0 0 38px;
+    height: 38px;
+    border: 1px solid #dbe7df;
+    border-radius: 50%;
+    background: #f1f6f1;
+    color: inherit;
+    font-size: 26px;
+    cursor: pointer;
+}
+.tafsir-content {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 22px 20px 28px;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.tafsir-verse-card {
+    padding: 20px 18px;
+    border: 1px solid #dce9dd;
+    border-radius: 18px;
+    background: #f3f8f0;
+}
+.tafsir-reference { display: block; color: #467264; font-size: 12px; }
+.tafsir-ayah-text {
+    margin: 14px 0 2px;
+    font-family: 'Amiri Quran', serif;
+    font-size: clamp(23px, 5.6vw, 31px);
+    line-height: 2.15;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+.tafsir-section-title {
+    margin: 26px 2px 12px;
+    color: #176b63;
+    font-size: 16px;
+}
+.tafsir-explanation {
+    margin: 0 2px;
+    font-size: 17px;
+    line-height: 2.15;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+.tafsir-status { color: #687b73; line-height: 1.9; }
+.tafsir-retry {
+    padding: 11px 20px;
+    border: 0;
+    border-radius: 12px;
+    background: #176b63;
+    color: white;
+    cursor: pointer;
+}
+.tafsir-footer {
+    flex: 0 0 auto;
+    padding: 13px 22px max(18px, env(safe-area-inset-bottom));
+    border-top: 1px solid #e3ece5;
+    color: #64786f;
+    font-size: 11px;
+    line-height: 1.6;
+}
+.tafsir-footer a { color: #176b63; text-underline-offset: 3px; }
+.reader-page[data-theme='dark'] .tafsir-sheet {
+    background: #1e2925;
+    color: #e9eee7;
+}
+.reader-page[data-theme='dark'] .tafsir-header,
+.reader-page[data-theme='dark'] .tafsir-footer { border-color: #34473d; }
+.reader-page[data-theme='dark'] .tafsir-close {
+    background: #293a32; border-color: #40564b;
+}
+.reader-page[data-theme='dark'] .tafsir-verse-card {
+    background: #283a31; border-color: #405649;
+}
+.reader-page[data-theme='dark'] .tafsir-eyebrow,
+.reader-page[data-theme='dark'] .tafsir-reference,
+.reader-page[data-theme='dark'] .tafsir-footer,
+.reader-page[data-theme='dark'] .tafsir-status { color: #b1c7b9; }
+.reader-page[data-theme='dark'] .tafsir-section-title,
+.reader-page[data-theme='dark'] .tafsir-footer a { color: #86d5bb; }
+@media (min-width: 700px) {
+    .tafsir-sheet {
+        right: 50%;
+        left: auto;
+        width: min(620px, calc(100% - 32px));
+        border-radius: 24px 24px 0 0;
+        transform: translate(50%, 105%);
+    }
+    .tafsir-sheet.is-open { transform: translate(50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .tafsir-backdrop, .tafsir-sheet { transition: none; }
+}
