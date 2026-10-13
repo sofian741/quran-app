@@ -20,7 +20,16 @@
             <strong id="toolbar-surah">القرآن الكريم</strong>
             <small id="toolbar-range">جاري التحميل…</small>
         </div>
-        <button class="icon-button" id="open-settings" type="button" aria-label="إعدادات القراءة">⚙</button>
+        <div class="reader-toolbar-actions">
+            <button class="icon-button page-marker-button" id="toggle-page-marker" type="button"
+                    aria-label="حفظ فاصلة للصفحة الحالية" aria-pressed="false" title="فاصلة الصفحة">
+                <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor"
+                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <path d="M6 3.75h12a1 1 0 0 1 1 1V21l-7-4.7L5 21V4.75a1 1 0 0 1 1-1z"></path>
+                </svg>
+            </button>
+            <button class="icon-button" id="open-settings" type="button" aria-label="إعدادات القراءة">⚙</button>
+        </div>
     </header>
 
     <main class="reader-stage" id="reader-stage" aria-label="صفحة المصحف">
@@ -156,7 +165,8 @@
         </div>
         <div class="saved-tabs" role="tablist" aria-label="المحفوظات">
             <button type="button" id="saved-tab-favorites" class="is-active" role="tab" aria-selected="true">المفضلة</button>
-            <button type="button" id="saved-tab-marker" role="tab" aria-selected="false">الفاصلة</button>
+            <button type="button" id="saved-tab-marker" role="tab" aria-selected="false">فاصلة الآية</button>
+            <button type="button" id="saved-tab-page" role="tab" aria-selected="false">فاصلة الصفحة</button>
         </div>
         <div class="saved-list" id="saved-list" role="tabpanel"></div>
     </aside>
