@@ -292,6 +292,8 @@
             this.channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel(CHANNEL_NAME) : null;
             this.lastSave = 0;
             this.pendingResume = this.state.position;
+            this.intentToPlay = false;
+            this.prepareVersion = 0;
             this.bindAudio();
             this.bindChannel();
             this.audio.playbackRate = this.state.speed;
@@ -342,6 +344,7 @@
             this.audio.addEventListener('loadstart', () => { this.status = 'loading'; this.error = ''; this.emit(); });
             this.audio.addEventListener('waiting', () => { this.status = 'loading'; this.emit(); });
             this.audio.addEventListener('playing', () => {
+                this.intentToPlay = true;
                 this.status = 'playing'; this.error = '';
                 this.channel?.postMessage({ type: 'playing', sessionId: this.sessionId });
                 this.emit();
@@ -385,18 +388,23 @@
 
         async prepare(options = {}) {
             const autoplay = !!options.autoplay;
+            const version = ++this.prepareVersion;
+            if (autoplay) this.intentToPlay = true;
             this.status = 'loading'; this.error = ''; this.currentTiming = null; this.emit();
             try {
                 let url;
                 if (this.state.provider === 'quran-foundation') {
-                    this.chapter = await this.timing.chapter(this.state.reciterId, this.state.surah);
-                    this.currentTiming = this.chapter.get(this.state.ayah) || null;
+                    const chapter = await this.timing.chapter(this.state.reciterId, this.state.surah);
+                    if (version !== this.prepareVersion) return false;
+                    this.chapter = chapter;
+                    this.currentTiming = chapter.get(this.state.ayah) || null;
                     if (!this.currentTiming) throw new Error('Verse timing is unavailable');
                     url = this.currentTiming.audioUrl;
                 } else {
                     url = mp3Url({ server: this.state.server, surahs: this.state.availableSurahs }, this.state.surah);
                     if (!url) throw new Error('Surah is unavailable for this recording');
                 }
+                if (version !== this.prepareVersion) return false;
                 if (url !== this.trackUrl) {
                     this.trackUrl = url;
                     this.audio.src = url;
@@ -408,6 +416,7 @@
                 if (autoplay) await this.play();
                 return true;
             } catch (error) {
+                if (version !== this.prepareVersion) return false;
                 this.status = 'error';
                 this.error = error?.message === 'Failed to fetch'
                     ? 'تعذّر جلب بيانات المزامنة. تحقق من الإنترنت أو اختر تسجيل MP3Quran.'
@@ -418,6 +427,7 @@
         }
 
         async play() {
+            this.intentToPlay = true;
             if (!this.trackUrl && !(await this.prepare())) return false;
             try {
                 await this.audio.play();
@@ -432,7 +442,7 @@
             }
         }
 
-        pause() { this.audio.pause(); }
+        pause() { this.intentToPlay = false; this.audio.pause(); }
         toggle() { return this.audio.paused ? this.play() : (this.pause(), Promise.resolve(true)); }
 
         seek(seconds) {
@@ -460,6 +470,7 @@
         async selectAligned(reciterId = 7, options = {}) {
             const reciter = ALIGNED_RECITERS.find(item => item.id === Number(reciterId));
             if (!reciter) return false;
+            const autoplay = options.autoplay ?? (!this.audio.paused || this.intentToPlay);
             this.audio.pause();
             this.trackUrl = '';
             this.state = sanitizeState({
@@ -472,11 +483,12 @@
                 position: Number(options.position) || 0
             });
             this.pendingResume = this.state.position;
-            return this.prepare({ autoplay: !!options.autoplay });
+            return this.prepare({ autoplay });
         }
 
         async selectMp3(reciter, moshaf, options = {}) {
             if (!reciter || !moshaf || !validMp3Server(moshaf.server)) return false;
+            const autoplay = options.autoplay ?? (!this.audio.paused || this.intentToPlay);
             this.audio.pause();
             this.trackUrl = '';
             const requestedSurah = Number(options.surah) || this.state.surah;
@@ -491,10 +503,11 @@
                     ? this.state.repeat : { mode: 'off', start: 1, end: 1, count: 1, completed: 0 }
             });
             this.pendingResume = this.state.position;
-            return this.prepare({ autoplay: !!options.autoplay });
+            return this.prepare({ autoplay });
         }
 
         async goTo(surah, ayah = 1, options = {}) {
+            const autoplay = options.autoplay ?? (!this.audio.paused || this.intentToPlay);
             surah = Math.min(114, Math.max(1, Number(surah) || 1));
             ayah = Math.min(VERSE_COUNTS[surah - 1], Math.max(1, Number(ayah) || 1));
             if (this.state.provider === 'mp3quran' && !this.state.availableSurahs.includes(surah)) return false;
@@ -508,19 +521,19 @@
                 [this.state.repeat.start, this.state.repeat.end] = [this.state.repeat.end, this.state.repeat.start];
             }
             this.state.position = Number(options.position) || 0;
-            this.state.repeat.completed = 0;
+            if (!options.preserveRepeat) this.state.repeat.completed = 0;
             this.pendingResume = this.state.position;
             if (sameTrack) {
                 this.seek(this.state.position);
-                if (options.autoplay) await this.play();
+                if (autoplay) await this.play();
                 return true;
             }
             this.audio.pause(); this.trackUrl = '';
-            return this.prepare({ autoplay: !!options.autoplay });
+            return this.prepare({ autoplay });
         }
 
         async next(options = {}) {
-            const autoplay = options.autoplay ?? !this.audio.paused;
+            const autoplay = options.autoplay ?? (!this.audio.paused || this.intentToPlay);
             if (this.state.provider === 'quran-foundation') {
                 if (this.state.ayah < VERSE_COUNTS[this.state.surah - 1]) {
                     return this.goTo(this.state.surah, this.state.ayah + 1, { autoplay });
@@ -534,7 +547,7 @@
         }
 
         async previous(options = {}) {
-            const autoplay = options.autoplay ?? !this.audio.paused;
+            const autoplay = options.autoplay ?? (!this.audio.paused || this.intentToPlay);
             if (this.state.provider === 'quran-foundation') {
                 if (this.audio.currentTime > 3) { this.seek(0); return true; }
                 if (this.state.ayah > 1) return this.goTo(this.state.surah, this.state.ayah - 1, { autoplay });
@@ -561,19 +574,24 @@
                 if (repeat.completed < repeat.count) {
                     this.trackUrl = ''; await this.prepare({ autoplay: true }); return;
                 }
+                // "Repeat current verse" is a finite practice action, not every next verse.
                 repeat.completed = 0;
+                repeat.mode = 'off';
+                this.persist();
                 await this.next({ autoplay: true });
                 return;
             }
             if (repeat.mode === 'range') {
                 if (this.state.ayah < repeat.end) {
-                    await this.goTo(this.state.surah, this.state.ayah + 1, { autoplay: true });
+                    await this.goTo(this.state.surah, this.state.ayah + 1, { autoplay: true, preserveRepeat: true });
                 } else {
                     repeat.completed += 1;
                     if (repeat.completed < repeat.count) {
-                        await this.goTo(this.state.surah, repeat.start, { autoplay: true });
+                        await this.goTo(this.state.surah, repeat.start, { autoplay: true, preserveRepeat: true });
                     } else {
                         repeat.completed = 0;
+                        repeat.mode = 'off';
+                        this.persist();
                         await this.next({ autoplay: true });
                     }
                 }
