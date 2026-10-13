@@ -13,7 +13,13 @@
     status: $('player-status'), catalogStatus: $('catalog-status'), count: $('reader-count'),
     title: $('player-title'), subtitle: $('player-subtitle'), duration: $('duration'),
     current: $('current-time'), connection: $('connection-label'), reload: $('reload-catalog'),
-    download: $('download-current')
+    download: $('download-current'),
+    theme: $('recitations-theme-toggle'), playerMode: $('player-mode'),
+    mainPlayer: $('main-player'), mini: $('mini-player'), miniOpen: $('mini-open'),
+    miniPlay: $('mini-play'), miniNext: $('mini-next'), miniIcon: $('mini-play-icon'),
+    miniTitle: $('mini-title'), miniSubtitle: $('mini-subtitle'), miniProgress: $('mini-progress-fill'),
+    downloadsList: $('downloads-list'), downloadsCount: $('downloads-count'),
+    downloadsStatus: $('downloads-status')
   };
   if (Object.values(ui).some(value => !value)) return;
 
@@ -24,7 +30,48 @@
   let selectedReciter = null;
   let selectedMoshaf = null;
   let applying = false;
+  let miniEnabled = false;
+  let downloadCheck = 0;
   window.quranAudioEngine = engine;
+
+  const THEME_KEY = 'quranHomeTheme';
+  function readTheme() {
+    try {
+      const value = localStorage.getItem(THEME_KEY);
+      if (value === 'dark' || value === 'light') return value;
+      const reader = JSON.parse(localStorage.getItem('quranReaderSettings') || 'null');
+      if (reader?.theme === 'dark') return 'dark';
+    } catch (_) { /* Theme storage is optional. */ }
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  function applyTheme(theme) {
+    document.body.dataset.theme = theme;
+    ui.theme.setAttribute('aria-label', theme === 'dark' ? 'تفعيل الوضع النهاري' : 'تفعيل الوضع الليلي');
+    ui.theme.title = theme === 'dark' ? 'تفعيل الوضع النهاري' : 'تفعيل الوضع الليلي';
+    document.querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'dark' ? '#141e1a' : '#f7f8f3');
+  }
+  applyTheme(readTheme());
+  ui.theme.addEventListener('click', () => {
+    const theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(theme);
+    try { localStorage.setItem(THEME_KEY, theme); } catch (_) { /* Optional. */ }
+  });
+
+  function updateMiniVisibility() {
+    const rect = ui.mainPlayer.getBoundingClientRect();
+    const belowMainPlayer = rect.bottom < 0;
+    ui.mini.hidden = !(miniEnabled && belowMainPlayer);
+  }
+  ui.miniOpen.addEventListener('click', () => ui.mainPlayer.scrollIntoView({
+    behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    block: 'start'
+  }));
+  ui.miniPlay.addEventListener('click', () => engine.toggle());
+  ui.miniNext.addEventListener('click', () => engine.next());
+  window.addEventListener('scroll', updateMiniVisibility, { passive: true });
+  window.addEventListener('resize', updateMiniVisibility);
+
 
   function option(select, value, label) {
     const item = document.createElement('option');
@@ -69,16 +116,30 @@
       button.type = 'button';
       button.className = `reciter-card${selectedReciter?.id === reciter.id ? ' is-selected' : ''}`;
       button.setAttribute('aria-pressed', String(selectedReciter?.id === reciter.id));
+      const avatar = document.createElement('span');
+      avatar.className = 'reciter-avatar';
+      avatar.setAttribute('aria-hidden', 'true');
+      avatar.textContent = reciter.name.replace(/^(الشيخ|القارئ)\\s+/u, '').trim().charAt(0) || '۞';
+      const info = document.createElement('span');
+      info.className = 'reciter-info';
       const name = document.createElement('strong'); name.textContent = reciter.name;
       const detail = document.createElement('small');
       const complete = reciter.moshaf.filter(item => item.complete).length;
       detail.textContent = complete
         ? `${core.arabicDigits(reciter.moshaf.length)} تسجيل • ${core.arabicDigits(complete)} مصحف كامل`
         : `${core.arabicDigits(reciter.moshaf.length)} تسجيل • تلاوات مختارة`;
-      button.append(name, detail);
+      info.append(name, detail);
+      const arrow = document.createElement('span');
+      arrow.className = 'reciter-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = selectedReciter?.id === reciter.id ? '✓' : '‹';
+      button.append(avatar, info, arrow);
       button.addEventListener('click', async () => {
         await chooseReciter(reciter);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        ui.mainPlayer.scrollIntoView({
+          behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'start'
+        });
       });
       fragment.appendChild(button);
     });
@@ -115,13 +176,130 @@
     ui.status.textContent = stateStatus(state);
     ui.play.disabled = false;
     setPlay(state.playing);
+    ui.playerMode.textContent = state.loading ? 'جاري التحميل…' :
+      state.playing ? 'تلاوة جارية' : state.error ? 'تعذّر التشغيل' :
+      state.status === 'paused' ? 'متوقف مؤقتًا' : 'جاهز للاستماع';
+    miniEnabled = state.provider === 'mp3quran' && !!state.server;
+    ui.miniTitle.textContent = `سورة ${core.SURAH_NAMES[state.surah - 1]}`;
+    ui.miniSubtitle.textContent = state.reciterName || 'القرآن الكريم';
+    ui.miniPlay.setAttribute('aria-label', state.playing ? 'إيقاف مؤقت' : 'تشغيل التلاوة');
+    ui.miniIcon.innerHTML = state.playing
+      ? '<path d="M7 5h4v14H7zm6 0h4v14h-4z"/>'
+      : '<path d="m8 5 12 7-12 7V5Z"/>';
+    ui.miniProgress.style.width = state.duration > 0
+      ? `${Math.min(100, Math.max(0, state.currentTime / state.duration * 100))}%` : '0%';
+    updateMiniVisibility();
     if (full) {
+      updateDownloadButton(state);
       ui.speed.value = String(state.speed);
       ui.repeat.checked = state.repeat.mode === 'surah';
       if (state.provider === 'mp3quran' && selectedMoshaf?.surahs.includes(state.surah)) ui.surah.value = String(state.surah);
     }
     applying = false;
   }
+
+  function updateDownloadButton(state) {
+    const requestId = ++downloadCheck;
+    const url = state.provider === 'mp3quran'
+      ? core.mp3Url({ server: state.server, surahs: state.availableSurahs }, state.surah) : null;
+    if (!url) {
+      ui.download.disabled = true;
+      ui.download.querySelector('span').textContent = 'اختر تسجيلًا للتنزيل';
+      return;
+    }
+    ui.download.disabled = downloads.active;
+    ui.download.querySelector('span').textContent = 'تنزيل السورة';
+    downloads.has(url).then(saved => {
+      if (requestId !== downloadCheck || downloads.active) return;
+      ui.download.disabled = saved;
+      ui.download.querySelector('span').textContent = saved ? 'السورة محفوظة ✓' : 'تنزيل السورة';
+    }).catch(() => { /* Playback remains available if Cache Storage fails. */ });
+  }
+
+  function renderDownloads() {
+    const items = downloads.list().filter(item => item.provider === 'mp3quran' &&
+      Number.isInteger(Number(item.surah)) && Number(item.surah) >= 1 && Number(item.surah) <= 114);
+    ui.downloadsCount.textContent = core.arabicDigits(items.length);
+    const fragment = document.createDocumentFragment();
+    if (!items.length) {
+      const empty = document.createElement('p');
+      empty.className = 'downloads-empty';
+      empty.textContent = 'لا توجد تلاوات محفوظة بعد. اختر قارئًا وسورة واضغط «تنزيل السورة» للاستماع دون إنترنت.';
+      fragment.appendChild(empty);
+    }
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'download-row';
+      const info = document.createElement('span');
+      info.className = 'download-row-info';
+      const name = document.createElement('strong');
+      name.textContent = `سورة ${item.surahName || core.SURAH_NAMES[item.surah - 1]}`;
+      const detail = document.createElement('small');
+      detail.textContent = `${item.reciterName || 'قارئ القرآن'} • ${downloadsApi.humanSize(item.bytes)}`;
+      info.append(name, detail);
+      const play = document.createElement('button');
+      play.type = 'button';
+      play.textContent = 'استمع';
+      play.setAttribute('aria-label', `استمع إلى ${name.textContent} بصوت ${item.reciterName || 'القارئ'}`);
+      play.addEventListener('click', async () => {
+        const reciter = catalog.find(entry => entry.id === Number(item.reciterId) &&
+          entry.moshaf.some(m => core.mp3Url(m, item.surah) === item.url));
+        if (reciter) {
+          const moshaf = reciter.moshaf.find(m => core.mp3Url(m, item.surah) === item.url);
+          await chooseReciter(reciter, moshaf.id, true);
+          if (engine.state.surah !== Number(item.surah)) await engine.goTo(Number(item.surah), 1);
+        } else {
+          // A saved track must remain playable even if the catalog is unavailable offline.
+          const match = /^(https:\/\/[^?#]+\/)(\\d{3})\\.mp3(?:[?#].*)?$/i.exec(item.url);
+          if (!match || Number(match[2]) !== Number(item.surah)) {
+            ui.downloadsStatus.textContent = 'تعذّر تحديد مصدر هذا التسجيل المحفوظ.';
+            return;
+          }
+          const offlineMoshaf = {
+            id: 0, name: 'التسجيل المحفوظ', server: match[1],
+            surahs: [Number(item.surah)], complete: false
+          };
+          const offlineReciter = {
+            id: Number(item.reciterId) || 0, name: item.reciterName || 'قارئ القرآن',
+            moshaf: [offlineMoshaf]
+          };
+          await chooseReciter(offlineReciter, 0, true);
+        }
+        ui.mainPlayer.scrollIntoView({
+          behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'start'
+        });
+      });
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'remove-download';
+      remove.textContent = 'حذف';
+      remove.setAttribute('aria-label', `حذف التسجيل المحفوظ: ${name.textContent} بصوت ${item.reciterName || 'القارئ'}`);
+      remove.addEventListener('click', async () => {
+        if (!window.confirm(`حذف ${name.textContent} بصوت ${item.reciterName || 'القارئ'} من الجهاز؟`)) return;
+        remove.disabled = true;
+        try {
+          await downloads.remove(item.url);
+          ui.downloadsStatus.textContent = 'تم حذف التسجيل المحفوظ من الجهاز.';
+          updateDownloadButton(engine.snapshot());
+        } catch (_) {
+          remove.disabled = false;
+          ui.downloadsStatus.textContent = 'تعذّر حذف التسجيل. حاول مرة أخرى.';
+        }
+      });
+      row.append(info, play, remove);
+      fragment.appendChild(row);
+    });
+    ui.downloadsList.replaceChildren(fragment);
+  }
+  downloads.addEventListener('change', event => {
+    if (event.detail.status === 'done' || event.detail.status === 'removed' ||
+        event.detail.status === 'cleared') {
+      renderDownloads();
+      updateDownloadButton(engine.snapshot());
+    }
+  });
+  renderDownloads();
 
   engine.addEventListener('state', event => applyState(event.detail, true));
   engine.addEventListener('time', event => applyState(event.detail, false));
@@ -159,6 +337,7 @@
       return;
     }
     ui.download.disabled = true;
+    ui.download.querySelector('span').textContent = 'جاري التنزيل…';
     ui.status.textContent = 'جاري تنزيل السورة. لا تغلق الصفحة…';
     try {
       await downloads.downloadTrack({
@@ -167,7 +346,7 @@
       });
       ui.status.textContent = 'اكتمل تنزيل السورة للاستماع دون إنترنت.';
     } catch (error) { ui.status.textContent = error.message; }
-    finally { ui.download.disabled = false; }
+    finally { updateDownloadButton(engine.snapshot()); }
   });
 
   async function loadCatalog() {
