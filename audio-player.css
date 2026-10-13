@@ -443,3 +443,93 @@
 @media (prefers-reduced-motion: reduce) {
     .mushaf-audio-player { transition: none; }
 }
+
+/* Keep the 604-page mushaf geometry untouched: audio floats OVER the page. */
+.reader-page .reader-stage,
+.reader-page.tools-visible .reader-stage {
+    height: 100vh;
+    height: 100dvh;
+}
+.reader-page.tools-visible .mushaf-audio-player { box-shadow: 0 -14px 35px rgba(0,0,0,.32); }
+
+/* App-native searchable picker: no browser select popup or extra confirmation tap. */
+.audio-option-grid .audio-picker-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #326052;
+}
+.audio-picker { position: relative; min-width: 0; }
+.audio-picker-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-height: 49px;
+    padding: 11px 14px;
+    color: #244d41;
+    background: #f5faf6;
+    border: 1px solid #d0e4d8;
+    border-radius: 13px;
+    text-align: right;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .16s, border-color .16s, box-shadow .16s;
+}
+.audio-picker-trigger span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.audio-picker-trigger svg {
+    width: 18px; height: 18px; flex: 0 0 18px;
+    fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    transition: transform .16s;
+}
+.audio-picker-trigger[aria-expanded='true'] {
+    border-color: #21826d;
+    background: #e9f6ee;
+    box-shadow: 0 0 0 3px rgba(33,130,109,.10);
+}
+.audio-picker-trigger[aria-expanded='true'] svg { transform: rotate(180deg); }
+.audio-picker-panel {
+    margin-top: 7px;
+    padding: 9px;
+    background: #fff;
+    border: 1px solid #d4e7dc;
+    border-radius: 15px;
+    box-shadow: 0 12px 30px rgba(12,61,45,.11);
+}
+.audio-picker-panel[hidden] { display: none !important; }
+.audio-picker-panel input[type='search'] {
+    width: 100%; min-height: 42px; padding: 8px 12px; margin-bottom: 8px;
+    color: #23483c; background: #f5f9f6; border: 1px solid #d4e6da;
+    border-radius: 11px; outline-color: #21826d; font: inherit; font-size: 13px; font-weight: 400;
+}
+.audio-picker-results {
+    display: grid; gap: 4px; max-height: min(32vh, 260px);
+    overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+.audio-picker-option {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; width: 100%; min-height: 42px; padding: 10px 12px;
+    color: #315e50; background: transparent; border: 0; border-radius: 10px;
+    text-align: right; font: inherit; font-size: 13px; font-weight: 500;
+    cursor: pointer;
+}
+.audio-picker-option:hover, .audio-picker-option:focus-visible { background: #eaf5ee; outline-color: #21826d; }
+.audio-picker-option[aria-current='true'] { background: #e0f1e8; color: #125b47; font-weight: 800; }
+.audio-picker-option[aria-current='true']::after { content: '✓'; color: #18745c; }
+.audio-picker-empty { margin: 0; padding: 18px 12px; color: #6d8177; text-align: center; font-size: 12px; font-weight: 400; }
+.reader-page[data-theme='dark'] .audio-option-grid .audio-picker-field { color: #c1dcd0; }
+.reader-page[data-theme='dark'] .audio-picker-trigger { color: #e2f2e9; background: #2b4036; border-color: #435e50; }
+.reader-page[data-theme='dark'] .audio-picker-trigger[aria-expanded='true'] { background: #365344; border-color: #70b39b; }
+.reader-page[data-theme='dark'] .audio-picker-panel { background: #23342b; border-color: #435e50; }
+.reader-page[data-theme='dark'] .audio-picker-panel input[type='search'] { color: #e2f2e9; background: #293c31; border-color: #435e50; }
+.reader-page[data-theme='dark'] .audio-picker-option { color: #cfe5d9; }
+.reader-page[data-theme='dark'] .audio-picker-option:hover,
+.reader-page[data-theme='dark'] .audio-picker-option:focus-visible,
+.reader-page[data-theme='dark'] .audio-picker-option[aria-current='true'] { background: #385a49; color: #f3fff8; }
