@@ -37,6 +37,7 @@
 
         emit(detail) {
             this.dispatchEvent(new CustomEvent('change', { detail: { ...detail, items: this.list() } }));
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('quran-downloads:change'));
         }
 
         async estimate() {
@@ -99,7 +100,8 @@
                 items.push({
                     url: track.url, provider: track.provider, reciterId: track.reciterId,
                     reciterName: track.reciterName, surah: track.surah,
-                    surahName: track.surahName, ayah: track.ayah || null,
+                    surahName: track.surahName, moshafId: track.moshafId || null,
+                    moshafName: track.moshafName || null, ayah: track.ayah || null,
                     bytes, savedAt: Date.now()
                 });
                 if (!writeIndex(items)) throw new Error('تعذّر حفظ فهرس التنزيلات على الجهاز.');
