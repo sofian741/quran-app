@@ -121,7 +121,10 @@
             search: null, results: $('audio-moshaf-results') },
         surah: { select: ui.surah, trigger: $('audio-surah-trigger'),
             label: $('audio-surah-selected'), panel: $('audio-surah-panel'),
-            search: ui.surahSearch, results: $('audio-surah-results') }
+            search: ui.surahSearch, results: $('audio-surah-results') },
+        repeat: { select: ui.repeatMode, trigger: $('audio-repeat-mode-trigger'),
+            label: $('audio-repeat-mode-selected'), panel: $('audio-repeat-mode-panel'),
+            search: null, results: $('audio-repeat-mode-results') }
     };
 
     function updatePicker(kind) {
@@ -194,7 +197,22 @@
     function repeatClasses(mode) {
         ui.repeatFieldset.classList.toggle('is-simple', mode === 'off' || mode === 'surah');
         ui.repeatFieldset.classList.toggle('is-verse', mode === 'verse');
+        updatePicker('repeat');
     }
+    // A touch-friendly numeric stepper instead of the browser's tiny number spinners.
+    ui.repeatFieldset.addEventListener('click', event => {
+        const button = event.target.closest('[data-audio-step]');
+        if (!button) return;
+        const [id, deltaText] = button.dataset.audioStep.split(':');
+        const input = $(id);
+        if (!input) return;
+        const delta = Number(deltaText);
+        const min = Number(input.min) || 1;
+        const max = Number(input.max) || (id === 'audio-repeat-count' ? 99 :
+            core.VERSE_COUNTS[engine.state.surah - 1]);
+        input.value = String(Math.min(max, Math.max(min, (Number(input.value) || min) + delta)));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
 
     function updatePlayIcon(playing, loading) {
         ui.play.setAttribute('aria-label', loading ? 'جاري التحميل' : (playing ? 'إيقاف مؤقت' : 'تشغيل'));
@@ -344,11 +362,16 @@
     ui.open.addEventListener('click', openOptions);
     function openRepeat() {
         closeOptions();
+        const maxAyah = core.VERSE_COUNTS[engine.state.surah - 1];
+        ui.repeatStart.max = String(maxAyah);
+        ui.repeatEnd.max = String(maxAyah);
+        updatePicker('repeat');
         ui.repeatBackdrop.hidden = false;
         ui.repeatSheet.hidden = false;
         ui.repeatSheet.setAttribute('aria-hidden', 'false');
     }
     function closeRepeat() {
+        closePickers();
         ui.repeatBackdrop.hidden = true;
         ui.repeatSheet.hidden = true;
         ui.repeatSheet.setAttribute('aria-hidden', 'true');
@@ -411,9 +434,10 @@
 
     async function applyRepeat() {
         const mode = ui.repeatMode.value;
-        const start = Number(ui.repeatStart.value);
-        const end = Number(ui.repeatEnd.value);
-        const count = Number(ui.repeatCount.value);
+        const maxAyah = core.VERSE_COUNTS[engine.state.surah - 1];
+        const start = Math.min(maxAyah, Math.max(1, Number(ui.repeatStart.value) || 1));
+        const end = Math.min(maxAyah, Math.max(1, Number(ui.repeatEnd.value) || 1));
+        const count = Math.min(99, Math.max(1, Number(ui.repeatCount.value) || 1));
         const wasPlaying = !engine.audio.paused || engine.intentToPlay;
         const switching = engine.state.provider === 'mp3quran' && (mode === 'verse' || mode === 'range');
 
