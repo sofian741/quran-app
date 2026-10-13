@@ -286,6 +286,23 @@
     .tafsir-backdrop, .tafsir-sheet { transition: none; }
 }
 
+/* Match the mushaf's finger-tracked two-page swipe without affecting
+   vertical scrolling or the fixed tafsir header/navigation. */
+.tafsir-sheet { overflow: hidden; }
+.tafsir-content { touch-action: pan-y; will-change: transform; }
+.tafsir-swipe-preview {
+    position: absolute;
+    z-index: 1;
+    flex: none;
+    min-height: 0;
+    margin: 0;
+    overflow-y: auto;
+    pointer-events: none;
+    touch-action: none;
+    background: inherit;
+    box-sizing: border-box;
+    will-change: transform;
+}
 /* Tafsir reader: one ayah per view, with page-like navigation. */
 .tafsir-navigation {
     display: grid;
