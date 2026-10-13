@@ -176,6 +176,9 @@
             ui.surah.value = String(state.surah);
             fillReciters(state);
             ui.speedLabel.textContent = `${state.speed}×`;
+            ui.downloadAll.textContent = state.availableSurahs.length === 114
+                ? 'تحميل المصحف الصوتي كاملًا'
+                : `تحميل كل التلاوات المتاحة (${core.arabicDigits(state.availableSurahs.length)} سورة)`;
             ui.quickRepeat.setAttribute('aria-pressed', String(state.repeat.mode !== 'off'));
             ui.repeatHint.textContent = state.provider === 'mp3quran'
                 ? 'التسجيل الحالي سورة كاملة؛ تكرار آية أو نطاق يحتاج تسجيلًا متزامنًا. اختر مشاري العفاسي المتزامن من قائمة القرّاء.'
