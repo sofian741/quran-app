@@ -382,6 +382,9 @@
             }
         }
     }, true);
+    // Reuse this exact tafsir viewer from Quran search results.
+    window.mushafTafsir = { open };
+
     // Warm the bundled file after the reader starts, to avoid delaying page layout.
     const warm = () => { loadData().catch(() => {}); };
     if (typeof requestIdleCallback === 'function') requestIdleCallback(warm, { timeout: 4500 });
