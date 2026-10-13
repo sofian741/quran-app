@@ -464,7 +464,7 @@
 }
 
 /* Inline-SVG page bookmark, independent of device emoji and icon fonts. */
-.reader-toolbar:has(.reader-toolbar-actions) {
+.reader-toolbar {
     grid-template-columns: 44px minmax(0, 1fr) 92px;
 }
 .reader-toolbar-actions {
@@ -481,8 +481,8 @@
     color: #f5e7b0;
 }
 .page-marker-button[aria-pressed='true'] svg { fill: rgba(245,231,176,.32); }
-.saved-tabs:has(#saved-tab-page) { gap: 6px; }
-.saved-tabs:has(#saved-tab-page) button {
+.saved-tabs { gap: 6px; }
+.saved-tabs button {
     padding: 8px 4px;
     font-size: 12px;
     line-height: 1.4;
