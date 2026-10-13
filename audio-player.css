@@ -533,3 +533,95 @@
 .reader-page[data-theme='dark'] .audio-picker-option:hover,
 .reader-page[data-theme='dark'] .audio-picker-option:focus-visible,
 .reader-page[data-theme='dark'] .audio-picker-option[aria-current='true'] { background: #385a49; color: #f3fff8; }
+
+/* Repeat options use the same native-looking app picker as reciters and surahs. */
+.audio-repeat-settings {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 14px;
+    background: #f7faf6;
+    border-color: #d2e6d9;
+}
+.audio-repeat-mode-field {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.audio-repeat-field-label,
+.audio-repeat-settings .audio-repeat-number-field {
+    color: #315e50;
+    font-size: 13px;
+    font-weight: 700;
+}
+.audio-repeat-mode-field .audio-picker-trigger { background: #fff; }
+.audio-repeat-mode-field .audio-picker-panel { background: #fff; }
+.audio-repeat-settings .audio-repeat-number-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+.audio-repeat-number-field:last-of-type { grid-column: 1 / -1; }
+.audio-number-stepper {
+    display: flex;
+    direction: ltr;
+    align-items: stretch;
+    overflow: hidden;
+    width: 100%;
+    min-height: 45px;
+    background: #fff;
+    border: 1px solid #d2e6d9;
+    border-radius: 12px;
+}
+.audio-repeat-settings .audio-number-stepper input {
+    flex: 1 1 0;
+    width: 30px;
+    min-width: 0;
+    height: 45px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 0;
+    outline-offset: -3px;
+    background: transparent;
+    color: #1f5947;
+    font-size: 15px;
+    font-weight: 800;
+    text-align: center;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+.audio-number-stepper input::-webkit-inner-spin-button,
+.audio-number-stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.audio-number-stepper button {
+    flex: 0 0 39px;
+    min-height: 45px;
+    padding: 0;
+    color: #176b63;
+    background: #ecf6ef;
+    border: 0;
+    font: inherit;
+    font-size: 23px;
+    cursor: pointer;
+}
+.audio-number-stepper button:active { background: #d2e9db; }
+.audio-number-stepper button:focus-visible { outline: 2px solid #176b63; outline-offset: -2px; }
+.audio-repeat-settings.is-simple .audio-repeat-number-field { display: none; }
+.audio-repeat-settings.is-verse .audio-repeat-number-field:nth-of-type(2),
+.audio-repeat-settings.is-verse .audio-repeat-number-field:nth-of-type(3) { display: none; }
+/* nth-of-type is among labels; hide both verse-range bounds in verse mode. */
+.audio-repeat-settings.is-verse label.audio-repeat-number-field:nth-of-type(1),
+.audio-repeat-settings.is-verse label.audio-repeat-number-field:nth-of-type(2) { display: none; }
+.reader-page[data-theme='dark'] .audio-repeat-settings { background: #26382f; border-color: #40564c; }
+.reader-page[data-theme='dark'] .audio-repeat-field-label,
+.reader-page[data-theme='dark'] .audio-repeat-settings .audio-repeat-number-field { color: #c7e1d4; }
+.reader-page[data-theme='dark'] .audio-repeat-mode-field .audio-picker-trigger,
+.reader-page[data-theme='dark'] .audio-repeat-mode-field .audio-picker-panel,
+.reader-page[data-theme='dark'] .audio-number-stepper { color: #e4f2ea; background: #2b4036; border-color: #40564c; }
+.reader-page[data-theme='dark'] .audio-repeat-settings .audio-number-stepper input { color: #e4f2ea; background: transparent; }
+.reader-page[data-theme='dark'] .audio-number-stepper button { color: #d1f3e1; background: #365443; }
+@media (max-width: 350px) {
+    .audio-repeat-settings { gap: 9px; padding: 10px; }
+    .audio-number-stepper button { flex-basis: 34px; }
+}
