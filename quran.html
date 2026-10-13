@@ -187,8 +187,20 @@
             <p class="tafsir-explanation" id="tafsir-explanation" hidden></p>
             <button class="tafsir-retry" id="tafsir-retry" type="button" hidden>إعادة المحاولة</button>
         </div>
+        <nav class="tafsir-navigation" aria-label="التنقل بين تفاسير الآيات">
+            <button id="tafsir-previous" class="tafsir-nav-button" type="button" aria-label="تفسير الآية السابقة" disabled>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+                <span>السابقة</span>
+            </button>
+            <div class="tafsir-nav-position" id="tafsir-nav-position" aria-live="polite" aria-atomic="true">الآية ١</div>
+            <button id="tafsir-next" class="tafsir-nav-button" type="button" aria-label="تفسير الآية التالية" disabled>
+                <span>التالية</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>
+            </button>
+        </nav>
         <div class="tafsir-footer">
-            المصدر: <a href="https://quranenc.com/ar/browse/arabic_moyassar" target="_blank" rel="noopener noreferrer">موسوعة القرآن الكريم (QuranEnc)</a>
+            <span>اسحب يمينًا أو يسارًا للتنقل بين الآيات</span>
+            <span>المصدر: <a href="https://quranenc.com/ar/browse/arabic_moyassar" target="_blank" rel="noopener noreferrer">موسوعة القرآن الكريم (QuranEnc)</a></span>
         </div>
     </aside>
 
