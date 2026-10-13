@@ -60,7 +60,7 @@
                 day: 'numeric', month: 'long', year: 'numeric'
             }).format(today);
             const weekday = new Intl.DateTimeFormat('ar-EG', { weekday: 'long' }).format(today);
-            date.textContent = `${weekday} • ${hijri} هـ`;
+            date.textContent = `${weekday} • ${hijri}`;
             date.title = 'التاريخ الهجري محسوب تقريبيًا وقد يختلف بحسب رؤية الهلال';
         } catch (_) {
             date.textContent = new Intl.DateTimeFormat('ar-EG', { dateStyle: 'long' }).format(new Date());
