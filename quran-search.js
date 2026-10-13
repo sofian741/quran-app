@@ -41,14 +41,16 @@
             .toLowerCase();
     }
 
-    function normalizedWithMap(raw) {
+    function normalizedWithMap(raw, expandSmallAlif = false) {
         let text = '';
         const map = [];
         let offset = 0;
         for (const char of raw) {
             const start = offset;
             offset += char.length;
-            for (const folded of foldChar(char)) {
+            // Some Uthmani spellings write a small alif where standard
+            // Arabic uses a full alif (e.g. الصِّرَٰط). Search both forms.
+            for (const folded of (expandSmallAlif && char === '\u0670' ? 'ا' : foldChar(char))) {
                 if (/\s/.test(folded)) {
                     if (text && text[text.length - 1] !== ' ') {
                         text += ' ';
@@ -79,7 +81,8 @@
             surah: verse.surah,
             ayah: verse.ayah,
             text: verse.text,
-            normalized: normalize(verse.text)
+            normalized: normalize(verse.text),
+            normalizedAlif: normalizedWithMap(verse.text, true).text
         }));
         for (let surah = 1; surah <= 114; surah++) {
             const option = document.createElement('option');
@@ -129,12 +132,16 @@
         setTimeout(() => window.mushafTafsir.open({
             surah: verse.surah, ayah: verse.ayah,
             verseKey: `${verse.surah}:${verse.ayah}`
-        }), window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : 230);
+        }), window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : 260);
     }
 
     function appendHighlightedText(parent, verse) {
-        const { text, map } = normalizedWithMap(verse.text);
-        const start = text.indexOf(activeQuery);
+        let { text, map } = normalizedWithMap(verse.text);
+        let start = text.indexOf(activeQuery);
+        if (start < 0) {
+            ({ text, map } = normalizedWithMap(verse.text, true));
+            start = text.indexOf(activeQuery);
+        }
         if (start < 0 || !map.length) {
             parent.textContent = verse.text;
             return;
@@ -212,7 +219,7 @@
         const scope = surahSelect.value;
         matches = indexedVerses.filter(verse =>
             (scope === 'all' || verse.surah === Number(scope)) &&
-            verse.normalized.includes(activeQuery));
+            (verse.normalized.includes(activeQuery) || verse.normalizedAlif.includes(activeQuery)));
         status.textContent = matches.length
             ? `تم العثور على ${digits(matches.length)} آية مطابقة`
             : 'لا توجد نتائج مطابقة. جرّب كلمة أخرى أو ابحث في جميع السور.';
@@ -233,6 +240,7 @@
         }
         clearTimeout(closeTimer);
         backdrop.hidden = false;
+        sheet.inert = false;
         sheet.classList.add('is-open');
         sheet.setAttribute('aria-hidden', 'false');
         requestAnimationFrame(() => backdrop.classList.add('is-open'));
@@ -246,12 +254,14 @@
         clearTimeout(searchTimer);
         sheet.classList.remove('is-open');
         sheet.setAttribute('aria-hidden', 'true');
+        sheet.inert = true;
         backdrop.classList.remove('is-open');
         clearTimeout(closeTimer);
         closeTimer = setTimeout(() => { backdrop.hidden = true; }, 240);
         if (restoreFocus) document.getElementById('open-settings')?.focus({ preventScroll: true });
     }
 
+    sheet.inert = true;
     trigger.addEventListener('click', open);
     closeButton.addEventListener('click', () => close());
     backdrop.addEventListener('click', () => close());
