@@ -95,11 +95,11 @@
     ui.surah.value = String(moshaf.surahs.includes(Number(selected)) ? selected : moshaf.surahs[0]);
   }
 
-  async function chooseReciter(reciter, preferredMoshaf, autoplay = false, position = 0) {
+  async function chooseReciter(reciter, preferredMoshaf, autoplay = false, position = 0, requestedSurah = null) {
     if (!reciter) return;
     fillMoshaf(reciter, preferredMoshaf);
     await engine.selectMp3(reciter, selectedMoshaf, {
-      surah: Number(ui.surah.value), autoplay, position
+      surah: Number(requestedSurah) || Number(ui.surah.value), autoplay, position
     });
     renderCatalog();
   }
@@ -119,7 +119,7 @@
       const avatar = document.createElement('span');
       avatar.className = 'reciter-avatar';
       avatar.setAttribute('aria-hidden', 'true');
-      avatar.textContent = reciter.name.replace(/^(الشيخ|القارئ)\\s+/u, '').trim().charAt(0) || '۞';
+      avatar.textContent = reciter.name.replace(/^(الشيخ|القارئ)\s+/u, '').trim().charAt(0) || '۞';
       const info = document.createElement('span');
       info.className = 'reciter-info';
       const name = document.createElement('strong'); name.textContent = reciter.name;
@@ -246,11 +246,10 @@
           entry.moshaf.some(m => core.mp3Url(m, item.surah) === item.url));
         if (reciter) {
           const moshaf = reciter.moshaf.find(m => core.mp3Url(m, item.surah) === item.url);
-          await chooseReciter(reciter, moshaf.id, true);
-          if (engine.state.surah !== Number(item.surah)) await engine.goTo(Number(item.surah), 1);
+          await chooseReciter(reciter, moshaf.id, true, 0, Number(item.surah));
         } else {
           // A saved track must remain playable even if the catalog is unavailable offline.
-          const match = /^(https:\/\/[^?#]+\/)(\\d{3})\\.mp3(?:[?#].*)?$/i.exec(item.url);
+          const match = /^(https:\/\/[^?#]+\/)(\d{3})\.mp3(?:[?#].*)?$/i.exec(item.url);
           if (!match || Number(match[2]) !== Number(item.surah)) {
             ui.downloadsStatus.textContent = 'تعذّر تحديد مصدر هذا التسجيل المحفوظ.';
             return;
@@ -263,7 +262,7 @@
             id: Number(item.reciterId) || 0, name: item.reciterName || 'قارئ القرآن',
             moshaf: [offlineMoshaf]
           };
-          await chooseReciter(offlineReciter, 0, true);
+          await chooseReciter(offlineReciter, 0, true, 0, Number(item.surah));
         }
         ui.mainPlayer.scrollIntoView({
           behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
