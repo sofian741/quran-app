@@ -300,18 +300,27 @@
         rows.forEach((words, row) => {
             const rowRect = row.getBoundingClientRect();
             const boxes = words.map(word => word.getBoundingClientRect());
-            const lastGroup = words.at(-1).closest('.ayah-end-group');
-            if (lastGroup) boxes.push(lastGroup.getBoundingClientRect());
-            const band = document.createElement('span');
-            band.className = 'audio-verse-band';
-            band.setAttribute('aria-hidden', 'true');
+            // Match the long-press verse selection exactly, including the ayah
+            // ornament only when it belongs to the last word of this verse.
+            const lastWord = words[words.length - 1];
+            const marker = lastWord.closest('.ayah-end-group');
+            if (marker && marker.contains(lastWord)) boxes.push(marker.getBoundingClientRect());
             const left = Math.min(...boxes.map(box => box.left));
             const right = Math.max(...boxes.map(box => box.right));
             const top = Math.min(...boxes.map(box => box.top));
             const bottom = Math.max(...boxes.map(box => box.bottom));
+            // Reader lines are scaled to fit the phone. Convert viewport
+            // coordinates back into the row's local coordinate system.
+            const scaleX = rowRect.width / Math.max(1, row.offsetWidth);
+            const scaleY = rowRect.height / Math.max(1, row.offsetHeight);
+            const band = document.createElement('span');
+            band.className = 'audio-verse-band';
+            band.setAttribute('aria-hidden', 'true');
             Object.assign(band.style, {
-                left: `${left - rowRect.left}px`, top: `${top - rowRect.top}px`,
-                width: `${right - left}px`, height: `${bottom - top}px`
+                left: `${(left - rowRect.left) / scaleX}px`,
+                top: `${(top - rowRect.top) / scaleY}px`,
+                width: `${(right - left) / scaleX}px`,
+                height: `${(bottom - top) / scaleY}px`
             });
             row.appendChild(band);
         });
