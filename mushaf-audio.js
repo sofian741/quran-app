@@ -383,35 +383,74 @@
         } : null;
     }
 
-    async function downloadCurrentSurah() {
+    function setDownloadBusy(busy) {
+        downloadBatch = busy;
+        ui.download.disabled = busy;
+        ui.downloadAll.disabled = busy;
+        ui.cancelDownload.hidden = !busy;
+        ui.cancelDownload.disabled = false;
+        if (busy) cancelRequested = false;
+    }
+
+    async function tracksForSurah(state, surah) {
+        if (state.provider === 'quran-foundation') {
+            const chapter = await engine.timing.chapter(state.reciterId, surah);
+            return [...chapter.values()].sort((a, b) => a.ayah - b.ayah)
+                .map(timing => currentTrack({ ...state, surah }, timing)).filter(Boolean);
+        }
+        const track = currentTrack({ ...state, surah });
+        return track ? [track] : [];
+    }
+
+    async function downloadRecitation(all = false) {
         if (downloadBatch) return;
-        downloadBatch = true;
-        ui.download.disabled = true;
         const state = engine.snapshot();
+        const surahs = all ? [...state.availableSurahs] : [state.surah];
+        if (all) {
+            const count = state.provider === 'quran-foundation' ? 'آلاف ملفات الآيات' : `${surahs.length} ملف سورة`;
+            const accepted = window.confirm(
+                `تحميل المصحف الصوتي للقارئ ${state.reciterName}؟\\n` +
+                `سيتم تنزيل ${count}، وقد يستهلك مساحة كبيرة جدًا وباقة الإنترنت.\\n` +
+                'يُفضّل استخدام Wi-Fi. يمكن إيقاف التنزيل من نفس الصفحة. هل تريد البدء؟'
+            );
+            if (!accepted) return;
+        }
+        setDownloadBusy(true);
+        let saved = 0, skipped = 0;
         try {
-            let tracks;
-            if (state.provider === 'quran-foundation') {
-                ui.downloadProgress.textContent = 'جاري تجهيز ملفات السورة للتنزيل…';
-                const chapter = await engine.timing.chapter(state.reciterId, state.surah);
-                tracks = [...chapter.values()].map(timing => currentTrack(state, timing)).filter(Boolean);
-            } else {
-                tracks = [currentTrack(state)].filter(Boolean);
+            for (let surahIndex = 0; surahIndex < surahs.length; surahIndex++) {
+                if (cancelRequested) break;
+                const surah = surahs[surahIndex];
+                ui.downloadProgress.textContent = `تجهيز تلاوة سورة ${core.SURAH_NAMES[surah - 1]} (${surahIndex + 1}/${surahs.length})…`;
+                const tracks = await tracksForSurah(state, surah);
+                if (!tracks.length) throw new Error('لا يوجد تسجيل صوتي متاح لهذه السورة.');
+                for (let index = 0; index < tracks.length; index++) {
+                    if (cancelRequested) break;
+                    const track = tracks[index];
+                    ui.downloadProgress.textContent =
+                        `سورة ${core.SURAH_NAMES[surah - 1]} (${surahIndex + 1}/${surahs.length}) • تسجيل ${index + 1}/${tracks.length} • تم حفظ ${saved}`;
+                    if (await downloads.has(track.url)) { skipped++; continue; }
+                    await downloads.downloadTrack(track);
+                    saved++;
+                }
             }
-            if (!tracks.length) throw new Error('لا يوجد ملف متاح للتنزيل.');
-            for (let index = 0; index < tracks.length; index++) {
-                ui.downloadProgress.textContent = `تنزيل ${core.arabicDigits(index + 1)} من ${core.arabicDigits(tracks.length)}…`;
-                if (!(await downloads.has(tracks[index].url))) await downloads.downloadTrack(tracks[index]);
-            }
-            ui.downloadProgress.textContent = `اكتمل تنزيل سورة ${core.SURAH_NAMES[state.surah - 1]} للاستماع دون إنترنت.`;
+            ui.downloadProgress.textContent = cancelRequested
+                ? `تم إيقاف تنزيل التلاوة. المحفوظ: ${saved}، الموجود مسبقًا: ${skipped}. يمكن استكمال الباقي لاحقًا.`
+                : `اكتمل تنزيل التلاوة الصوتية. جديد: ${saved}، موجود مسبقًا: ${skipped}.`;
         } catch (error) {
-            ui.downloadProgress.textContent = error.message || 'تعذّر تنزيل التلاوة.';
+            ui.downloadProgress.textContent = `${error?.message || 'تعذّر تنزيل التلاوة.'} • تم حفظ ${saved} ملف، ويمكن إعادة المحاولة لاستكمال الباقي.`;
         } finally {
-            downloadBatch = false;
-            ui.download.disabled = false;
+            setDownloadBusy(false);
             renderDownloads();
         }
     }
-    ui.download.addEventListener('click', downloadCurrentSurah);
+    ui.download.addEventListener('click', () => downloadRecitation(false));
+    ui.downloadAll.addEventListener('click', () => downloadRecitation(true));
+    ui.cancelDownload.addEventListener('click', () => {
+        cancelRequested = true;
+        ui.cancelDownload.disabled = true;
+        ui.downloadProgress.textContent = 'سيتم إيقاف التنزيل بعد انتهاء الملف الحالي…';
+    });
 
     function renderDownloads() {
         const groups = new Map();
