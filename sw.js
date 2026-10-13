@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v2';
+const APP_CACHE = 'quran-reader-shell-v3';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html',
@@ -9,16 +9,14 @@ const APP_SHELL = [
     './verse-actions.js', './tafsir.js', './verse-tools.js',
     './audio-core.js', './audio-downloads.js', './mushaf-audio.js', './recitations.js',
     './data/quran-uthmani.txt', './data/mushaf-layout.json',
-    './scripts/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2'
+    './scripts/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2',
+    './assets/audio/starter-fatiha.ogg'
 ];
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(APP_CACHE).then(async cache => {
         await cache.addAll(APP_SHELL);
-        // The starter audio is a package asset, not an optional online download.
-        // Cache it for browser/PWA use; if a deployment has not bundled it yet,
-        // don't break the offline Quran text and tafsir installation.
-        await cache.add('./assets/audio/starter-fatiha.ogg').catch(() => {});
+        // The CC0 starter recitation is bundled and required for offline installs.
         await self.skipWaiting();
     }));
 });
