@@ -175,10 +175,48 @@
             this.verseCache = new Map();
         }
 
+        offlineKey(recitationId, surah) {
+            return new URL(`./offline-audio-timings/${recitationId}/${surah}.json`, location.href).href;
+        }
+
+        async savedChapter(recitationId, surah) {
+            if (typeof caches === 'undefined' || typeof location === 'undefined') return null;
+            try {
+                const cache = await caches.open('quran-recitation-metadata-v1');
+                const response = await cache.match(this.offlineKey(recitationId, surah));
+                if (!response) return null;
+                const payload = await response.json();
+                if (payload.recitationId !== recitationId || payload.surah !== surah ||
+                    !Array.isArray(payload.verses) || payload.verses.length !== VERSE_COUNTS[surah - 1]) return null;
+                const verses = new Map(payload.verses.map(item => [item.ayah, item]));
+                if (verses.size !== payload.verses.length) return null;
+                verses.forEach((item, ayah) =>
+                    this.verseCache.set(`${recitationId}:${surah}:${ayah}`, item));
+                return verses;
+            } catch (_) { return null; }
+        }
+
+        async saveChapter(recitationId, surah, verses) {
+            if (typeof caches === 'undefined' || typeof location === 'undefined' ||
+                verses.size !== VERSE_COUNTS[surah - 1]) return;
+            try {
+                const cache = await caches.open('quran-recitation-metadata-v1');
+                await cache.put(this.offlineKey(recitationId, surah),
+                    new Response(JSON.stringify({
+                        recitationId, surah, verses: [...verses.values()]
+                    }), { headers: { 'Content-Type': 'application/json' } }));
+            } catch (_) { /* Cache quota is best-effort; streaming still works online. */ }
+        }
+
         async chapter(recitationId, surah) {
+            recitationId = Number(recitationId);
+            surah = Number(surah);
             const key = `${recitationId}:${surah}`;
             if (this.cache.has(key)) return this.cache.get(key);
-            const promise = this.fetchChapter(recitationId, surah).catch(error => {
+            const promise = (async () => {
+                const saved = await this.savedChapter(recitationId, surah);
+                return saved || this.fetchChapter(recitationId, surah);
+            })().catch(error => {
                 this.cache.delete(key);
                 throw error;
             });
@@ -230,7 +268,7 @@
             // The Quran API paginates verse audio. Fetch all pages, not just the
             // first page (otherwise "Read from here" fails later in a surah).
             while (page <= totalVerses) {
-                const url = `${QURAN_API}/recitations/${recitationId}/by_chapter/${surah}?segments=true&per_page=100&page=${page}`;
+                const url = `${QURAN_API}/recitations/${recitationId}/by_chapter/${surah}?segments=true&per_page=50&page=${page}`;
                 const response = await this.fetcher(url, { cache: 'force-cache' });
                 if (!response.ok) throw new Error(`Quran audio HTTP ${response.status}`);
                 const payload = await response.json();
@@ -244,7 +282,7 @@
                 if (totalPages > page) { page++; continue; }
                 // Some API responses omit pagination metadata. Never guess that
                 // 10/50/100 returned verses means the whole chapter is present.
-                if (!pagination.total_pages && verses.size < totalVerses && current.size >= 100) {
+                if (!pagination.total_pages && verses.size < totalVerses && current.size >= 50) {
                     page++;
                     continue;
                 }
@@ -253,6 +291,7 @@
             if (!verses.size) throw new Error('No aligned verses returned');
             verses.forEach((timing, ayah) =>
                 this.verseCache.set(`${recitationId}:${surah}:${ayah}`, timing));
+            await this.saveChapter(Number(recitationId), Number(surah), verses);
             return verses;
         }
 
@@ -260,6 +299,9 @@
             const key = `${recitationId}:${surah}:${ayah}`;
             if (this.verseCache.has(key)) return this.verseCache.get(key);
             const promise = (async () => {
+                // First try persisted timing metadata, even on a fresh offline launch.
+                const saved = await this.savedChapter(Number(recitationId), Number(surah));
+                if (saved?.has(ayah)) return saved.get(ayah);
                 // Prefer the chapter cache when available; fall back to the
                 // exact-ayah endpoint if the chapter response is incomplete.
                 let chapter;
@@ -470,9 +512,11 @@
             } catch (error) {
                 if (version !== this.prepareVersion) return false;
                 this.status = 'error';
-                this.error = error?.message === 'Failed to fetch'
-                    ? 'تعذّر جلب بيانات المزامنة. تحقق من الإنترنت أو اختر تسجيل MP3Quran.'
-                    : (error?.message || 'تعذّر تجهيز التلاوة.');
+                this.error = navigator.onLine === false
+                    ? 'التلاوة دي مش محمّلة بالكامل على الجهاز. اتصل بالإنترنت وحمّل السورة أولًا.'
+                    : error?.message === 'Failed to fetch'
+                        ? 'تعذّر جلب بيانات المزامنة. تحقق من الإنترنت أو اختر تسجيل MP3Quran.'
+                        : (error?.message || 'تعذّر تجهيز التلاوة.');
                 this.emit();
                 return false;
             }
