@@ -357,8 +357,15 @@
         if (page && reader.getCurrentPage() !== page) reader.goToVerse(state.surah, state.ayah, page);
     }
 
+    const starterPlayer = $('audio-starter-player');
+    starterPlayer?.addEventListener('play', () => engine.pause());
+    starterPlayer?.addEventListener('error', () => {
+        ui.downloadProgress.textContent = 'ملف تلاوة الفاتحة المدمجة غير موجود في هذه النسخة. حدّث التطبيق.';
+    });
+
     engine.addEventListener('state', event => {
         const state = event.detail;
+        if (state.playing && starterPlayer && !starterPlayer.paused) starterPlayer.pause();
         applyState(state, true);
         followVerse(state);
         requestAnimationFrame(() => syncHighlight(state));
