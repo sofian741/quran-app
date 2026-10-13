@@ -462,3 +462,28 @@
 @media (prefers-reduced-motion: reduce) {
     .saved-backdrop, .share-backdrop, .saved-sheet, .share-sheet { transition: none; }
 }
+
+/* Inline-SVG page bookmark, independent of device emoji and icon fonts. */
+.reader-toolbar {
+    grid-template-columns: 44px minmax(0, 1fr) 92px;
+}
+.reader-toolbar-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-width: 0;
+}
+.page-marker-button svg { display: block; width: 22px; height: 22px; }
+.page-marker-button[aria-pressed='true'] {
+    background: #176b63;
+    border-color: rgba(255,255,255,.5);
+    color: #f5e7b0;
+}
+.page-marker-button[aria-pressed='true'] svg { fill: rgba(245,231,176,.32); }
+.saved-tabs { gap: 6px; }
+.saved-tabs button {
+    padding: 8px 4px;
+    font-size: 12px;
+    line-height: 1.4;
+}
