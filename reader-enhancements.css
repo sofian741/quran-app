@@ -286,6 +286,87 @@
     .tafsir-backdrop, .tafsir-sheet { transition: none; }
 }
 
+/* Tafsir reader: one ayah per view, with page-like navigation. */
+.tafsir-navigation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(92px, auto) minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 13px 18px 12px;
+    border-top: 1px solid #e2ece5;
+    background: #fcfdf9;
+}
+.tafsir-nav-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 47px;
+    padding: 10px 12px;
+    color: #176b63;
+    background: #eaf5ef;
+    border: 1px solid #cde5d7;
+    border-radius: 13px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: background .15s ease, transform .15s ease;
+}
+.tafsir-nav-button svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.tafsir-nav-button:not(:disabled):active {
+    background: #d5e9df;
+    transform: scale(.98);
+}
+.tafsir-nav-button:focus-visible { outline: 3px solid #56aa94; outline-offset: 2px; }
+.tafsir-nav-button:disabled { opacity: .38; cursor: default; }
+.tafsir-nav-position {
+    color: #506c60;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 750;
+    white-space: nowrap;
+}
+.tafsir-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 7px 18px max(12px, env(safe-area-inset-bottom));
+    text-align: center;
+    font-size: 10px;
+}
+.tafsir-footer span:first-child { color: #688479; }
+.reader-page[data-theme='dark'] .tafsir-navigation {
+    background: #1e2925;
+    border-color: #34473d;
+}
+.reader-page[data-theme='dark'] .tafsir-nav-button {
+    color: #a4e3ce;
+    background: #2a4337;
+    border-color: #426450;
+}
+.reader-page[data-theme='dark'] .tafsir-nav-button:not(:disabled):active { background: #365848; }
+.reader-page[data-theme='dark'] .tafsir-nav-position,
+.reader-page[data-theme='dark'] .tafsir-footer span:first-child { color: #b4cfc1; }
+@media (max-width: 350px) {
+    .tafsir-navigation { gap: 6px; padding-inline: 10px; grid-template-columns: 1fr auto 1fr; }
+    .tafsir-nav-button { padding: 9px 7px; font-size: 12px; }
+    .tafsir-nav-position { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .tafsir-nav-button { transition: none; }
+}
+
 /* Saved verses, reading marker, and share preview */
 .saved-backdrop, .share-backdrop {
     position: fixed;
