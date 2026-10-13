@@ -1,10 +1,10 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v5';
+const APP_CACHE = 'quran-reader-shell-v6';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html',
-    './style.css', './reader-enhancements.css', './audio-player.css', './recitations.css',
+    './style.css', './home.css', './home.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
     './app.js', './reader-enhancements.js', './reader-layout-polish.js',
     './verse-actions.js', './tafsir.js', './quran-search.js', './verse-tools.js',
     './audio-core.js', './audio-downloads.js', './mushaf-audio.js', './recitations.js',
