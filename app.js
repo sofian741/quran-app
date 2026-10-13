@@ -223,6 +223,9 @@
         els.text.style.setProperty('--mushaf-line-count', pageLayout.length);
         updatePageMeta(pageLayout);
         saveReaderState();
+        window.dispatchEvent(new CustomEvent('mushaf:page-changed', {
+            detail: { page: displayPage }
+        }));
         // Complete sizing before paint, never show the temporary small text.
         fitPage();
     }
@@ -855,6 +858,15 @@
         fitElement,
         getSurahName(surah) { return SURAH_NAMES[surah - 1] || ""; },
         getCurrentPage() { return displayPage; },
+        goToPage(page) {
+            if (isTurningPage || isSettingsOpen() || isIndexOpen() ||
+                !Number.isInteger(page) || page < 1 || page > TOTAL_PAGES) return false;
+            displayPage = page;
+            els.text.scrollTop = 0;
+            renderCurrentPage();
+            els.body.classList.remove('tools-visible');
+            return true;
+        },
         getVerse(surah, ayah) {
             const verse = verses.find(item => item.surah === surah && item.ayah === ayah);
             return verse ? { ...verse } : null;
