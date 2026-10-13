@@ -111,6 +111,84 @@
         });
     }).observe(stage, { childList: true });
 
+    let deepLinkConsumed = false;
+    let deepLinkHighlightTimer = null;
+
+    function readVerseDeepLink() {
+        const hash = window.location.hash.replace(/^#/, '');
+        if (!hash) return null;
+        const params = new URLSearchParams(hash);
+        const match = params.get('verse')?.match(/^(\d{1,3}):(\d{1,3})$/);
+        if (!match) return null;
+        const surah = Number(match[1]);
+        const ayah = Number(match[2]);
+        if (!Number.isInteger(surah) || !Number.isInteger(ayah) ||
+            surah < 1 || surah > 114 || ayah < 1) return null;
+        return {
+            surah,
+            ayah,
+            action: params.get('action') === 'tafsir' ? 'tafsir' : 'verse'
+        };
+    }
+
+    function clearVerseDeepLink() {
+        if (!window.location.hash) return;
+        try {
+            history.replaceState(history.state, '', `${window.location.pathname}${window.location.search}`);
+        } catch (_) {
+            // The navigation already succeeded, so leaving the hash is harmless.
+        }
+    }
+
+    function highlightVerse(surah, ayah) {
+        clearTimeout(deepLinkHighlightTimer);
+        document.querySelectorAll('.mushaf-word.is-search-target').forEach(node =>
+            node.classList.remove('is-search-target'));
+        const key = `${surah}:${ayah}`;
+        const words = Array.from(document.querySelectorAll('#quran-text .mushaf-word'))
+            .filter(word => word.dataset.verse === key);
+        words.forEach(word => word.classList.add('is-search-target'));
+        words[0]?.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+        deepLinkHighlightTimer = setTimeout(() => {
+            words.forEach(word => word.classList.remove('is-search-target'));
+        }, 5500);
+    }
+
+    function openTafsirWhenReady(verse, attempts = 0) {
+        if (window.mushafTafsir?.open && window.QuranAudio?.VERSE_COUNTS) {
+            window.mushafTafsir.open(verse);
+            return;
+        }
+        if (attempts >= 30) return;
+        requestAnimationFrame(() => openTafsirWhenReady(verse, attempts + 1));
+    }
+
+    function consumeVerseDeepLink() {
+        if (deepLinkConsumed) return;
+        const target = readVerseDeepLink();
+        if (!target) return;
+        const reader = window.mushafReader;
+        if (!reader?.getVerse || !reader?.goToVerse) return;
+        if (!reader.getVerse(target.surah, target.ayah)) return;
+        if (!reader.goToVerse(target.surah, target.ayah)) return;
+
+        deepLinkConsumed = true;
+        clearVerseDeepLink();
+        const verse = {
+            surah: target.surah,
+            ayah: target.ayah,
+            verseKey: `${target.surah}:${target.ayah}`
+        };
+        requestAnimationFrame(() => {
+            highlightVerse(target.surah, target.ayah);
+            if (target.action === 'tafsir') {
+                requestAnimationFrame(() => openTafsirWhenReady(verse));
+            }
+        });
+    }
+
+    window.addEventListener('mushaf:data-ready', consumeVerseDeepLink);
     window.addEventListener('resize', queueSync, { passive: true });
     queueSync();
+    consumeVerseDeepLink();
 })();
