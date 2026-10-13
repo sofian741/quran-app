@@ -7,6 +7,8 @@
     const SETTINGS_KEY = 'quranReaderSettings';
     const TOTAL_PAGES = 604;
     const MIN_FONT_SIZE = 18;
+    // Start pages of the 30 juz in the standard 604-page Madinah mushaf.
+    const JUZ_START_PAGES = [1,22,42,62,82,102,121,142,162,182,201,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582];
     const FIXED_FONT_SIZE = 34;
     const FIXED_LINE_HEIGHT = 1.42;
     const SUFFIX_MARKS = new Set(['ۖ', 'ۚ', 'ۘ', 'ۗ', 'ۛ', 'ۙ', 'ۜ', '۩']);
@@ -58,14 +60,16 @@
         toolbarRange: $('toolbar-range'),
         displayPageNumber: $('display-page-number'),
         navPageNumber: $('nav-page-number'),
-        prev: $('prev-page'),
-        next: $('next-page'),
+        openIndex: $('open-index'),
+        closeIndex: $('close-index'),
+        indexSheet: $('index-sheet'),
+        indexBackdrop: $('index-backdrop'),
+        indexList: $('index-list'),
+        indexTabs: Array.from(document.querySelectorAll('[data-index-tab]')),
         settings: $('settings-sheet'),
         backdrop: $('settings-backdrop'),
         openSettings: $('open-settings'),
         closeSettings: $('close-settings'),
-        paperColor: $('paper-color'),
-        textColor: $('text-color'),
         reset: $('reset-settings'),
         themeButtons: Array.from(document.querySelectorAll('[data-theme-choice]'))
     };
@@ -78,6 +82,9 @@
     let resizeTimer = null;
     let fitRevision = 0;
     let pointerStart = null;
+    let suppressStageClick = false;
+    let indexTab = 'surahs';
+    let indexCloseTimer = null;
     let isTurningPage = false;
     let settingsPageSize = null;
     let settingsCloseTimer = null;
@@ -107,6 +114,7 @@
         tokens = buildTokens(verses);
         pages = validateLayout(await layoutResponse.json(), tokens.length);
         displayPage = loadReaderState();
+        renderIndex();
 
         if (document.fonts?.load) {
             await Promise.race([
@@ -455,17 +463,17 @@
             ? `الآيات ${toArabicDigits(first.ayah)}–${toArabicDigits(last.ayah)}`
             : `${toArabicDigits(first.surah)}:${toArabicDigits(first.ayah)} — ${toArabicDigits(last.surah)}:${toArabicDigits(last.ayah)}`;
         els.pageSurah.textContent = title;
-        els.pageRange.textContent = range;
+        const juz = JUZ_START_PAGES.reduce((number, start, index) => displayPage >= start ? index + 1 : number, 1);
+        els.pageRange.textContent = `الجزء ${toArabicDigits(juz)}`;
         els.toolbarSurah.textContent = title;
         els.toolbarRange.textContent = range;
         els.displayPageNumber.textContent = toArabicDigits(displayPage);
         els.navPageNumber.textContent = toArabicDigits(displayPage);
-        els.prev.disabled = displayPage === 1;
-        els.next.disabled = displayPage === TOTAL_PAGES;
+
     }
 
     function turnPage(direction) {
-        if (isTurningPage || isSettingsOpen()) return;
+        if (isTurningPage || isSettingsOpen() || isIndexOpen()) return;
         const target = displayPage + direction;
         if (target < 1 || target > TOTAL_PAGES) return;
         isTurningPage = true;
@@ -494,9 +502,101 @@
         }).catch(() => {}).finally(() => { isTurningPage = false; });
     }
 
+    function renderIndex() {
+        const entries = [];
+        if (indexTab === 'surahs') {
+            const starts = new Map();
+            pages.forEach((page, i) => page.forEach(line => {
+                if (line[0] === 'h') starts.set(line[1], i + 1);
+            }));
+            SURAH_NAMES.forEach((name, i) => entries.push({
+                label: `سورة ${name}`,
+                number: i + 1,
+                page: starts.get(i + 1)
+            }));
+        } else {
+            JUZ_START_PAGES.forEach((page, i) => entries.push({
+                label: `الجزء ${toArabicDigits(i + 1)}`,
+                number: i + 1,
+                page
+            }));
+        }
+        const fragment = document.createDocumentFragment();
+        entries.forEach(entry => {
+            if (!entry.page) return;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'index-entry';
+            button.innerHTML = '<span class="index-entry-number"></span><span class="index-entry-name"></span><small class="index-entry-page"></small>';
+            button.querySelector('.index-entry-number').textContent = toArabicDigits(entry.number);
+            button.querySelector('.index-entry-name').textContent = entry.label;
+            button.querySelector('.index-entry-page').textContent = `صفحة ${toArabicDigits(entry.page)}`;
+            button.addEventListener('click', () => {
+                closeIndex();
+                displayPage = entry.page;
+                els.text.scrollTop = 0;
+                renderCurrentPage();
+                els.body.classList.remove('tools-visible');
+            });
+            fragment.appendChild(button);
+        });
+        els.indexList.replaceChildren(fragment);
+        els.indexTabs.forEach(button => {
+            const active = button.dataset.indexTab === indexTab;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-pressed', String(active));
+        });
+    }
+
+    function isIndexOpen() {
+        return els.indexSheet.classList.contains('is-open');
+    }
+
+    function openIndex() {
+        if (isIndexOpen() || isSettingsOpen()) return;
+        clearTimeout(indexCloseTimer);
+        renderIndex();
+        els.body.classList.add('index-open');
+        els.indexBackdrop.hidden = false;
+        els.indexSheet.classList.add('is-open');
+        els.indexSheet.setAttribute('aria-hidden', 'false');
+        requestAnimationFrame(() => els.indexBackdrop.classList.add('is-open'));
+    }
+
+    function closeIndex() {
+        if (!isIndexOpen()) return;
+        els.indexSheet.classList.remove('is-open');
+        els.indexSheet.setAttribute('aria-hidden', 'true');
+        els.indexBackdrop.classList.remove('is-open');
+        indexCloseTimer = setTimeout(() => {
+            els.indexBackdrop.hidden = true;
+            els.body.classList.remove('index-open');
+        }, 230);
+    }
+
+    function resetDrag(animate = true) {
+        if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            els.page.style.transition = 'transform 180ms ease-out';
+            els.page.style.transform = 'translateX(0)';
+            setTimeout(() => { els.page.style.transition = ''; }, 190);
+        } else {
+            els.page.style.transform = '';
+            els.page.style.transition = '';
+        }
+    }
+
     function bindEvents() {
-        els.next.addEventListener('click', () => turnPage(1));
-        els.prev.addEventListener('click', () => turnPage(-1));
+        els.openIndex.addEventListener('click', event => {
+            event.stopPropagation();
+            openIndex();
+        });
+        els.closeIndex.addEventListener('click', closeIndex);
+        els.indexBackdrop.addEventListener('click', closeIndex);
+        els.indexTabs.forEach(button => button.addEventListener('click', () => {
+            indexTab = button.dataset.indexTab;
+            renderIndex();
+            els.indexList.scrollTop = 0;
+        }));
         els.openSettings.addEventListener('click', event => {
             event.stopPropagation();
             openSettings();
@@ -504,26 +604,102 @@
         els.closeSettings.addEventListener('click', closeSettings);
         els.backdrop.addEventListener('click', closeSettings);
         els.stage.addEventListener('click', event => {
-            if (event.target.closest('button, a, input') || isSettingsOpen()) return;
+            if (suppressStageClick) {
+                suppressStageClick = false;
+                return;
+            }
+            if (event.target.closest('button, a, input') || isSettingsOpen() || isIndexOpen()) return;
             els.body.classList.toggle('tools-visible');
         });
         els.stage.addEventListener('pointerdown', event => {
-            pointerStart = { x: event.clientX, y: event.clientY, scrollTop: els.text.scrollTop };
+            if (event.pointerType === 'mouse' && event.button !== 0) return;
+            if (isTurningPage || isSettingsOpen() || isIndexOpen()) return;
+            pointerStart = {
+                id: event.pointerId,
+                x: event.clientX,
+                y: event.clientY,
+                scrollTop: els.text.scrollTop,
+                dragging: false,
+                dx: 0
+            };
         });
-        els.stage.addEventListener('pointerup', event => {
-            if (!pointerStart || isSettingsOpen()) return;
+        els.stage.addEventListener('pointermove', event => {
+            if (!pointerStart || pointerStart.id !== event.pointerId || isSettingsOpen() || isIndexOpen()) return;
             const dx = event.clientX - pointerStart.x;
             const dy = event.clientY - pointerStart.y;
-            const scrolled = Math.abs(els.text.scrollTop - pointerStart.scrollTop) > 4;
-            pointerStart = null;
-            if (!scrolled && Math.abs(dx) > 58 && Math.abs(dx) > Math.abs(dy) * 1.25) {
-                turnPage(dx > 0 ? 1 : -1);
+            if (!pointerStart.dragging) {
+                if (Math.abs(dy) > 14 && Math.abs(dy) > Math.abs(dx)) {
+                    pointerStart = null;
+                    return;
+                }
+                if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+                pointerStart.dragging = true;
+                if (els.stage.setPointerCapture) els.stage.setPointerCapture(event.pointerId);
             }
+            if (event.cancelable) event.preventDefault();
+            const direction = dx > 0 ? 1 : -1;
+            const canTurn = displayPage + direction >= 1 && displayPage + direction <= TOTAL_PAGES;
+            pointerStart.dx = canTurn ? dx : dx * 0.18;
+            els.page.style.transition = 'none';
+            els.page.style.transform = `translateX(${pointerStart.dx}px)`;
+            suppressStageClick = true;
         });
+        els.stage.addEventListener('pointerup', event => {
+            if (!pointerStart || pointerStart.id !== event.pointerId) return;
+            const gesture = pointerStart;
+            pointerStart = null;
+            if (!gesture.dragging) return;
+            const dx = gesture.dx;
+            const direction = dx > 0 ? 1 : -1;
+            const target = displayPage + direction;
+            if (target < 1 || target > TOTAL_PAGES || Math.abs(dx) < Math.min(85, els.page.clientWidth * .2)) {
+                resetDrag();
+                return;
+            }
+            isTurningPage = true;
+            const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const finish = () => {
+                els.page.style.transition = '';
+                els.page.style.transform = '';
+                displayPage = target;
+                els.text.scrollTop = 0;
+                renderCurrentPage();
+                isTurningPage = false;
+            };
+            if (reduced) {
+                finish();
+                return;
+            }
+            els.page.style.transition = 'transform 180ms ease-out, opacity 180ms ease-out';
+            els.page.style.transform = `translateX(${direction * els.page.clientWidth}px)`;
+            els.page.style.opacity = '0.4';
+            setTimeout(() => {
+                els.page.style.transition = 'none';
+                els.page.style.opacity = '0';
+                finish();
+                requestAnimationFrame(() => {
+                    els.page.style.transition = 'opacity 150ms ease-out';
+                    els.page.style.opacity = '1';
+                    setTimeout(() => { els.page.style.transition = ''; }, 160);
+                });
+            }, 185);
+        });
+        const cancelDrag = () => {
+            if (!pointerStart) return;
+            const dragged = pointerStart.dragging;
+            pointerStart = null;
+            if (dragged) resetDrag();
+        };
+        els.stage.addEventListener('pointercancel', cancelDrag);
+        window.addEventListener('blur', cancelDrag);
         window.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                closeSettings();
+                closeIndex();
+            }
+            if (isIndexOpen()) return;
             if (event.key === 'ArrowLeft') turnPage(1);
             if (event.key === 'ArrowRight') turnPage(-1);
-            if (event.key === 'Escape') closeSettings();
         });
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
@@ -537,16 +713,6 @@
                 settings.textColor = preset.text;
                 applySettings(false);
             });
-        });
-        els.paperColor.addEventListener('input', () => {
-            settings.theme = 'custom';
-            settings.paperColor = els.paperColor.value;
-            applySettings(false);
-        });
-        els.textColor.addEventListener('input', () => {
-            settings.theme = 'custom';
-            settings.textColor = els.textColor.value;
-            applySettings(false);
         });
         els.reset.addEventListener('click', () => {
             settings = defaultSettings();
@@ -572,9 +738,9 @@
             return {
                 fontSize: FIXED_FONT_SIZE,
                 lineHeight: FIXED_LINE_HEIGHT,
-                theme: THEMES[saved.theme] ? saved.theme : 'custom',
-                paperColor: validHex(saved.paperColor) ? saved.paperColor : defaults.paperColor,
-                textColor: validHex(saved.textColor) ? saved.textColor : defaults.textColor
+                theme: THEMES[saved.theme] ? saved.theme : 'paper',
+                paperColor: THEMES[saved.theme]?.paper || defaults.paperColor,
+                textColor: THEMES[saved.theme]?.text || defaults.textColor
             };
         } catch (_) {
             return defaults;
@@ -588,8 +754,6 @@
         els.body.style.setProperty('--page-text', settings.textColor);
         els.body.style.setProperty('--reader-accent', preset?.accent || THEMES.paper.accent);
         els.body.style.setProperty('--reader-line-height', settings.lineHeight);
-        els.paperColor.value = settings.paperColor;
-        els.textColor.value = settings.textColor;
         els.themeButtons.forEach(button => {
             button.classList.toggle('is-active', button.dataset.themeChoice === settings.theme);
         });
@@ -657,10 +821,6 @@
         } catch (_) {
             return 1;
         }
-    }
-
-    function validHex(value) {
-        return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
     }
 
     function toArabicDigits(value) {

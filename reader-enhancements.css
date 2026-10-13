@@ -1,0 +1,78 @@
+/* Small reader refinements layered on top of style.css. */
+.reader-stage {
+    position: relative;
+    isolation: isolate;
+}
+
+.mushaf-page {
+    z-index: 2;
+}
+
+/* Keep every surah cartouche full-width, including pages with 3+ short surahs.
+   The existing fixed-row grid supplies the available vertical space. */
+.quran-text .surah-heading,
+.quran-text.multi-surah-page .surah-heading,
+.quran-text.dense-surah-page .surah-heading {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    align-self: stretch;
+    overflow: hidden;
+}
+
+.quran-text .surah-heading .surah-ornament {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Keep the title legible without changing the frame width. */
+.quran-text.multi-surah-page .surah-name,
+.quran-text.dense-surah-page .surah-name {
+    font-size: clamp(15px, 6.2cqi, 42px);
+    padding-bottom: .25em;
+}
+
+/* Keep ayah numbers readable in night mode instead of leaving them dark teal. */
+.reader-page[data-theme='dark'] .ayah-marker .ayah-number {
+    color: var(--page-text);
+}
+
+/* The target page sits beside the current page while the finger is dragging. */
+.swipe-preview {
+    position: absolute;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0;
+    pointer-events: none;
+    will-change: transform;
+}
+
+.swipe-preview.is-front {
+    z-index: 4;
+}
+
+.preview-heading-fallback {
+    display: grid;
+    place-items: center;
+    min-height: 2.2em;
+    width: 88%;
+    border: 1px solid color-mix(in srgb, var(--reader-accent) 45%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--reader-accent) 8%, var(--page-paper));
+}
+
+.preview-heading-fallback .surah-name {
+    position: static;
+    inset: auto;
+    padding: 0;
+    font-size: .92em;
+}
+
+.preview-marker-fallback {
+    border: 1px solid var(--reader-accent);
+    border-radius: 50%;
+    color: var(--page-text);
+}
+
+
