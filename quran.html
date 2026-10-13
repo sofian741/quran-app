@@ -137,10 +137,40 @@
             <span><strong>المحفوظات</strong><small>المفضلة وفاصلة الآية وفاصلة الصفحة</small></span>
         </button>
 
+        <button type="button" id="open-quran-search" class="settings-saved-button settings-search-button" aria-haspopup="dialog" aria-controls="quran-search-sheet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+            <span><strong>البحث في القرآن الكريم</strong><small>ابحث بكلمة أو جزء من آية، وانتقل للمصحف أو التفسير</small></span>
+        </button>
+
         <button type="button" class="reset-settings" id="reset-settings">إعادة الإعدادات الافتراضية</button>
         <p class="settings-note">صفحات المصحف وأسطرها ثابتة (٦٠٤ صفحة)، ويُضبط حجم الخط تلقائيًا لعرض السطر كاملًا. نص القرآن من <a href="https://tanzil.net" target="_blank" rel="noopener noreferrer">Tanzil Project</a>.</p>
     </aside>
 
+
+    <div class="quran-search-backdrop" id="quran-search-backdrop" hidden></div>
+    <aside class="quran-search-sheet" id="quran-search-sheet" role="dialog" aria-modal="true"
+           aria-labelledby="quran-search-title" aria-hidden="true" tabindex="-1">
+        <div class="quran-search-header">
+            <div><small>بحث في ٦٢٣٦ آية</small><h2 id="quran-search-title">البحث في القرآن الكريم</h2></div>
+            <button type="button" class="quran-search-close" id="close-quran-search" aria-label="إغلاق البحث">×</button>
+        </div>
+        <div class="quran-search-controls">
+            <label for="quran-search-input">كلمة أو جزء من آية</label>
+            <div class="quran-search-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+                <input id="quran-search-input" type="search" inputmode="search" autocomplete="off"
+                       spellcheck="false" placeholder="مثال: إن الله غفور رحيم" aria-describedby="quran-search-hint">
+            </div>
+            <p id="quran-search-hint">البحث يتجاهل التشكيل، ويعمل بدون إنترنت.</p>
+            <label for="quran-search-surah">نطاق البحث</label>
+            <select id="quran-search-surah" aria-label="اختيار السورة للبحث">
+                <option value="all">كل سور القرآن</option>
+            </select>
+        </div>
+        <p id="quran-search-status" class="quran-search-status" role="status" aria-live="polite">اكتب كلمة أو جزءًا من آية لبدء البحث.</p>
+        <div id="quran-search-results" class="quran-search-results" aria-label="نتائج البحث"></div>
+        <button id="quran-search-more" class="quran-search-more" type="button" hidden>عرض نتائج أكثر</button>
+    </aside>
 
     <!-- Reserved verse action slots, including future tafsir support. -->
     <div class="verse-actions-backdrop" id="verse-actions-backdrop" hidden></div>
@@ -342,6 +372,7 @@
     <script src="reader-layout-polish.js"></script>
     <script src="verse-actions.js"></script>
     <script src="tafsir.js"></script>
+    <script src="quran-search.js"></script>
     <script src="verse-tools.js"></script>
     <script src="audio-core.js"></script>
     <script src="audio-downloads.js"></script>
