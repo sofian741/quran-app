@@ -458,13 +458,24 @@
         const selected = window.mushafVerseActions?.getSelectedVerse?.();
         if (!selected) return;
         window.mushafVerseActions.close();
-        if (engine.state.provider === 'quran-foundation') {
-            await engine.goTo(selected.surah, selected.ayah, { autoplay: true });
-        } else {
-            const started = await engine.goTo(selected.surah, 1, { autoplay: true });
-            ui.status.textContent = started
-                ? 'بدأت السورة؛ التوقيت الدقيق لهذه التلاوة غير متاح.'
-                : 'السورة المحددة غير موجودة في هذا التسجيل.';
+
+        // A long-press targets an exact ayah. Full-surah MP3 recordings have no
+        // trustworthy ayah offsets, so switch to the word-aligned recitation.
+        // Never silently start at the beginning of the surah instead.
+        if (engine.state.provider !== 'quran-foundation') {
+            ui.status.textContent = 'جاري تجهيز التلاوة من الآية المحددة…';
+            const ready = await engine.selectAligned(7, {
+                surah: selected.surah, ayah: selected.ayah, autoplay: true
+            });
+            if (!ready) {
+                ui.status.textContent = 'تعذّر بدء التلاوة من الآية المحددة. تحقق من الاتصال وحاول مجددًا.';
+            }
+            return;
+        }
+
+        const started = await engine.goTo(selected.surah, selected.ayah, { autoplay: true });
+        if (!started) {
+            ui.status.textContent = 'تعذّر بدء التلاوة من الآية المحددة. حاول مرة أخرى.';
         }
     });
 
