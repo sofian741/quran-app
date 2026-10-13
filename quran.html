@@ -243,17 +243,38 @@
         </div>
         <p class="audio-sync-note" id="audio-sync-note" role="status"></p>
         <div class="audio-option-grid">
-            <label class="audio-wide-field audio-reciter-choice" id="audio-reciter-field">القارئ
-                <input id="audio-reciter-search" type="search" placeholder="ابحث عن قارئ…" autocomplete="off" aria-label="البحث عن قارئ">
-                <select id="audio-reciter" aria-label="اختر القارئ"></select>
-            </label>
-            <label id="audio-moshaf-field" hidden>الرواية والتسجيل
-                <select id="audio-moshaf"></select>
-            </label>
-            <label class="audio-wide-field">السورة
-                <input id="audio-surah-search" type="search" placeholder="ابحث عن سورة…" autocomplete="off" aria-label="البحث عن سورة">
-                <select id="audio-surah"></select>
-            </label>
+            <div class="audio-picker-field audio-wide-field audio-reciter-choice" id="audio-reciter-field">
+                <span class="audio-picker-caption">القارئ</span>
+                <div class="audio-picker" data-audio-picker="reciter">
+                    <button id="audio-reciter-trigger" class="audio-picker-trigger" type="button" aria-expanded="false" aria-controls="audio-reciter-panel" aria-label="اختيار القارئ"><span id="audio-reciter-selected">مشاري راشد العفاسي</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+                    <div id="audio-reciter-panel" class="audio-picker-panel" hidden>
+                        <input id="audio-reciter-search" type="search" placeholder="ابحث عن قارئ…" autocomplete="off" aria-label="البحث عن قارئ">
+                        <div id="audio-reciter-results" class="audio-picker-results" role="group" aria-label="نتائج القراء"></div>
+                    </div>
+                </div>
+                <select id="audio-reciter" hidden aria-label="القارئ المحدد"></select>
+            </div>
+            <div class="audio-picker-field" id="audio-moshaf-field" hidden>
+                <span class="audio-picker-caption">الرواية والتسجيل</span>
+                <div class="audio-picker" data-audio-picker="moshaf">
+                    <button id="audio-moshaf-trigger" class="audio-picker-trigger" type="button" aria-expanded="false" aria-controls="audio-moshaf-panel" aria-label="اختيار الرواية والتسجيل"><span id="audio-moshaf-selected">اختر التسجيل</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+                    <div id="audio-moshaf-panel" class="audio-picker-panel" hidden>
+                        <div id="audio-moshaf-results" class="audio-picker-results" role="group" aria-label="التسجيلات المتاحة"></div>
+                    </div>
+                </div>
+                <select id="audio-moshaf" hidden aria-label="التسجيل المحدد"></select>
+            </div>
+            <div class="audio-picker-field audio-wide-field" id="audio-surah-field">
+                <span class="audio-picker-caption">السورة</span>
+                <div class="audio-picker" data-audio-picker="surah">
+                    <button id="audio-surah-trigger" class="audio-picker-trigger" type="button" aria-expanded="false" aria-controls="audio-surah-panel" aria-label="اختيار السورة"><span id="audio-surah-selected">سورة الفاتحة</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+                    <div id="audio-surah-panel" class="audio-picker-panel" hidden>
+                        <input id="audio-surah-search" type="search" placeholder="ابحث عن سورة…" autocomplete="off" aria-label="البحث عن سورة">
+                        <div id="audio-surah-results" class="audio-picker-results" role="group" aria-label="نتائج السور"></div>
+                    </div>
+                </div>
+                <select id="audio-surah" hidden aria-label="السورة المحددة"></select>
+            </div>
             <select id="audio-provider" hidden aria-label="مصدر التسجيل">
                 <option value="quran-foundation">تلاوة متزامنة</option>
                 <option value="mp3quran">مكتبة التلاوات</option>
