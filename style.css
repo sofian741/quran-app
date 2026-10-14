@@ -381,7 +381,8 @@ a { -webkit-tap-highlight-color: transparent; }
 
 .surah-name {
     position: absolute;
-    inset: 24% 31%;
+    /* Optical center of the cartouche: Quran glyphs sit below their line box center. */
+    inset: 14% 31% 34%;
     display: grid;
     place-items: center;
     margin: 0;
@@ -392,6 +393,20 @@ a { -webkit-tap-highlight-color: transparent; }
     font-weight: 400;
     line-height: 1.2;
     white-space: nowrap;
+}
+
+/* Align the prefix and chapter name as a single centered baseline. */
+.surah-title-line {
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: .12em;
+    white-space: nowrap;
+}
+
+.surah-title-prefix {
+    position: relative;
+    top: -.08em;
 }
 
 .reader-page[data-theme='dark'] .surah-heading {
