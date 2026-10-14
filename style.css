@@ -674,3 +674,13 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     }
     .quran-text.opening-spread .surah-heading { margin-bottom: 2px; }
 }
+
+/* Al-Fatihah alone: shrink the oversized lines to the same compact visual rhythm
+   as Al-Baqarah, keeping both surah cartouches at the shared top anchor. */
+.quran-text.opening-spread[data-opening-page='1'] {
+    gap: clamp(10px, 1.5dvh, 21px);
+}
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line {
+    width: 86%;
+    align-self: center;
+}
