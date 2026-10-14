@@ -6,6 +6,7 @@ on:
       - fix/mushaf-uniform-layout-audit
     paths:
       - scripts/build-qpc-line-layout.cjs
+      - scripts/apply-uniform-mushaf-renderer.cjs
       - tests/content.cjs
       - .github/workflows/build-canonical-mushaf-layout.yml
   workflow_dispatch:
@@ -32,17 +33,26 @@ jobs:
       - name: Generate compact local layout
         run: node scripts/build-qpc-line-layout.cjs /tmp/page_lines.csv
 
+      - name: Apply uniform renderer migration
+        run: node scripts/apply-uniform-mushaf-renderer.cjs
+
+      - name: Validate JavaScript syntax
+        run: |
+          node --check app.js
+          node --check reader-enhancements.js
+          node --check tests/all-pages.cjs
+
       - name: Validate Quran text and layout
         run: node tests/content.cjs
 
-      - name: Commit generated layout
+      - name: Commit generated audit changes
         run: |
-          if git diff --quiet -- data/mushaf-layout.json; then
-            echo "Layout already up to date."
+          if git diff --quiet -- data/mushaf-layout.json app.js style.css reader-enhancements.js tests/all-pages.cjs; then
+            echo "Canonical data and renderer already up to date."
             exit 0
           fi
           git config user.name "quran-layout-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/mushaf-layout.json
-          git commit -m "data(mushaf): use canonical QPC 15-line page layout"
+          git add data/mushaf-layout.json app.js style.css reader-enhancements.js tests/all-pages.cjs
+          git commit -m "refactor(mushaf): canonical 15-line layout with uniform page typography"
           git push origin HEAD:fix/mushaf-uniform-layout-audit
