@@ -416,7 +416,9 @@
             line.classList.remove('is-full-line', 'is-short-line', 'is-crowded-line');
         });
 
-        const lineWidth = lines.reduce(
+        // Al-Fatihah has deliberately different line widths to form a printed-mushaf
+        // oval. Do not treat its narrowest line as the width of the entire page.
+        const lineWidth = pageNumber === 1 ? container.clientWidth : lines.reduce(
             (smallest, line) => Math.min(smallest, line.clientWidth),
             container.clientWidth
         );
@@ -430,7 +432,13 @@
         }));
         let lineWidths = measureLineWidths();
         const widest = Math.max(1, ...lineWidths.values());
-        const widthLimit = preferred * availableWidth / widest;
+        // Fit the single, consistent font size against each oval row's own width.
+        // This keeps Arabic glyphs undistorted and prevents a narrow row clipping.
+        const widthLimit = pageNumber === 1
+            ? Math.min(...lines.map(line =>
+                preferred * Math.max(1, line.clientWidth - 8) /
+                    Math.max(1, lineWidths.get(line))))
+            : preferred * availableWidth / widest;
         const textStyle = getComputedStyle(container);
         const verticalPadding = parseFloat(textStyle.paddingTop) +
             parseFloat(textStyle.paddingBottom);
