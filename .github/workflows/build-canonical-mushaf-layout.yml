@@ -6,6 +6,7 @@ on:
       - fix/mushaf-uniform-layout-audit
     paths:
       - scripts/build-qpc-line-layout.cjs
+      - tests/content.cjs
       - .github/workflows/build-canonical-mushaf-layout.yml
   workflow_dispatch:
 
