@@ -380,21 +380,24 @@
         marker.className = 'ayah-marker';
         marker.setAttribute('role', 'img');
         marker.setAttribute('aria-label', `الآية ${ayah}`);
-        // A compact vertical Uthmani-style medallion; shared by live pages and previews.
-        // The SVG stays inside the existing marker box, so page line fitting is unchanged.
-        marker.innerHTML =
-            '<svg class="ayah-ornament" viewBox="0 0 76 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
-                '<path class="ayah-frame-outline" d="M38 2 L44 12 C56 14 65 26 67 39 L72 50 L67 61 C65 74 56 86 44 88 L38 98 L32 88 C20 86 11 74 9 61 L4 50 L9 39 C11 26 20 14 32 12 Z"/>' +
-                '<path class="ayah-frame-metal" d="M38 6 L43 16 C56 18 61 30 63 41 L67 50 L63 59 C61 70 56 82 43 84 L38 94 L33 84 C20 82 15 70 13 59 L9 50 L13 41 C15 30 20 18 33 16 Z"/>' +
-                '<path class="ayah-frame-field" d="M38 10 L41 19 C53 21 58 32 59 42 L63 50 L59 58 C58 68 53 79 41 81 L38 90 L35 81 C23 79 18 68 17 58 L13 50 L17 42 C18 32 23 21 35 19 Z"/>' +
-                '<path class="ayah-frame-inner-ring" d="M38 19 C52 19 57 33 57 50 C57 67 52 81 38 81 C24 81 19 67 19 50 C19 33 24 19 38 19 Z"/>' +
-                '<path class="ayah-frame-center" d="M38 23 C50 23 53 36 53 50 C53 64 50 77 38 77 C26 77 23 64 23 50 C23 36 26 23 38 23 Z"/>' +
-                '<path class="ayah-frame-finial" d="M38 3 L42 13 L38 17 L34 13 Z M38 97 L42 87 L38 83 L34 87 Z"/>' +
-                '<path class="ayah-frame-filigree" d="M20 27 Q29 16 38 19 Q47 16 56 27 M20 73 Q29 84 38 81 Q47 84 56 73 M14 43 L19 45 M62 43 L57 45 M14 57 L19 55 M62 57 L57 55"/>' +
-                '<circle class="ayah-frame-dot" cx="38" cy="13" r="2.1"/>' +
-                '<circle class="ayah-frame-dot" cx="38" cy="87" r="2.1"/>' +
-            '</svg>' +
-            `<span class="ayah-number">${toArabicDigits(ayah)}</span>`;
+        // Approved green-and-gold Quranic cartouche. One renderer for all pages.
+        // Preserve the marker's existing dimensions so Quran line fitting is untouched.
+        marker.dataset.digits = String(ayah).length;
+        marker.innerHTML = `
+            <svg class="ayah-ornament" viewBox="0 0 290 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <path class="ayah-outer-edge" d="M145 12 C160 54 205 86 253 119 Q244 130 219 133 C240 166 245 228 220 267 Q242 266 253 281 C205 311 160 346 145 388 C130 346 85 311 37 281 Q48 266 70 267 C45 228 50 166 71 133 Q46 130 37 119 C85 86 130 54 145 12 Z"/>
+                <path class="ayah-gold-rim" d="M145 20 C160 57 206 94 245 118 Q232 128 212 126 C236 161 240 230 211 275 Q232 272 245 282 C204 309 158 351 145 379 C132 351 86 309 45 282 Q58 272 79 275 C50 230 54 161 78 126 Q58 128 45 118 C84 94 130 57 145 20 Z"/>
+                <path class="ayah-ivory-rim" d="M145 32 C162 65 195 92 232 116 Q216 119 203 115 C223 152 233 226 204 281 Q220 280 233 284 C191 314 159 344 145 364 C131 344 99 314 57 284 Q70 280 86 281 C57 226 67 152 87 115 Q74 119 58 116 C95 92 128 65 145 32 Z"/>
+                <path class="ayah-side-inlay" d="M75 130 C57 168 57 229 75 267 L87 271 C64 222 67 168 92 131 Z M215 130 C233 168 233 229 215 267 L203 271 C226 222 223 168 198 131 Z"/>
+                <path class="ayah-crown-inlay" d="M75 112 Q95 88 125 82 L120 101 Q98 104 89 116 Z M215 112 Q195 88 165 82 L170 101 Q192 104 201 116 Z"/>
+                <path class="ayah-finial-leaf" d="M145 48 C162 67 163 83 145 100 C127 83 128 67 145 48 Z M145 352 C162 333 163 317 145 300 C127 317 128 333 145 352 Z"/>
+                <path class="ayah-crown-inlay" d="M75 286 Q95 311 125 317 L120 297 Q98 295 89 283 Z M215 286 Q195 311 165 317 L170 297 Q192 295 201 283 Z"/>
+                <path class="ayah-leaf-vein" d="M145 55 Q142 78 145 94 M145 345 Q142 322 145 306"/>
+                <path class="ayah-inner-cartouche" d="M85 127 C103 107 126 108 145 126 C164 108 187 107 205 127 C230 160 230 240 205 273 C187 293 164 292 145 274 C126 292 103 293 85 273 C60 240 60 160 85 127 Z"/>
+                <path class="ayah-inner-keyline" d="M88 130 C104 111 127 112 145 130 C163 112 186 111 202 130 C224 162 224 238 202 270 C186 289 163 288 145 270 C127 288 104 289 88 270 C66 238 66 162 88 130 Z"/>
+            </svg>
+            <span class="ayah-number">${toArabicDigits(ayah)}</span>
+        `;
         return marker;
     }
 
