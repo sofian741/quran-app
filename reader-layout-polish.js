@@ -73,6 +73,7 @@
     const KASHIDA = '\u0640';
     const NON_JOINING_AFTER = new Set(['ء','ا','أ','إ','آ','ٱ','د','ذ','ر','ز','و','ؤ','ة']);
     const originalWordText = new WeakMap();
+    const fittedPages = new WeakMap();
     const graphemeSegmenter = typeof Intl?.Segmenter === 'function'
         ? new Intl.Segmenter('ar', { granularity: 'grapheme' })
         : null;
@@ -82,6 +83,7 @@
         .quran-text:not(.opening-spread) {
             padding-inline: 10px;
         }
+        .quran-text .ayah-marker { font-size: 1.075em; }
         .quran-text:not(.opening-spread) .surah-basmala {
             min-height: 1.45em;
             margin-block: .08em .18em;
@@ -243,6 +245,8 @@
 
     function stabilizeStandardPage(container, pageNumber) {
         if (!container || pageNumber <= 2 || !container.clientWidth) return;
+        const fitKey = `${pageNumber}:${container.clientWidth}:${container.clientHeight}`;
+        if (fittedPages.get(container) === fitKey) return;
         applyAdaptiveRows(container);
         container.classList.remove('opening-spread');
         container.dataset.openingPage = '';
@@ -299,6 +303,7 @@
             line.classList.add('is-crowded-line');
         });
         container.dataset.layoutState = 'ready';
+        fittedPages.set(container, fitKey);
     }
 
     let originalFitElement = null;
