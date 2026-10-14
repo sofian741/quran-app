@@ -7,7 +7,8 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const raw = fs.readFileSync(path.join(root, 'data/quran-uthmani.txt'), 'utf8');
-const layout = JSON.parse(fs.readFileSync(path.join(root, 'data/mushaf-layout.json'), 'utf8'));
+const layoutRaw = fs.readFileSync(path.join(root, 'data/mushaf-layout.json'), 'utf8');
+const layout = JSON.parse(layoutRaw);
 const suffixMarks = new Set(['ۖ', 'ۚ', 'ۘ', 'ۗ', 'ۛ', 'ۙ', 'ۜ', '۩']);
 const prefixMarks = new Set(['۞']);
 // First page containing each surah according to the source word/page mapping
@@ -56,6 +57,12 @@ assert.equal(
 assert.equal(verses.length, 6236);
 assert.equal(words.length, 77881);
 assert.equal(layout.version, 1);
+assert.equal(layout.source, 'zonetecde/mushaf-layout@72116ce4d405d67823804f0eed795c1e6409b4af');
+assert.equal(
+    crypto.createHash('sha256').update(layoutRaw).digest('hex'),
+    '1252d45a2a3fd9118db87c0bc6336643c51890740b8deab818ddd0024579a090',
+    'Pinned Madani page/line boundaries changed',
+);
 assert.equal(layout.pages.length, 604);
 
 let cursor = 0;
