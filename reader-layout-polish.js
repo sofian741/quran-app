@@ -65,6 +65,17 @@
     const STANDARD_FONT_MIN = 14;
     const STANDARD_FONT_MAX = 19;
     const STANDARD_LINE_MIN_SCALE = 0.75;
+    const STANDARD_GAP_MIN_EM = 0.12;
+    const STANDARD_GAP_MAX_EM = 0.30;
+    const STANDARD_TARGET_FILL = 0.985;
+    const MAX_KASHIDAS_PER_WORD = 2;
+    const MAX_KASHIDAS_PER_LINE = 12;
+    const KASHIDA = '\u0640';
+    const NON_JOINING_AFTER = new Set(['ء','ا','أ','إ','آ','ٱ','د','ذ','ر','ز','و','ؤ','ة']);
+    const originalWordText = new WeakMap();
+    const graphemeSegmenter = typeof Intl?.Segmenter === 'function'
+        ? new Intl.Segmenter('ar', { granularity: 'grapheme' })
+        : null;
 
     const layoutStyle = document.createElement('style');
     layoutStyle.textContent = `
@@ -77,10 +88,7 @@
             font-size: 1em;
             line-height: 1.42;
         }
-        .quran-text:not(.opening-spread) .mushaf-line.is-full-line {
-            justify-content: space-between;
-            gap: .05em;
-        }
+        .quran-text:not(.opening-spread) .mushaf-line.is-full-line,
         .quran-text:not(.opening-spread) .mushaf-line.is-short-line,
         .quran-text:not(.opening-spread) .mushaf-line.is-crowded-line {
             justify-content: center;
@@ -105,10 +113,132 @@
         return false;
     }
 
+    function baseWordText(word) {
+        if (!originalWordText.has(word)) originalWordText.set(word, word.textContent || '');
+        return originalWordText.get(word) || '';
+    }
+
+    function restoreLineWords(line) {
+        line.querySelectorAll('.mushaf-word').forEach(word => {
+            const original = baseWordText(word);
+            if (word.textContent !== original) word.textContent = original;
+        });
+    }
+
+    function segmentWord(textValue) {
+        if (graphemeSegmenter) {
+            return Array.from(graphemeSegmenter.segment(textValue), item => item.segment);
+        }
+        return Array.from(textValue);
+    }
+
+    function arabicBaseLetter(grapheme) {
+        for (const char of Array.from(grapheme)) {
+            if (/^[\u0621-\u063A\u0641-\u064A\u0671]$/u.test(char)) return char;
+        }
+        return '';
+    }
+
+    function kashidaSlots(textValue) {
+        const graphemes = segmentWord(textValue);
+        const slots = [];
+        for (let index = 0; index < graphemes.length - 1; index++) {
+            const left = arabicBaseLetter(graphemes[index]);
+            const right = arabicBaseLetter(graphemes[index + 1]);
+            if (!left || !right || right === 'ء' || NON_JOINING_AFTER.has(left)) continue;
+            if (graphemes[index].includes(KASHIDA) || graphemes[index + 1].includes(KASHIDA)) continue;
+            slots.push(index);
+        }
+        return { graphemes, slots };
+    }
+
+    function renderExtendedWord(plan) {
+        let textValue = '';
+        plan.graphemes.forEach((grapheme, index) => {
+            textValue += grapheme;
+            const count = plan.counts.get(index) || 0;
+            if (count) textValue += KASHIDA.repeat(count);
+        });
+        plan.word.textContent = textValue;
+    }
+
+    function createKashidaPlans(line) {
+        return Array.from(line.querySelectorAll('.mushaf-word'))
+            .map(word => {
+                const original = baseWordText(word);
+                const { graphemes, slots } = kashidaSlots(original);
+                return { word, graphemes, slots, counts: new Map(), added: 0, cursor: 0 };
+            })
+            .filter(plan => plan.slots.length > 0);
+    }
+
+    function lineItemMetrics(line) {
+        const items = Array.from(line.children);
+        return {
+            items,
+            intrinsic: items.reduce((sum, item) => sum + item.getBoundingClientRect().width, 0),
+            slots: Math.max(0, items.length - 1)
+        };
+    }
+
     function measureLineContent(line) {
         const boxes = Array.from(line.children).map(child => child.getBoundingClientRect());
         if (!boxes.length) return 0;
         return Math.max(...boxes.map(box => box.right)) - Math.min(...boxes.map(box => box.left));
+    }
+
+    function setBoundedGap(line, availableWidth, fontSize) {
+        const { intrinsic, slots } = lineItemMetrics(line);
+        if (!slots) {
+            line.style.columnGap = '0px';
+            return { intrinsic, slots, gap: 0 };
+        }
+        const minGap = fontSize * STANDARD_GAP_MIN_EM;
+        const maxGap = fontSize * STANDARD_GAP_MAX_EM;
+        const idealGap = (availableWidth - intrinsic) / slots;
+        const gap = clamp(idealGap, minGap, maxGap);
+        line.style.columnGap = `${gap.toFixed(2)}px`;
+        return { intrinsic, slots, gap };
+    }
+
+    function extendLineWithKashidas(line, availableWidth, fontSize) {
+        const plans = createKashidaPlans(line);
+        if (!plans.length) return;
+        const targetWidth = availableWidth * STANDARD_TARGET_FILL;
+        let totalAdded = 0;
+        let cursor = 0;
+        let stalled = 0;
+
+        while (totalAdded < MAX_KASHIDAS_PER_LINE && stalled < plans.length) {
+            const currentWidth = measureLineContent(line);
+            if (currentWidth >= targetWidth - fontSize * .12) break;
+
+            const plan = plans[cursor % plans.length];
+            cursor++;
+            if (plan.added >= MAX_KASHIDAS_PER_WORD) {
+                stalled++;
+                continue;
+            }
+
+            const slot = plan.slots[plan.cursor % plan.slots.length];
+            plan.cursor++;
+            plan.counts.set(slot, (plan.counts.get(slot) || 0) + 1);
+            plan.added++;
+            renderExtendedWord(plan);
+
+            if (measureLineContent(line) > availableWidth + fontSize * .08) {
+                const nextCount = (plan.counts.get(slot) || 1) - 1;
+                if (nextCount) plan.counts.set(slot, nextCount);
+                else plan.counts.delete(slot);
+                plan.added--;
+                renderExtendedWord(plan);
+                stalled++;
+                continue;
+            }
+
+            totalAdded++;
+            stalled = 0;
+        }
     }
 
     function stabilizeStandardPage(container, pageNumber) {
@@ -135,22 +265,29 @@
 
         const lines = Array.from(container.querySelectorAll('.mushaf-line'));
         lines.forEach(line => {
+            restoreLineWords(line);
             line.style.transform = '';
             line.style.width = '';
             line.style.fontSize = '';
-            line.style.justifyContent = '';
+            line.style.justifyContent = 'center';
             line.style.columnGap = '';
             line.dataset.lineRole = isIntentionalShortRow(container, line, pageNumber) ? 'surah-end' : '';
             line.classList.remove('is-measuring', 'is-full-line', 'is-short-line', 'is-crowded-line');
-            const isFull = line.dataset.lineRole !== 'surah-end' && line.children.length >= 4;
+            const isFull = line.dataset.lineRole !== 'surah-end' && line.children.length >= 3;
             line.classList.add(isFull ? 'is-full-line' : 'is-short-line');
         });
 
-        // Read after classes/font are committed, then only compress the few lines whose
-        // Amiri metrics are wider than the pinned Madani line break. The layout box is
-        // expanded by the inverse factor so full rows still touch both page margins.
         const availableWidth = Math.max(1, (lines[0]?.clientWidth || usableTextWidth) - 4);
         lines.forEach(line => {
+            const shouldFill = line.dataset.lineRole !== 'surah-end' && line.children.length >= 3;
+            setBoundedGap(line, availableWidth, fontSize);
+
+            const beforeFill = measureLineContent(line);
+            if (shouldFill && beforeFill < availableWidth * .92) {
+                extendLineWithKashidas(line, availableWidth, fontSize);
+                setBoundedGap(line, availableWidth, fontSize);
+            }
+
             const contentWidth = measureLineContent(line);
             if (contentWidth <= availableWidth + 0.5) return;
             const scale = Math.max(
@@ -158,12 +295,8 @@
                 Math.min(1, availableWidth / Math.max(1, contentWidth) * 0.985)
             );
             line.style.transform = `scaleX(${scale.toFixed(4)})`;
-            if (line.classList.contains('is-full-line')) {
-                line.style.width = `${(100 / scale).toFixed(3)}%`;
-            } else {
-                line.classList.remove('is-short-line');
-                line.classList.add('is-crowded-line');
-            }
+            line.classList.remove('is-full-line', 'is-short-line');
+            line.classList.add('is-crowded-line');
         });
         container.dataset.layoutState = 'ready';
     }
