@@ -637,19 +637,40 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     .index-sheet.is-open { transform: translate(50%, 0); }
 }
 
-/* Printed-mushaf opening spread: keep the first two pages compact and centered.
-   The same class is set before sizing both the live page and swipe previews. */
+/* The first two pages share one fixed top anchor, as in a printed mushaf.
+   Do not center the whole content stack: Al-Baqarah has an extra basmala row. */
 .quran-text.opening-spread {
-    justify-content: center;
-    gap: clamp(7px, 1.5vh, 18px);
+    justify-content: flex-start;
+    padding-top: clamp(110px, 16dvh, 250px);
+    gap: clamp(7px, 1.1dvh, 17px);
 }
+
+.quran-text.opening-spread .surah-heading {
+    flex: 0 0 auto;
+    margin-bottom: clamp(12px, 1.5dvh, 23px);
+}
+
+.quran-text.opening-spread .surah-basmala,
 .quran-text.opening-spread .mushaf-line {
     flex: 0 0 auto;
     min-height: 0;
 }
-.quran-text.opening-spread .surah-heading {
-    flex: 0 0 auto;
+
+/* Natural word widths create the gently rounded outline of the opening pages.
+   Full-line justification would stretch every row edge-to-edge into a rectangle. */
+.quran-text.opening-spread .mushaf-line.is-full-line,
+.quran-text.opening-spread .mushaf-line.is-short-line,
+.quran-text.opening-spread .mushaf-line.is-crowded-line,
+.quran-text.opening-spread .mushaf-line.is-measuring {
+    justify-content: center;
+    gap: .14em;
 }
-.quran-text.opening-spread .surah-basmala {
-    flex: 0 0 auto;
+
+/* On short landscape viewports, avoid clipping the lower lines. */
+@media (max-height: 620px) and (orientation: landscape) {
+    .quran-text.opening-spread {
+        padding-top: 3vh;
+        gap: 2px;
+    }
+    .quran-text.opening-spread .surah-heading { margin-bottom: 2px; }
 }
