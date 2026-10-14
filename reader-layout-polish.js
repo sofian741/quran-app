@@ -82,9 +82,13 @@
         .quran-text:not(.opening-spread) {
             padding-inline: 10px;
         }
+        /* Exactly 5% larger than the authored .74em verse marker size. */
+        .quran-text .ayah-marker {
+            font-size: .777em;
+        }
         .quran-text:not(.opening-spread) .surah-basmala {
             min-height: 1.45em;
-            margin-block: .08em .18em;
+            margin-block: -.05em .31em;
             font-size: 1em;
             line-height: 1.42;
         }
@@ -92,6 +96,9 @@
         .quran-text:not(.opening-spread) .mushaf-line.is-short-line,
         .quran-text:not(.opening-spread) .mushaf-line.is-crowded-line {
             justify-content: center;
+        }
+        .swipe-preview {
+            contain: layout paint;
         }
     `;
     document.head.appendChild(layoutStyle);
@@ -208,9 +215,11 @@
         let totalAdded = 0;
         let cursor = 0;
         let stalled = 0;
+        let currentWidth = measureLineContent(line);
 
+        // Keep the exact same visual algorithm, but carry the last measured width
+        // forward. The previous loop forced two full browser layouts per tatweel.
         while (totalAdded < MAX_KASHIDAS_PER_LINE && stalled < plans.length) {
-            const currentWidth = measureLineContent(line);
             if (currentWidth >= targetWidth - fontSize * .025) break;
 
             const plan = plans[cursor % plans.length];
@@ -226,7 +235,8 @@
             plan.added++;
             renderExtendedWord(plan);
 
-            if (measureLineContent(line) > availableWidth + fontSize * .08) {
+            const nextWidth = measureLineContent(line);
+            if (nextWidth > availableWidth + fontSize * .08) {
                 const nextCount = (plan.counts.get(slot) || 1) - 1;
                 if (nextCount) plan.counts.set(slot, nextCount);
                 else plan.counts.delete(slot);
@@ -236,6 +246,7 @@
                 continue;
             }
 
+            currentWidth = nextWidth;
             totalAdded++;
             stalled = 0;
         }
@@ -347,34 +358,33 @@
         if (toolbarRange) toolbarRange.textContent = juzText;
     }
 
-    let queued = false;
-    function queueSync() {
-        if (queued) return;
-        queued = true;
+    let metaQueued = false;
+    function queueMetaSync() {
+        if (metaQueued) return;
+        metaQueued = true;
         requestAnimationFrame(() => {
-            queued = false;
+            metaQueued = false;
+            syncPageMeta();
+        });
+    }
+
+    let resizeQueued = false;
+    function queueResizeSync() {
+        if (resizeQueued) return;
+        resizeQueued = true;
+        requestAnimationFrame(() => {
+            resizeQueued = false;
             stabilizeVisiblePage();
             syncPageMeta();
         });
     }
 
-    new MutationObserver(queueSync).observe(text, { childList: true, subtree: false });
+    // DOM replacement already emits mushaf:page-ready. Observe it only for metadata;
+    // re-running the expensive kashida fit here was doing the whole page twice.
+    new MutationObserver(queueMetaSync).observe(text, { childList: true, subtree: false });
 
-    // Swipe previews are cloned pages, so apply the same responsive row balance to them.
-    new MutationObserver(records => {
-        records.forEach(record => {
-            record.addedNodes.forEach(node => {
-                if (!(node instanceof HTMLElement) || !node.classList.contains('swipe-preview')) return;
-                const previewText = node.querySelector('.quran-text');
-                if (!previewText) return;
-                applyAdaptiveRows(previewText);
-                const previewNumber = fromArabicDigits(
-                    node.querySelector('.display-page-number')?.textContent || ''
-                );
-                if (previewNumber > 2) stabilizeStandardPage(previewText, previewNumber);
-            });
-        });
-    }).observe(stage, { childList: true });
+    // reader-enhancements.js already calls the wrapped fitElement once after it attaches
+    // an offscreen swipe preview. Do not observe the stage and fit that same clone again.
 
     let deepLinkConsumed = false;
     let deepLinkHighlightTimer = null;
@@ -452,12 +462,12 @@
         });
     }
 
-    window.addEventListener('mushaf:data-ready', () => {
-        stabilizeVisiblePage();
-        consumeVerseDeepLink();
-    });
+    // Install the preview wrapper as soon as app.js exposes it. Visible pages are
+    // stabilized exactly once on mushaf:page-ready; previews are fitted once offscreen.
+    installStandardFitOverride();
+    window.addEventListener('mushaf:data-ready', consumeVerseDeepLink);
     window.addEventListener('mushaf:page-ready', stabilizeVisiblePage);
-    window.addEventListener('resize', queueSync, { passive: true });
-    queueSync();
+    window.addEventListener('resize', queueResizeSync, { passive: true });
+    queueMetaSync();
     consumeVerseDeepLink();
 })();
