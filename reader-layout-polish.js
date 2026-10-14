@@ -243,6 +243,10 @@
 
     function stabilizeStandardPage(container, pageNumber) {
         if (!container || pageNumber <= 2 || !container.clientWidth) return;
+        const layoutWidth = String(container.clientWidth);
+        if (container.dataset.standardLayoutPage === String(pageNumber) &&
+            container.dataset.standardLayoutWidth === layoutWidth &&
+            container.dataset.layoutState === 'ready') return;
         applyAdaptiveRows(container);
         container.classList.remove('opening-spread');
         container.dataset.openingPage = '';
@@ -299,6 +303,8 @@
             line.classList.add('is-crowded-line');
         });
         container.dataset.layoutState = 'ready';
+        container.dataset.standardLayoutPage = String(pageNumber);
+        container.dataset.standardLayoutWidth = layoutWidth;
     }
 
     let originalFitElement = null;

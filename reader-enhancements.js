@@ -38,8 +38,25 @@
     let markerTemplate = null;
     let metaQueued = false;
     let suppressSwipeClick = false;
+    let previewPreparationHandle = null;
+    let previewPreparationRevision = 0;
+    const preparedPreviews = new Map();
+    const swipeDiagnostics = {
+        preparedBuilds: 0,
+        preparedHits: 0,
+        preparationMisses: 0,
+        preparedReady: 0,
+    };
+    window.mushafSwipeDiagnostics = swipeDiagnostics;
 
-    preload().catch(error => console.warn('Swipe preview data unavailable:', error));
+    function syncPreparedDiagnostics() {
+        swipeDiagnostics.preparedReady = preparedPreviews.size;
+        swipeDiagnostics.preparedKeys = Array.from(preparedPreviews.keys());
+    }
+
+    preload()
+        .then(schedulePreviewPreparation)
+        .catch(error => console.warn('Swipe preview data unavailable:', error));
 
     async function preload() {
         const [quranResponse, layoutResponse] = await Promise.all([fetch(DATA_URL), fetch(LAYOUT_URL)]);
@@ -107,6 +124,8 @@
     }
 
     function getCurrentPage() {
+        const readerPage = Number(window.mushafReader?.getCurrentPage?.());
+        if (Number.isInteger(readerPage)) return Math.max(1, Math.min(TOTAL_PAGES, readerPage));
         return Math.max(1, Math.min(TOTAL_PAGES, fromArabicDigits(displayPageNumber.textContent)));
     }
 
@@ -220,6 +239,8 @@
     }
 
     function buildPreviewText(container, layout) {
+        delete container.dataset.standardLayoutPage;
+        delete container.dataset.standardLayoutWidth;
         const fragment = document.createDocumentFragment();
         for (const row of layout) {
             if (row[0] === 'h') {
@@ -259,8 +280,7 @@
         container.classList.toggle('dense-surah-page', headingCount >= 3);
     }
 
-    function buildPreview(targetPage, direction) {
-        removePreview();
+    function createPreview(targetPage, direction) {
         const layout = window.mushafReader?.getPageLayout?.(targetPage) ||
             previewPages?.[targetPage - 1];
         if (!layout) return null;
@@ -279,6 +299,7 @@
 
         const cloneText = clone.querySelector('.quran-text');
         cloneText.style.cssText = text.style.cssText;
+        cloneText.dataset.preparedPage = String(targetPage);
         buildPreviewText(cloneText, layout);
 
         const surahs = pageSurahs(cloneText);
@@ -298,8 +319,123 @@
         stage.appendChild(clone);
         // The target is fitted while offscreen, before the drag reveals it.
         window.mushafReader?.fitElement(cloneText, targetPage);
-        preview = clone;
         return clone;
+    }
+
+    function previewKey(targetPage, direction) {
+        return `${targetPage}:${direction}`;
+    }
+
+    function clearPreparedPreviews() {
+        preparedPreviews.forEach(node => node.remove());
+        preparedPreviews.clear();
+        syncPreparedDiagnostics();
+    }
+
+    function cancelPreviewPreparation(clearPrepared = true) {
+        previewPreparationRevision++;
+        if (previewPreparationHandle !== null) {
+            if ('cancelIdleCallback' in window) cancelIdleCallback(previewPreparationHandle);
+            else clearTimeout(previewPreparationHandle);
+            previewPreparationHandle = null;
+        }
+        if (clearPrepared) clearPreparedPreviews();
+    }
+
+    function scheduleIdle(callback) {
+        if ('requestIdleCallback' in window) {
+            previewPreparationHandle = requestIdleCallback(callback, { timeout: 450 });
+        } else {
+            previewPreparationHandle = setTimeout(
+                () => callback({ timeRemaining: () => 8 }), 60,
+            );
+        }
+    }
+
+    function schedulePreviewPreparation() {
+        cancelPreviewPreparation(false);
+        if (!previewReady || gesture || preview) return;
+
+        const revision = previewPreparationRevision;
+        const current = getCurrentPage();
+        // The next page is the common reading direction, so prepare it first.
+        const candidates = [1, -1]
+            .map(direction => ({ direction, target: current + direction }))
+            .filter(item => item.target >= 1 && item.target <= TOTAL_PAGES);
+        const desiredKeys = new Set(candidates.map(item => (
+            previewKey(item.target, item.direction)
+        )));
+        preparedPreviews.forEach((node, key) => {
+            if (desiredKeys.has(key)) return;
+            node.remove();
+            preparedPreviews.delete(key);
+        });
+        const missing = candidates.filter(item => !preparedPreviews.has(
+            previewKey(item.target, item.direction),
+        ));
+        syncPreparedDiagnostics();
+
+        const prepareNext = deadline => {
+            previewPreparationHandle = null;
+            if (revision !== previewPreparationRevision || gesture || preview) return;
+            const item = missing.shift();
+            if (!item) return;
+
+            const node = createPreview(item.target, item.direction);
+            if (revision !== previewPreparationRevision || !node) {
+                node?.remove();
+                return;
+            }
+            node.remove();
+            node.dataset.preparedPreview = 'true';
+            preparedPreviews.set(previewKey(item.target, item.direction), node);
+            swipeDiagnostics.preparedBuilds++;
+            syncPreparedDiagnostics();
+
+            if (missing.length) scheduleIdle(prepareNext);
+        };
+        if (missing.length) scheduleIdle(prepareNext);
+    }
+
+    function scheduleLookaheadPreparation(targetPage, direction) {
+        if (targetPage < 1 || targetPage > TOTAL_PAGES) return;
+        const key = previewKey(targetPage, direction);
+        if (preparedPreviews.has(key)) return;
+        const revision = previewPreparationRevision;
+        setTimeout(() => {
+            if (revision !== previewPreparationRevision || gesture || preparedPreviews.has(key)) return;
+            const node = createPreview(targetPage, direction);
+            if (revision !== previewPreparationRevision || !node) {
+                node?.remove();
+                return;
+            }
+            node.remove();
+            node.dataset.preparedPreview = 'true';
+            preparedPreviews.set(key, node);
+            swipeDiagnostics.preparedBuilds++;
+            syncPreparedDiagnostics();
+        }, 0);
+    }
+
+    function buildPreview(targetPage, direction) {
+        removePreview();
+        const key = previewKey(targetPage, direction);
+        const prepared = preparedPreviews.get(key);
+        if (prepared) {
+            preparedPreviews.delete(key);
+            prepared.dataset.preparedPreview = 'used';
+            stage.appendChild(prepared);
+            preview = prepared;
+            swipeDiagnostics.preparedHits++;
+            syncPreparedDiagnostics();
+            return preview;
+        }
+
+        // Never construct and fit a page from pointermove. A preparation miss
+        // still lets the current page follow the finger; pointerup commits the
+        // turn without stalling the gesture on hundreds of layout reads.
+        swipeDiagnostics.preparationMisses++;
+        return null;
     }
 
     function removePreview() {
@@ -329,6 +465,7 @@
             page.style.transition = '';
             page.style.transform = '';
             removePreview();
+            schedulePreviewPreparation();
         }, 190);
     }
 
@@ -336,8 +473,10 @@
         const width = page.getBoundingClientRect().width;
         const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (!preview || reduced) {
+            const preparedText = preview?.querySelector('.quran-text') || null;
+            dispatchPageTurn(direction, preparedText);
             removePreview();
-            dispatchPageTurn(direction);
+            schedulePreviewPreparation();
             return;
         }
         page.style.transition = 'transform 175ms ease-out';
@@ -345,19 +484,21 @@
         page.style.transform = `translateX(${direction * width}px)`;
         preview.style.transform = 'translateX(0)';
         preview.classList.add('is-front');
+        scheduleLookaheadPreparation(targetPage + direction, direction);
         setTimeout(() => {
             page.style.transition = '';
             page.style.transform = '';
-            dispatchPageTurn(direction);
+            dispatchPageTurn(direction, preview?.querySelector('.quran-text') || null);
             requestAnimationFrame(() => {
                 removePreview();
                 queueMetaSync();
+                schedulePreviewPreparation();
             });
         }, 180);
     }
 
-    function dispatchPageTurn(direction) {
-        if (window.mushafReader?.turnPageInstant(direction)) return;
+    function dispatchPageTurn(direction, preparedText = null) {
+        if (window.mushafReader?.turnPageInstant(direction, preparedText)) return;
         window.dispatchEvent(new KeyboardEvent('keydown', {
             key: direction > 0 ? 'ArrowLeft' : 'ArrowRight',
             bubbles: true
@@ -376,7 +517,9 @@
             dx: 0,
             dragging: false,
             direction: 0,
-            targetPage: 0
+            targetPage: 0,
+            currentPage: getCurrentPage(),
+            pageWidth: page.clientWidth,
         };
         event.stopImmediatePropagation();
     }, true);
@@ -399,8 +542,7 @@
         if (event.cancelable) event.preventDefault();
 
         const direction = dx > 0 ? 1 : -1;
-        const current = getCurrentPage();
-        const target = current + direction;
+        const target = gesture.currentPage + direction;
         const canTurn = target >= 1 && target <= TOTAL_PAGES;
         const effectiveDx = canTurn ? dx : dx * 0.16;
 
@@ -418,9 +560,8 @@
         page.style.transition = 'none';
         page.style.transform = `translateX(${effectiveDx}px)`;
         if (preview) {
-            const width = page.getBoundingClientRect().width;
             preview.style.transition = 'none';
-            preview.style.transform = `translateX(${effectiveDx - direction * width}px)`;
+            preview.style.transform = `translateX(${effectiveDx - direction * gesture.pageWidth}px)`;
         }
     }, { capture: true, passive: false });
 
@@ -452,4 +593,10 @@
         event.preventDefault();
         event.stopImmediatePropagation();
     }, true);
+
+    window.addEventListener('mushaf:page-ready', schedulePreviewPreparation);
+    window.addEventListener('resize', () => {
+        cancelPreviewPreparation(true);
+        setTimeout(schedulePreviewPreparation, 140);
+    }, { passive: true });
 })();

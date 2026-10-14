@@ -226,6 +226,8 @@
         // Set the mode before fitting, including when moving back from later pages.
         els.text.classList.toggle('opening-spread', displayPage <= 2);
         els.text.dataset.openingPage = displayPage <= 2 ? String(displayPage) : '';
+        delete els.text.dataset.standardLayoutPage;
+        delete els.text.dataset.standardLayoutWidth;
         els.text.dataset.layoutState = 'pending';
         els.text.replaceChildren(fragment);
         els.text.style.setProperty('--mushaf-line-count', pageLayout.length);
@@ -577,6 +579,36 @@
     function fitPage() {
         if (isSettingsOpen()) return;
         fitElement(els.text, displayPage);
+    }
+
+    function adoptPreparedPage(preparedText, target, pageLayout) {
+        if (!(preparedText instanceof HTMLElement) ||
+            Number(preparedText.dataset.preparedPage) !== target ||
+            preparedText.dataset.layoutState !== 'ready' ||
+            preparedText.clientWidth !== els.text.clientWidth) return false;
+
+        els.text.className = preparedText.className;
+        els.text.style.cssText = preparedText.style.cssText;
+        els.text.dataset.openingPage = preparedText.dataset.openingPage || '';
+        els.text.dataset.layoutState = 'ready';
+        if (preparedText.dataset.standardLayoutPage) {
+            els.text.dataset.standardLayoutPage = preparedText.dataset.standardLayoutPage;
+            els.text.dataset.standardLayoutWidth = preparedText.dataset.standardLayoutWidth;
+        } else {
+            delete els.text.dataset.standardLayoutPage;
+            delete els.text.dataset.standardLayoutWidth;
+        }
+        els.text.replaceChildren(...preparedText.childNodes);
+        els.text.scrollTop = 0;
+        updatePageMeta(pageLayout);
+        saveReaderState();
+        window.dispatchEvent(new CustomEvent('mushaf:page-changed', {
+            detail: { page: displayPage }
+        }));
+        window.dispatchEvent(new CustomEvent('mushaf:page-ready', {
+            detail: { page: displayPage, prepared: true }
+        }));
+        return true;
     }
 
     function updatePageMeta(pageLayout) {
@@ -997,11 +1029,13 @@
             els.body.classList.remove('tools-visible');
             return true;
         },
-        turnPageInstant(direction) {
+        turnPageInstant(direction, preparedText) {
             if (isTurningPage || isSettingsOpen() || isIndexOpen()) return false;
             const target = displayPage + direction;
             if (target < 1 || target > TOTAL_PAGES) return false;
             displayPage = target;
+            const pageLayout = resolvePageLayout(displayPage);
+            if (adoptPreparedPage(preparedText, target, pageLayout)) return true;
             els.text.scrollTop = 0;
             renderCurrentPage();
             return true;
