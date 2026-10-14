@@ -186,8 +186,11 @@
     }
 
     function validateLayout(layout, wordCount) {
-        if (layout?.version !== 1 || !Array.isArray(layout.pages) || layout.pages.length !== TOTAL_PAGES) {
-            throw new Error('Invalid mushaf layout metadata');
+        if (
+            layout?.version !== 2 || layout.protected_opening_pages !== 2 ||
+            !Array.isArray(layout.pages) || layout.pages.length !== TOTAL_PAGES
+        ) {
+            throw new Error('Invalid canonical mushaf layout metadata');
         }
         let cursor = 0;
         let headers = 0;
@@ -220,7 +223,9 @@
         for (const line of pageLayout) {
             if (line[0] === 'h') fragment.appendChild(createSurahHeading(line[1]));
             else if (line[0] === 'b') fragment.appendChild(createBasmala(line[1], line[2]));
-            else fragment.appendChild(createMushafLine(line[1], line[2]));
+            else fragment.appendChild(createMushafLine(
+                line[1], line[2], line[3] === 1, displayPage > 2
+            ));
         }
         // Only the opening spread follows the compact, centered printed-mushaf layout.
         // Set the mode before fitting, including when moving back from later pages.
@@ -259,11 +264,14 @@
         return [...sourceLayout.filter(row => row[0] === 'h'), ...balancedRows];
     }
 
-    function createMushafLine(start, end) {
+    function createMushafLine(start, end, centered = false, canonical = false) {
         const line = document.createElement('div');
-        line.className = 'mushaf-line is-measuring';
+        line.className = canonical
+            ? `mushaf-line ${centered ? 'is-canonical-centered' : 'is-canonical-full'}`
+            : 'mushaf-line is-measuring';
         line.dataset.start = String(start);
         line.dataset.end = String(end);
+        if (canonical) line.dataset.canonicalCentered = centered ? '1' : '0';
         for (let index = start; index < end; index++) {
             const token = tokens[index];
             const word = createWord(token);
@@ -446,6 +454,46 @@
         }
     }
 
+    // Pages 3-604 are a single 15-line printed-mushaf system. Their type size is
+    // viewport-dependent, never page-dependent. This prevents page-to-page font jumps.
+    function getStandardMushafFontSize(container) {
+        const usableWidth = Math.max(1, container.clientWidth - 20);
+        const widthBased = usableWidth * 0.048;
+        const heightBased = container.clientHeight / (15 * settings.lineHeight * 1.08);
+        return Math.max(
+            MIN_FONT_SIZE,
+            Math.min(settings.fontSize, widthBased, heightBased)
+        );
+    }
+
+    function fitStandardElement(container) {
+        const lines = Array.from(container.querySelectorAll('.mushaf-line'));
+        const fontSize = getStandardMushafFontSize(container);
+        const value = `${fontSize.toFixed(2)}px`;
+        container.dataset.layoutState = 'pending';
+        container.style.fontSize = value;
+        container.style.setProperty('--mushaf-font-size', value);
+        container.style.setProperty(
+            '--mushaf-min-row-height',
+            `${(fontSize * settings.lineHeight).toFixed(2)}px`
+        );
+
+        lines.forEach(line => {
+            const centered = line.dataset.canonicalCentered === '1';
+            line.classList.remove(
+                'is-measuring', 'is-full-line', 'is-short-line', 'is-crowded-line',
+                'is-canonical-full', 'is-canonical-centered'
+            );
+            line.classList.add(centered ? 'is-canonical-centered' : 'is-canonical-full');
+            line.style.transform = '';
+            line.style.fontSize = '';
+            line.style.width = '';
+            line.style.justifyContent = '';
+            line.style.columnGap = '';
+        });
+        container.dataset.layoutState = 'ready';
+    }
+
     function applyFitResult(container, lines, result) {
         const fontSize = `${result.fontSize.toFixed(2)}px`;
         container.style.fontSize = fontSize;
@@ -471,6 +519,10 @@
         const lines = Array.from(container.querySelectorAll('.mushaf-line'));
         container.classList.toggle('opening-spread', pageNumber <= 2);
         container.dataset.openingPage = pageNumber <= 2 ? String(pageNumber) : '';
+        if (pageNumber > 2) {
+            fitStandardElement(container);
+            return;
+        }
         const key = [
             pageNumber, container.clientWidth, container.clientHeight,
             settings.fontSize, settings.lineHeight

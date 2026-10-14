@@ -286,6 +286,27 @@ a { -webkit-tap-highlight-color: transparent; }
 
 .mushaf-word { display: inline-block; flex: 0 0 auto; }
 
+/* Canonical printed-Madinah rows for pages 3-604. The opening spread is
+   deliberately excluded so its approved Fatihah/Baqarah design cannot move. */
+.quran-text:not(.opening-spread) .mushaf-line.is-canonical-full {
+    justify-content: space-between;
+    gap: .05em;
+}
+
+.quran-text:not(.opening-spread) .mushaf-line.is-canonical-centered {
+    justify-content: center;
+    gap: .14em;
+}
+
+.quran-text:not(.opening-spread) .surah-basmala {
+    flex: 1 1 0;
+    min-height: var(--mushaf-min-row-height);
+    padding-block: .08em;
+    font-size: 1em;
+    line-height: var(--reader-line-height);
+}
+
+
 .ayah-end-group {
     display: inline-flex;
     align-items: center;

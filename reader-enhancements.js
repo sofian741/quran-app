@@ -234,9 +234,14 @@
                 continue;
             }
             const line = document.createElement('div');
-            line.className = 'mushaf-line is-short-line';
+            const canonical = row.length >= 4;
+            const centered = canonical && row[3] === 1;
+            line.className = canonical
+                ? `mushaf-line ${centered ? 'is-canonical-centered' : 'is-canonical-full'}`
+                : 'mushaf-line is-short-line';
             line.dataset.start = String(row[1]);
             line.dataset.end = String(row[2]);
+            if (canonical) line.dataset.canonicalCentered = centered ? '1' : '0';
             for (let index = row[1]; index < row[2]; index++) {
                 const token = previewTokens[index];
                 const word = previewWord(token);
@@ -249,7 +254,9 @@
                     line.appendChild(word);
                 }
             }
-            if (line.children.length >= 4) line.className = 'mushaf-line is-full-line';
+            if (!canonical && line.children.length >= 4) {
+                line.className = 'mushaf-line is-full-line';
+            }
             fragment.appendChild(line);
         }
         container.replaceChildren(fragment);

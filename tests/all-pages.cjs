@@ -69,6 +69,7 @@ const surahNames = [
                 const errors = [];
                 const headings = [];
                 let basmalas = 0;
+                let standardFontSize = null;
 
                 const waitForLayout = async expectedPage => {
                     const deadline = performance.now() + 3000;
@@ -95,6 +96,32 @@ const surahNames = [
                     const rowRects = rows.map(row => row.getBoundingClientRect());
                     const words = [...text.querySelectorAll('.mushaf-word')];
 
+                    if (pageNumber >= 3) {
+                        const fontSize = parseFloat(getComputedStyle(text).fontSize);
+                        if (standardFontSize === null) standardFontSize = fontSize;
+                        else if (Math.abs(fontSize - standardFontSize) > 0.01) {
+                            fail(pageNumber, `font-size changed ${standardFontSize} -> ${fontSize}`);
+                        }
+                        const canonicalLines = [...text.querySelectorAll('.mushaf-line')];
+                        for (const line of canonicalLines) {
+                            const style = getComputedStyle(line);
+                            const centered = line.dataset.canonicalCentered === '1';
+                            if (style.transform !== 'none') fail(pageNumber, 'canonical line is transformed');
+                            if (centered && style.justifyContent !== 'center') {
+                                fail(pageNumber, 'canonical centered line is not centered');
+                            }
+                            if (!centered && style.justifyContent !== 'space-between') {
+                                fail(pageNumber, 'canonical full line is not justified');
+                            }
+                        }
+                        for (const basmala of text.querySelectorAll('.surah-basmala')) {
+                            const basmalaSize = parseFloat(getComputedStyle(basmala).fontSize);
+                            if (Math.abs(basmalaSize - fontSize) > 0.01) {
+                                fail(pageNumber, `basmala size ${basmalaSize} != ${fontSize}`);
+                            }
+                        }
+                    }
+
                     if (words.some(word => {
                         const rect = word.getBoundingClientRect();
                         return rect.left < textRect.left - 1 || rect.right > textRect.right + 1;
@@ -112,8 +139,8 @@ const surahNames = [
 
                     const pageHeadings = [...text.querySelectorAll('.surah-heading')];
                     basmalas += text.querySelectorAll('.surah-basmala').length;
-                    if (pageNumber === 207 && pageHeadings.length) {
-                        fail(pageNumber, 'unexpected heading before Surah Yunus');
+                    if (pageNumber === 207 && !pageHeadings.some(item => item.dataset.surah === '10')) {
+                        fail(pageNumber, 'canonical Surah Yunus heading is missing from final row');
                     }
 
                     for (const heading of pageHeadings) {
@@ -153,8 +180,8 @@ const surahNames = [
                         }
                     }
 
-                    if (pageNumber === 208 && !pageHeadings.some(item => item.dataset.surah === '10')) {
-                        fail(pageNumber, 'Surah Yunus heading is missing');
+                    if (pageNumber === 208 && pageHeadings.some(item => item.dataset.surah === '10')) {
+                        fail(pageNumber, 'duplicate Surah Yunus heading after canonical page break');
                     }
                     if (pageNumber < pageLimit) {
                         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
