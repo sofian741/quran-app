@@ -69,6 +69,7 @@ const surahNames = [
                 const errors = [];
                 const headings = [];
                 let basmalas = 0;
+                let standardFontSize = null;
 
                 const waitForLayout = async expectedPage => {
                     const deadline = performance.now() + 3000;
@@ -108,6 +109,21 @@ const surahNames = [
                     }
                     if (rowRects.slice(1).some((rect, index) => rowRects[index].bottom > rect.top + 1)) {
                         fail(pageNumber, 'adjacent rows overlap');
+                    }
+
+                    if (pageNumber >= 3) {
+                        const currentFontSize = parseFloat(getComputedStyle(text).fontSize);
+                        if (standardFontSize === null) standardFontSize = currentFontSize;
+                        if (Math.abs(currentFontSize - standardFontSize) > 0.05) {
+                            fail(pageNumber, `standard font size drift: ${currentFontSize} vs ${standardFontSize}`);
+                        }
+                        for (const basmala of text.querySelectorAll('.surah-basmala')) {
+                            const basmalaSize = parseFloat(getComputedStyle(basmala).fontSize);
+                            if (Math.abs(basmalaSize - currentFontSize) > 0.1) {
+                                fail(pageNumber, `basmala size mismatch: ${basmalaSize} vs ${currentFontSize}`);
+                                break;
+                            }
+                        }
                     }
 
                     const pageHeadings = [...text.querySelectorAll('.surah-heading')];
