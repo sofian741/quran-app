@@ -297,13 +297,13 @@ a { -webkit-tap-highlight-color: transparent; }
     position: relative;
     display: inline-grid;
     place-items: center;
-    flex: 0 0 2em;
-    width: 2em;
-    height: 2em;
+    flex: 0 0 2.25em;
+    width: 2.25em;
+    height: 2.45em;
     margin-inline: .08em;
     padding: 0;
     overflow: visible;
-    font-size: .7em;
+    font-size: .74em;
     vertical-align: middle;
     background: transparent;
     border: 0;
@@ -358,8 +358,8 @@ a { -webkit-tap-highlight-color: transparent; }
     letter-spacing: 0;
     white-space: nowrap;
 }
-.ayah-marker[data-digits="2"] .ayah-number { font-size: .68em; }
-.ayah-marker[data-digits="3"] .ayah-number { font-size: .5em; }
+.ayah-marker[data-digits="2"] .ayah-number { font-size: .74em; }
+.ayah-marker[data-digits="3"] .ayah-number { font-size: .57em; }
 
 .surah-heading {
     --ornament-gold: #997532;
