@@ -1,0 +1,52 @@
+name: Audit canonical mushaf visually
+
+on:
+  push:
+    branches: [fix/mushaf-uniform-layout-audit]
+    paths:
+      - app.js
+      - style.css
+      - reader-enhancements.js
+      - data/mushaf-layout.json
+      - tests/all-pages.cjs
+      - tests/fatihah-layout.cjs
+      - tests/mushaf-visual-snapshots.cjs
+      - .github/workflows/audit-mushaf-visual.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/mushaf-uniform-layout-audit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Validate Quran source and canonical layout
+        run: node tests/content.cjs
+      - name: Protect approved opening pages
+        run: node tests/fatihah-layout.cjs
+      - name: Audit all 604 pages at phone size
+        env:
+          QURAN_VIEWPORT: 390x844
+        run: node tests/all-pages.cjs
+      - name: Capture representative pages
+        if: always()
+        run: node tests/mushaf-visual-snapshots.cjs
+      - name: Upload screenshots and metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canonical-mushaf-audit
+          path: artifacts/canonical-mushaf-audit
+          if-no-files-found: error
