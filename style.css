@@ -675,23 +675,36 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     .quran-text.opening-spread .surah-heading { margin-bottom: 2px; }
 }
 
-/* Al-Fatihah alone: shrink the oversized lines to the same compact visual rhythm
-   as Al-Baqarah, keeping both surah cartouches at the shared top anchor. */
+/* Al-Fatihah: a geometrically planned seven-row oval, rather than seven
+   independently resized fonts. These widths follow the printed opening page:
+   narrow shoulders, broad middle, then narrow again. Same for swipe previews. */
 .quran-text.opening-spread[data-opening-page='1'] {
     gap: clamp(10px, 1.5dvh, 21px);
 }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line {
-    width: 86%;
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line,
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-measuring,
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-full-line,
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-short-line,
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-crowded-line {
     align-self: center;
+    justify-content: space-between;
+    gap: .12em;
 }
+/* The heading is child 1; the seven verse lines are children 2 through 8. */
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(2) { width: 50%; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(3) { width: 68%; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(4) { width: 90%; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(5) { width: 98%; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(6) { width: 90%; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(7) { width: 69%; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(8) { width: 46%; }
 
-/* Give Al-Fatihah's seven fixed Quran lines a deliberate oval silhouette.
-   The line breaks and verse markers stay untouched; only relative type size changes.
-   Both swipe preview and settled page inherit the same page-specific selectors. */
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(2) { font-size: .88em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(3) { font-size: .94em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(4) { font-size: 1.03em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(5) { font-size: 1.09em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(6) { font-size: .99em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(7) { font-size: 1.06em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(8) { font-size: 1.10em; }
+/* Smaller end-of-ayah ornaments sit within the oval instead of protruding
+   from its outline. The numbers and Quran words remain in their original order. */
+.quran-text.opening-spread[data-opening-page='1'] .ayah-marker {
+    font-size: .45em;
+    margin-inline: .02em;
+}
+.quran-text.opening-spread[data-opening-page='1'] .ayah-marker .ayah-number {
+    font-size: 1em;
+}
