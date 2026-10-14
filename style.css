@@ -675,29 +675,16 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     .quran-text.opening-spread .surah-heading { margin-bottom: 2px; }
 }
 
-/* Al-Fatihah: keep the seven lines natural, just a little wider and much tighter vertically.
-   !important deliberately overrides the inline per-line sizing from app.js on page 1 only. */
+/* The Fatihah uses one consistent type size, including ayah markers.
+   Row widths are measured in app.js and only inter-word spacing is varied. */
 .quran-text.opening-spread[data-opening-page='1'] {
-    gap: clamp(4px, .65dvh, 9px);
+    gap: clamp(5px, .75dvh, 10px);
 }
-
 .quran-text.opening-spread[data-opening-page='1'] .surah-heading {
-    margin-bottom: clamp(7px, .8dvh, 12px);
+    margin-bottom: clamp(8px, 1dvh, 14px);
 }
-
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line,
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-measuring,
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-full-line,
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-short-line,
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-crowded-line {
-    width: 100%;
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line {
     align-self: center;
-    justify-content: center;
     gap: .13em;
-    font-size: calc(var(--mushaf-font-size) * 1.08) !important;
-    line-height: 1.28;
-}
-
-.quran-text.opening-spread[data-opening-page='1'] .ayah-marker {
-    font-size: .62em;
+    line-height: 1.35;
 }
