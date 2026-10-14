@@ -165,8 +165,15 @@
         if (headingTemplate) {
             const heading = headingTemplate.cloneNode(true);
             heading.dataset.surah = String(surah);
-            const title = heading.querySelector('.surah-name');
-            if (title) title.textContent = `سورة ${SURAH_NAMES[surah - 1]}`;
+            const chapter = heading.querySelector('.surah-title-chapter');
+            if (chapter) {
+                // Preserve the main reader's aligned title spans during swipe previews.
+                // Replacing .surah-name.textContent destroys them and makes the title jump on commit.
+                chapter.textContent = SURAH_NAMES[surah - 1];
+            } else {
+                const title = heading.querySelector('.surah-name');
+                if (title) title.textContent = `سورة ${SURAH_NAMES[surah - 1]}`;
+            }
             return heading;
         }
         const heading = document.createElement('header');
@@ -174,7 +181,16 @@
         heading.dataset.surah = String(surah);
         const title = document.createElement('h2');
         title.className = 'surah-name';
-        title.textContent = `سورة ${SURAH_NAMES[surah - 1]}`;
+        const titleLine = document.createElement('span');
+        titleLine.className = 'surah-title-line';
+        const prefix = document.createElement('span');
+        prefix.className = 'surah-title-prefix';
+        prefix.textContent = 'سورة';
+        const chapter = document.createElement('span');
+        chapter.className = 'surah-title-chapter';
+        chapter.textContent = SURAH_NAMES[surah - 1];
+        titleLine.append(prefix, document.createTextNode(' '), chapter);
+        title.appendChild(titleLine);
         heading.appendChild(title);
         return heading;
     }
