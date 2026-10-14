@@ -684,3 +684,14 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     width: 86%;
     align-self: center;
 }
+
+/* Give Al-Fatihah's seven fixed Quran lines a deliberate oval silhouette.
+   The line breaks and verse markers stay untouched; only relative type size changes.
+   Both swipe preview and settled page inherit the same page-specific selectors. */
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(2) { font-size: .88em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(3) { font-size: .94em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(4) { font-size: 1.03em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(5) { font-size: 1.09em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(6) { font-size: .99em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(7) { font-size: 1.06em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(8) { font-size: 1.10em; }
