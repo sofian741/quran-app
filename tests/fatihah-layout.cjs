@@ -55,6 +55,7 @@ const root = path.join(__dirname, '..');
                 const heading = text.querySelector('.surah-heading').getBoundingClientRect();
                 return {
                     fontSize: parseFloat(getComputedStyle(text).fontSize),
+                    letterSpacing: getComputedStyle(text.querySelector('.mushaf-word')).letterSpacing,
                     containerGap: parseFloat(getComputedStyle(text).gap),
                     heading: [heading.x, heading.y, heading.width, heading.height],
                     words: [...text.querySelectorAll('.mushaf-word')].map(word => (
@@ -97,6 +98,8 @@ const root = path.join(__dirname, '..');
             assert.equal(new Set(fatihah.words).size, 29);
             assert.equal(fatihah.lines.length, 7);
             assert.ok(Math.abs(fatihah.fontSize - baqarah.fontSize) < 0.01);
+            assert.equal(fatihah.letterSpacing, baqarah.letterSpacing);
+            assert.equal(fatihah.letterSpacing, 'normal');
             assert.ok(Math.abs(fatihah.markerWidth - baqarah.markerWidth) < 0.01);
             assert.ok(Math.abs(fatihah.containerGap - baqarah.containerGap) < 0.01);
             assert.deepEqual(fatihah.heading, baqarah.heading);
@@ -107,11 +110,11 @@ const root = path.join(__dirname, '..');
             assert.ok(fatihah.lines.every(line => (
                 Math.abs(line.gap - baqarah.lines[0].gap) < 0.01
             )));
-            assert.ok(widths[0] < widths[2] && widths[1] < widths[2]);
-            assert.ok(widths[2] > widths[3] && widths[3] < widths[4]);
-            assert.ok(widths[4] > widths[5] && widths[5] > widths[6]);
+            assert.ok(widths[0] < widths[1] && widths[1] < widths[2]);
+            assert.ok(Math.abs(widths[2] - widths[3]) < fatihah.fontSize * 0.5);
+            assert.ok(widths[3] > widths[4] && widths[4] > widths[5] && widths[5] > widths[6]);
             assert.deepEqual(fatihah.ranges, [
-                [0, 4], [4, 8], [8, 13], [13, 18], [18, 23], [23, 27], [27, 29],
+                [0, 4], [4, 9], [9, 14], [14, 19], [19, 23], [23, 27], [27, 29],
             ]);
             checks++;
         }
