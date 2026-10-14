@@ -675,14 +675,7 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     .quran-text.opening-spread .surah-heading { margin-bottom: 2px; }
 }
 
-/* The Fatihah uses one consistent type size, including ayah markers.
-   Its seven source-order rows stay centered at their natural word widths. */
-.quran-text.opening-spread[data-opening-page='1'] {
-    gap: clamp(5px, .75dvh, 10px);
-}
-.quran-text.opening-spread[data-opening-page='1'] .surah-heading {
-    margin-bottom: clamp(8px, 1dvh, 14px);
-}
+/* Al-Fatihah and Al-Baqarah share the same opening-page proportions. */
 .quran-text.opening-spread[data-opening-page='1'] .mushaf-line {
     align-self: center;
     gap: .14em;

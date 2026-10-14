@@ -12,10 +12,6 @@
     const JUZ_START_PAGES = [1,22,42,62,82,102,121,142,162,182,201,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582];
     const FIXED_FONT_SIZE = 34;
     const FIXED_LINE_HEIGHT = 1.42;
-    // Al-Fatihah keeps the same 29 source tokens and the same first page, but
-    // uses a balanced seven-row presentation. These boundaries form a natural
-    // rise and fall without stretching spaces or resizing individual rows.
-    const FATIHAH_LINE_ENDS = [4, 9, 14, 19, 23, 27, 29];
     const SUFFIX_MARKS = new Set(['ۖ', 'ۚ', 'ۘ', 'ۗ', 'ۛ', 'ۙ', 'ۜ', '۩']);
     const PREFIX_MARKS = new Set(['۞']);
 
@@ -216,7 +212,7 @@
     }
 
     function renderCurrentPage() {
-        const pageLayout = getDisplayLayout(displayPage);
+        const pageLayout = pages[displayPage - 1];
         const fragment = document.createDocumentFragment();
         for (const line of pageLayout) {
             if (line[0] === 'h') fragment.appendChild(createSurahHeading(line[1]));
@@ -240,28 +236,6 @@
         window.dispatchEvent(new CustomEvent('mushaf:page-ready', {
             detail: { page: displayPage }
         }));
-    }
-
-    function getDisplayLayout(pageNumber) {
-        const sourceLayout = pages[pageNumber - 1];
-        if (pageNumber !== 1) return sourceLayout;
-
-        const textRows = sourceLayout.filter(row => row[0] === 'l');
-        const firstToken = textRows[0]?.[1];
-        const lastToken = textRows.at(-1)?.[2];
-        if (firstToken !== 0 || lastToken !== 29) {
-            throw new Error('Unexpected Al-Fatihah source range');
-        }
-
-        let start = firstToken;
-        return [
-            ...sourceLayout.filter(row => row[0] === 'h'),
-            ...FATIHAH_LINE_ENDS.map(end => {
-                const row = ['l', start, end];
-                start = end;
-                return row;
-            })
-        ];
     }
 
     function createMushafLine(start, end) {
@@ -954,10 +928,6 @@
     // Shared interface for the interactive swipe layer.
     window.mushafReader = {
         fitElement,
-        getDisplayLayout(page) {
-            if (!Number.isInteger(page) || page < 1 || page > TOTAL_PAGES) return null;
-            return getDisplayLayout(page).map(row => [...row]);
-        },
         getSurahName(surah) { return SURAH_NAMES[surah - 1] || ""; },
         getCurrentPage() { return displayPage; },
         getSearchVerses() { return verses; },

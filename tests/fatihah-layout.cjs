@@ -52,13 +52,19 @@ const root = path.join(__dirname, '..');
                 const text = document.querySelector('#quran-text');
                 const bounds = text.getBoundingClientRect();
                 const lines = [...text.querySelectorAll('.mushaf-line')];
+                const heading = text.querySelector('.surah-heading').getBoundingClientRect();
                 return {
                     fontSize: parseFloat(getComputedStyle(text).fontSize),
+                    containerGap: parseFloat(getComputedStyle(text).gap),
+                    heading: [heading.x, heading.y, heading.width, heading.height],
                     words: [...text.querySelectorAll('.mushaf-word')].map(word => (
                         `${word.dataset.verse}:${word.dataset.word}`
                     )),
                     markerWidth: lines[0].querySelector('.ayah-marker')
                         ?.getBoundingClientRect().width,
+                    ranges: lines.map(line => [
+                        Number(line.dataset.start), Number(line.dataset.end),
+                    ]),
                     lines: lines.map(line => {
                         const style = getComputedStyle(line);
                         const children = [...line.children].map(child => (
@@ -92,6 +98,8 @@ const root = path.join(__dirname, '..');
             assert.equal(fatihah.lines.length, 7);
             assert.ok(Math.abs(fatihah.fontSize - baqarah.fontSize) < 0.01);
             assert.ok(Math.abs(fatihah.markerWidth - baqarah.markerWidth) < 0.01);
+            assert.ok(Math.abs(fatihah.containerGap - baqarah.containerGap) < 0.01);
+            assert.deepEqual(fatihah.heading, baqarah.heading);
             assert.ok(fatihah.lines.every(line => line.fontSize === fatihah.fontSize));
             assert.ok(fatihah.lines.every(line => line.justify === 'center'));
             assert.ok(fatihah.lines.every(line => line.transform === 'none'));
@@ -99,14 +107,12 @@ const root = path.join(__dirname, '..');
             assert.ok(fatihah.lines.every(line => (
                 Math.abs(line.gap - baqarah.lines[0].gap) < 0.01
             )));
-            assert.ok(widths[0] < widths[1] && widths[1] < widths[2]);
-            assert.ok(Math.abs(widths[2] - widths[3]) < fatihah.fontSize * 0.5);
-            assert.ok(widths[3] > widths[4] && widths[4] > widths[5] && widths[5] > widths[6]);
-            assert.deepEqual(await page.evaluate(() => (
-                window.mushafReader.getDisplayLayout(1)
-                    .filter(row => row[0] === 'l')
-                    .map(row => row.slice(1))
-            )), [[0, 4], [4, 9], [9, 14], [14, 19], [19, 23], [23, 27], [27, 29]]);
+            assert.ok(widths[0] < widths[2] && widths[1] < widths[2]);
+            assert.ok(widths[2] > widths[3] && widths[3] < widths[4]);
+            assert.ok(widths[4] > widths[5] && widths[5] > widths[6]);
+            assert.deepEqual(fatihah.ranges, [
+                [0, 4], [4, 8], [8, 13], [13, 18], [18, 23], [23, 27], [27, 29],
+            ]);
             checks++;
         }
 
