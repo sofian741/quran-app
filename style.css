@@ -319,20 +319,17 @@ a { -webkit-tap-highlight-color: transparent; }
     pointer-events: none;
 }
 
-.ayah-flower-outer {
-    fill: #a3cbbf;
-    stroke: #a8894d;
-    stroke-width: 2.5;
-    stroke-linejoin: round;
-}
-
-.ayah-flower-inner { fill: var(--page-paper); stroke: #398c7c; stroke-width: 3; }
-.ayah-flower-ring { fill: none; stroke: #a8894d; stroke-width: 1.5; }
+.ayah-medallion-shadow { fill: var(--ayah-edge, #245b50); }
+.ayah-medallion-border { fill: var(--ayah-accent, #73a99b); stroke: var(--ayah-edge, #245b50); stroke-width: 1.6; }
+.ayah-medallion-detail { fill: var(--page-paper); stroke: var(--ayah-edge, #245b50); stroke-width: 1.7; }
+.ayah-medallion-center { fill: var(--ayah-accent, #73a99b); stroke: var(--ayah-edge, #245b50); stroke-width: 1.1; }
+.ayah-medallion-inlay { fill: var(--page-paper); stroke: var(--ayah-edge, #245b50); stroke-width: 1.5; }
+.ayah-medallion-petals { fill: var(--ayah-highlight, #d4c69a); stroke: var(--ayah-edge, #245b50); stroke-width: .7; }
 
 .ayah-marker .ayah-number {
     position: relative;
     z-index: 10;
-    color: #176b63;
+    color: var(--ayah-edge, #245b50);
     font-family: Tahoma, Arial, sans-serif;
     font-size: .85em;
     font-weight: 700;
