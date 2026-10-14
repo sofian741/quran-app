@@ -222,6 +222,7 @@
         // Only the opening spread follows the compact, centered printed-mushaf layout.
         // Set the mode before fitting, including when moving back from later pages.
         els.text.classList.toggle('opening-spread', displayPage <= 2);
+        els.text.dataset.openingPage = displayPage <= 2 ? String(displayPage) : '';
         els.text.dataset.layoutState = 'pending';
         els.text.replaceChildren(fragment);
         els.text.style.setProperty('--mushaf-line-count', pageLayout.length);
@@ -391,6 +392,7 @@
         if (!tokens.length || !container.clientWidth || !container.clientHeight) return;
         const lines = Array.from(container.querySelectorAll('.mushaf-line'));
         container.classList.toggle('opening-spread', pageNumber <= 2);
+        container.dataset.openingPage = pageNumber <= 2 ? String(pageNumber) : '';
         const key = [
             pageNumber, container.clientWidth, container.clientHeight,
             settings.fontSize, settings.lineHeight
@@ -403,7 +405,8 @@
 
         container.dataset.layoutState = 'pending';
         // The opening spread uses the compact type scale of a printed mushaf.
-        const preferred = pageNumber <= 2 ? settings.fontSize * 0.9 : settings.fontSize;
+        const preferred = pageNumber === 1 ? settings.fontSize * 0.78
+            : pageNumber === 2 ? settings.fontSize * 0.9 : settings.fontSize;
         container.style.fontSize = `${preferred}px`;
         container.style.setProperty('--mushaf-font-size', `${preferred}px`);
         container.style.setProperty('--mushaf-min-row-height', '0px');
