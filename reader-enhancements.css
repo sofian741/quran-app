@@ -35,7 +35,7 @@
 
 /* Keep ayah numbers readable in night mode instead of leaving them dark teal. */
 .reader-page[data-theme='dark'] .ayah-marker .ayah-number {
-    color: var(--page-text);
+    color: var(--ayah-number-ink);
 }
 
 /* The target page sits beside the current page while the finger is dragging. */
