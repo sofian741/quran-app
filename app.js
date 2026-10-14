@@ -402,7 +402,8 @@
         }
 
         container.dataset.layoutState = 'pending';
-        const preferred = settings.fontSize;
+        // The opening spread uses the compact type scale of a printed mushaf.
+        const preferred = pageNumber <= 2 ? settings.fontSize * 0.9 : settings.fontSize;
         container.style.fontSize = `${preferred}px`;
         container.style.setProperty('--mushaf-font-size', `${preferred}px`);
         container.style.setProperty('--mushaf-min-row-height', '0px');
