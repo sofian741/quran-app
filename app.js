@@ -385,6 +385,29 @@
             line.classList.add(result.lineClasses[index]);
             line.style.transform = result.transforms[index];
         });
+        // The normal page-fit routine sets one common font size, and can cancel
+        // CSS-only adjustments to the Fatihah silhouette. Shape these seven
+        // lines AFTER fitting, on both the real page and swipe previews.
+        if (container.dataset.openingPage === '1' && lines.length === 7) {
+            const targets = [.53, .68, .89, .94, .87, .67, .48];
+            const pageWidth = container.clientWidth - 16;
+            lines.forEach((line, index) => {
+                line.style.fontSize = '';
+                line.style.transform = '';
+                const children = Array.from(line.children);
+                const gap = parseFloat(getComputedStyle(line).columnGap) || 0;
+                const naturalWidth = children.reduce(
+                    (total, child) => total + child.getBoundingClientRect().width, 0
+                ) + Math.max(0, children.length - 1) * gap;
+                // Avoid the exaggerated word spacing of justify-content:
+                // adjust the text size as one intact, centered Quran phrase.
+                const targetWidth = Math.max(1, pageWidth * targets[index]);
+                const scale = Math.max(.78, Math.min(1.12, targetWidth / Math.max(1, naturalWidth)));
+                line.style.fontSize = `${(result.fontSize * scale).toFixed(2)}px`;
+            });
+        } else {
+            lines.forEach(line => { line.style.fontSize = ''; });
+        }
         container.dataset.layoutState = 'ready';
     }
 
