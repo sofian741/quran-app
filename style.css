@@ -675,11 +675,16 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     .quran-text.opening-spread .surah-heading { margin-bottom: 2px; }
 }
 
-/* Al-Fatihah: keep each Quran line as one compact, centered phrase.
-   Do not justify words across an artificial oval width. */
+/* Al-Fatihah: keep the seven lines natural, just a little wider and much tighter vertically.
+   !important deliberately overrides the inline per-line sizing from app.js on page 1 only. */
 .quran-text.opening-spread[data-opening-page='1'] {
-    gap: clamp(10px, 1.5dvh, 21px);
+    gap: clamp(4px, .65dvh, 9px);
 }
+
+.quran-text.opening-spread[data-opening-page='1'] .surah-heading {
+    margin-bottom: clamp(7px, .8dvh, 12px);
+}
+
 .quran-text.opening-spread[data-opening-page='1'] .mushaf-line,
 .quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-measuring,
 .quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-full-line,
@@ -688,9 +693,11 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     width: 100%;
     align-self: center;
     justify-content: center;
-    gap: .14em;
+    gap: .13em;
+    font-size: calc(var(--mushaf-font-size) * 1.08) !important;
+    line-height: 1.28;
 }
-/* Keep the original ornament size: tiny markers made the opening page uneven. */
 
-/* Al-Fatihah's seven line widths are measured and shaped after fitting in app.js.
-   Keep a single natural font and marker style during the initial measurement. */
+.quran-text.opening-spread[data-opening-page='1'] .ayah-marker {
+    font-size: .62em;
+}
