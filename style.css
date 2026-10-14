@@ -705,7 +705,11 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
 .quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(6) { --fatihah-row-scale: .98; }
 .quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(7) { --fatihah-row-scale: 1.15; }
 .quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(8) { --fatihah-row-scale: 1.10; }
-/* Keep verse ornaments at a consistent size while adjacent text changes gently. */
-.quran-text.opening-spread[data-opening-page='1'] .ayah-marker {
-    font-size: calc(.7em / var(--fatihah-row-scale, 1));
-}
+/* Counterbalance the row font sizes so all seven ayah ornaments match. */
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(2) .ayah-marker { font-size: .795em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(3) .ayah-marker { font-size: .761em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(4) .ayah-marker { font-size: .680em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(5) .ayah-marker { font-size: .609em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(6) .ayah-marker { font-size: .714em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(7) .ayah-marker { font-size: .609em; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(8) .ayah-marker { font-size: .636em; }
