@@ -219,6 +219,9 @@
             else if (line[0] === 'b') fragment.appendChild(createBasmala(line[1], line[2]));
             else fragment.appendChild(createMushafLine(line[1], line[2]));
         }
+        // Only the opening spread follows the compact, centered printed-mushaf layout.
+        // Set the mode before fitting, including when moving back from later pages.
+        els.text.classList.toggle('opening-spread', displayPage <= 2);
         els.text.dataset.layoutState = 'pending';
         els.text.replaceChildren(fragment);
         els.text.style.setProperty('--mushaf-line-count', pageLayout.length);
@@ -387,6 +390,7 @@
     function fitElement(container, pageNumber) {
         if (!tokens.length || !container.clientWidth || !container.clientHeight) return;
         const lines = Array.from(container.querySelectorAll('.mushaf-line'));
+        container.classList.toggle('opening-spread', pageNumber <= 2);
         const key = [
             pageNumber, container.clientWidth, container.clientHeight,
             settings.fontSize, settings.lineHeight
