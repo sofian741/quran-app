@@ -10,17 +10,6 @@ const raw = fs.readFileSync(path.join(root, 'data/quran-uthmani.txt'), 'utf8');
 const layout = JSON.parse(fs.readFileSync(path.join(root, 'data/mushaf-layout.json'), 'utf8'));
 const suffixMarks = new Set(['ۖ', 'ۚ', 'ۘ', 'ۗ', 'ۛ', 'ۙ', 'ۜ', '۩']);
 const prefixMarks = new Set(['۞']);
-// First page containing each surah according to the source word/page mapping
-// in zonetecde/mushaf-layout@72116ce4 (src/data/mushaf-layout).
-const referenceSurahStartPages = [
-    1,2,50,77,106,128,151,177,187,208,221,235,249,255,262,267,282,293,305,
-    312,322,332,342,350,359,367,377,385,396,404,411,415,418,428,434,440,446,
-    453,458,467,477,483,489,496,499,502,507,511,515,518,520,523,526,528,531,
-    534,537,542,545,549,551,553,554,556,558,560,562,564,566,568,570,572,574,
-    575,577,578,580,582,583,585,586,587,587,589,590,591,591,592,593,594,595,
-    595,596,596,597,597,598,598,599,599,600,600,601,601,601,602,602,602,603,
-    603,603,604,604,604,
-];
 
 function splitWords(text) {
     const words = [];
@@ -48,6 +37,11 @@ for (const line of raw.split(/\r?\n/)) {
     verseWords.forEach((text, word) => words.push({ surah, ayah, word, text }));
 }
 
+function key(index) {
+    const word = words[index];
+    return word ? `${word.surah}:${word.ayah}:${word.word + 1}` : null;
+}
+
 assert.equal(
     crypto.createHash('sha256').update(raw).digest('hex'),
     'aa0bf9278a177a12e6d9bef621ce37a1d24fa35168b5ae9c13ebcbe01e3686cf',
@@ -55,8 +49,22 @@ assert.equal(
 );
 assert.equal(verses.length, 6236);
 assert.equal(words.length, 77881);
-assert.equal(layout.version, 1);
+assert.equal(layout.version, 2);
+assert.equal(layout.protected_opening_pages, 2);
 assert.equal(layout.pages.length, 604);
+
+// The two hand-tuned opening pages are immutable during the canonical rebuild.
+assert.deepEqual(layout.pages[0], [
+    ['h',1],['l',0,4],['l',4,8],['l',8,13],['l',13,18],
+    ['l',18,23],['l',23,27],['l',27,29],
+]);
+assert.deepEqual(layout.pages[1], [
+    ['h',2],['b',29,33],['l',33,40],['l',40,46],['l',46,53],
+    ['l',53,61],['l',61,67],['l',67,69],
+]);
+for (let page = 3; page <= 604; page++) {
+    assert.equal(layout.pages[page - 1].length, 15, `canonical page ${page} has 15 rows`);
+}
 
 let cursor = 0;
 let headers = 0;
@@ -68,7 +76,7 @@ const firstWordLocations = new Map();
 const firstTextLocations = new Map();
 
 layout.pages.forEach((page, pageIndex) => {
-    assert.ok(page.length >= 8 && page.length <= 16, `page ${pageIndex + 1} line count`);
+    assert.ok(page.length >= 8 && page.length <= 15, `page ${pageIndex + 1} line count`);
     for (const [rowIndex, line] of page.entries()) {
         if (line[0] === 'h') {
             assert.equal(line[1], ++headers, `page ${pageIndex + 1} surah header`);
@@ -79,6 +87,9 @@ layout.pages.forEach((page, pageIndex) => {
         assert.ok(line[0] === 'l' || line[0] === 'b');
         assert.equal(line[1], cursor, `page ${pageIndex + 1} contiguous start`);
         assert.ok(line[2] > line[1], `page ${pageIndex + 1} nonempty line`);
+        if (pageIndex >= 2 && line[0] === 'l') {
+            assert.ok(line[3] === 0 || line[3] === 1, `page ${pageIndex + 1} centered flag`);
+        }
         cursor = line[2];
         const lineWords = words.slice(line[1], line[2]);
         for (const word of lineWords) {
@@ -109,20 +120,17 @@ assert.equal(cursor, words.length);
 assert.equal(headers, 114);
 assert.equal(basmalas, 112);
 assert.ok(textLines > 8500);
-assert.equal(referenceSurahStartPages.length, 114);
 
 for (let surah = 1; surah <= 114; surah++) {
     const heading = headingLocations.get(surah);
     const firstWord = firstWordLocations.get(surah);
     const firstText = firstTextLocations.get(surah);
-    const expectedPage = referenceSurahStartPages[surah - 1];
     assert.ok(heading, `missing heading for surah ${surah}`);
     assert.ok(firstWord, `missing Quran words for surah ${surah}`);
     assert.ok(firstText, `missing first text line for surah ${surah}`);
-    assert.equal(firstWord.page, expectedPage, `reference start page for surah ${surah}`);
-    assert.equal(heading.page, expectedPage, `heading page for surah ${surah}`);
+    assert.equal(heading.page, firstWord.page, `heading/first-word page for surah ${surah}`);
 
-    const page = layout.pages[expectedPage - 1];
+    const page = layout.pages[heading.page - 1];
     if (surah === 1 || surah === 9) {
         assert.equal(page[heading.row + 1][0], 'l', `heading/text order for surah ${surah}`);
         assert.equal(firstText.row, heading.row + 1, `first text row for surah ${surah}`);
@@ -130,16 +138,44 @@ for (let surah = 1; surah <= 114; surah++) {
     } else {
         const basmala = basmalaLocations.get(surah);
         assert.ok(basmala, `missing basmala for surah ${surah}`);
-        assert.equal(basmala.page, expectedPage, `basmala page for surah ${surah}`);
+        assert.equal(basmala.page, heading.page, `basmala page for surah ${surah}`);
         assert.equal(basmala.row, heading.row + 1, `heading/basmala order for surah ${surah}`);
         assert.equal(firstText.row, basmala.row + 1, `basmala/text order for surah ${surah}`);
     }
 }
 
+// Canonical QPC 15-line regression anchors. These catch the exact page/line
+// drift that prompted this rebuild, without changing the Quran source text.
+const p246 = layout.pages[245].filter(row => row[0] === 'l');
+assert.equal(key(p246[0][1]), '12:87:1');
+assert.equal(key(p246[0][2] - 1), '12:87:8');
+assert.equal(key(p246[1][1]), '12:87:9');
+assert.equal(key(p246[1][2] - 1), '12:87:19');
+assert.equal(key(p246[2][1]), '12:87:20');
+assert.ok(p246.every(row => row[3] === 0), 'page 246 is fully justified in QPC layout');
+
+const p586 = layout.pages[585];
+assert.equal(p586[0][0], 'l');
+assert.equal(key(p586[0][1]), '80:41:1');
+assert.equal(key(p586[0][2] - 1), '80:42:4');
+assert.equal(p586[0][3], 1, 'page 586 opening line is canonically centered');
+assert.deepEqual(p586[1], ['h', 81]);
+assert.equal(p586[2][0], 'b');
+assert.equal(key(p586[2][1]), '81:1:1');
+assert.equal(key(p586[2][2] - 1), '81:1:4');
+
+const p604 = layout.pages[603];
+assert.deepEqual(p604.filter(row => row[0] === 'h').map(row => row[1]), [112,113,114]);
+assert.deepEqual(
+    p604.filter(row => row[0] === 'l').map(row => row[3]),
+    [0,1,0,0,1,0,0,1,1],
+    'page 604 canonical centered-line flags',
+);
+
 assert.equal(headingLocations.get(10).page, 208, 'Surah Yunus heading regression');
 
 console.log(
-    `PASS: ${layout.pages.length} pages; ${verses.length} verses; ` +
+    `PASS: ${layout.pages.length} canonical pages; ${verses.length} verses; ` +
     `${words.length} source words covered once in order; ` +
-    `${headers} referenced headings; ${basmalas} separate basmalas; Tanzil SHA-256 unchanged.`,
+    `${headers} headings; ${basmalas} separate basmalas; Tanzil SHA-256 unchanged.`,
 );
