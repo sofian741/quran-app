@@ -675,9 +675,8 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     .quran-text.opening-spread .surah-heading { margin-bottom: 2px; }
 }
 
-/* Al-Fatihah: a geometrically planned seven-row oval, rather than seven
-   independently resized fonts. These widths follow the printed opening page:
-   narrow shoulders, broad middle, then narrow again. Same for swipe previews. */
+/* Al-Fatihah: keep each Quran line as one compact, centered phrase.
+   Do not justify words across an artificial oval width. */
 .quran-text.opening-spread[data-opening-page='1'] {
     gap: clamp(10px, 1.5dvh, 21px);
 }
@@ -686,25 +685,9 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
 .quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-full-line,
 .quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-short-line,
 .quran-text.opening-spread[data-opening-page='1'] .mushaf-line.is-crowded-line {
+    width: 100%;
     align-self: center;
-    justify-content: space-between;
-    gap: .12em;
+    justify-content: center;
+    gap: .14em;
 }
-/* The heading is child 1; the seven verse lines are children 2 through 8. */
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(2) { width: 50%; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(3) { width: 68%; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(4) { width: 90%; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(5) { width: 98%; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(6) { width: 90%; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(7) { width: 69%; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(8) { width: 46%; }
-
-/* Smaller end-of-ayah ornaments sit within the oval instead of protruding
-   from its outline. The numbers and Quran words remain in their original order. */
-.quran-text.opening-spread[data-opening-page='1'] .ayah-marker {
-    font-size: .45em;
-    margin-inline: .02em;
-}
-.quran-text.opening-spread[data-opening-page='1'] .ayah-marker .ayah-number {
-    font-size: 1em;
-}
+/* Keep the original ornament size: tiny markers made the opening page uneven. */
