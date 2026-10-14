@@ -81,7 +81,7 @@ layout.pages.forEach((page, pageIndex) => {
         if (line[0] === 'h') {
             assert.equal(line[1], ++headers, `page ${pageIndex + 1} surah header`);
             assert.ok(!headingLocations.has(line[1]), `duplicate heading for surah ${line[1]}`);
-            headingLocations.set(line[1], { page: pageIndex + 1, row: rowIndex });
+            headingLocations.set(line[1], { page: pageIndex + 1, row: rowIndex, ordinal: pageIndex * 15 + rowIndex });
             continue;
         }
         assert.ok(line[0] === 'l' || line[0] === 'b');
@@ -94,7 +94,7 @@ layout.pages.forEach((page, pageIndex) => {
         const lineWords = words.slice(line[1], line[2]);
         for (const word of lineWords) {
             if (!firstWordLocations.has(word.surah)) {
-                firstWordLocations.set(word.surah, { page: pageIndex + 1, row: rowIndex });
+                firstWordLocations.set(word.surah, { page: pageIndex + 1, row: rowIndex, ordinal: pageIndex * 15 + rowIndex });
             }
         }
         if (line[0] === 'b') {
@@ -105,12 +105,12 @@ layout.pages.forEach((page, pageIndex) => {
             assert.notEqual(opening[0].surah, 1);
             assert.notEqual(opening[0].surah, 9);
             assert.ok(!basmalaLocations.has(opening[0].surah));
-            basmalaLocations.set(opening[0].surah, { page: pageIndex + 1, row: rowIndex });
+            basmalaLocations.set(opening[0].surah, { page: pageIndex + 1, row: rowIndex, ordinal: pageIndex * 15 + rowIndex });
         } else {
             textLines++;
             const surah = lineWords[0].surah;
             if (!firstTextLocations.has(surah)) {
-                firstTextLocations.set(surah, { page: pageIndex + 1, row: rowIndex });
+                firstTextLocations.set(surah, { page: pageIndex + 1, row: rowIndex, ordinal: pageIndex * 15 + rowIndex });
             }
         }
     }
@@ -128,20 +128,20 @@ for (let surah = 1; surah <= 114; surah++) {
     assert.ok(heading, `missing heading for surah ${surah}`);
     assert.ok(firstWord, `missing Quran words for surah ${surah}`);
     assert.ok(firstText, `missing first text line for surah ${surah}`);
-    assert.equal(heading.page, firstWord.page, `heading/first-word page for surah ${surah}`);
 
-    const page = layout.pages[heading.page - 1];
+    // QPC can place a surah title on the final row of one page and its
+    // basmala/first ayah on the next. Validate printed row order globally,
+    // rather than forcing all three structures onto one page.
     if (surah === 1 || surah === 9) {
-        assert.equal(page[heading.row + 1][0], 'l', `heading/text order for surah ${surah}`);
-        assert.equal(firstText.row, heading.row + 1, `first text row for surah ${surah}`);
+        assert.equal(firstText.ordinal, heading.ordinal + 1, `heading/text order for surah ${surah}`);
         assert.ok(!basmalaLocations.has(surah), `unexpected basmala for surah ${surah}`);
     } else {
         const basmala = basmalaLocations.get(surah);
         assert.ok(basmala, `missing basmala for surah ${surah}`);
-        assert.equal(basmala.page, heading.page, `basmala page for surah ${surah}`);
-        assert.equal(basmala.row, heading.row + 1, `heading/basmala order for surah ${surah}`);
-        assert.equal(firstText.row, basmala.row + 1, `basmala/text order for surah ${surah}`);
+        assert.equal(basmala.ordinal, heading.ordinal + 1, `heading/basmala order for surah ${surah}`);
+        assert.equal(firstText.ordinal, basmala.ordinal + 1, `basmala/text order for surah ${surah}`);
     }
+    assert.ok(firstWord.ordinal >= heading.ordinal, `Quran words precede heading for surah ${surah}`);
 }
 
 // Canonical QPC 15-line regression anchors. These catch the exact page/line
@@ -172,7 +172,8 @@ assert.deepEqual(
     'page 604 canonical centered-line flags',
 );
 
-assert.equal(headingLocations.get(10).page, 208, 'Surah Yunus heading regression');
+assert.equal(headingLocations.get(10).page, 207, 'canonical Surah Yunus heading page');
+assert.equal(basmalaLocations.get(10).page, 208, 'canonical Surah Yunus basmala page');
 
 console.log(
     `PASS: ${layout.pages.length} canonical pages; ${verses.length} verses; ` +
