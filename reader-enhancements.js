@@ -260,7 +260,8 @@
 
     function buildPreview(targetPage, direction) {
         removePreview();
-        const layout = previewPages?.[targetPage - 1];
+        const layout = window.mushafReader?.getDisplayLayout?.(targetPage) ||
+            previewPages?.[targetPage - 1];
         if (!layout) return null;
 
         const stageRect = stage.getBoundingClientRect();

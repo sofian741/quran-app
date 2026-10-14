@@ -12,6 +12,10 @@
     const JUZ_START_PAGES = [1,22,42,62,82,102,121,142,162,182,201,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582];
     const FIXED_FONT_SIZE = 34;
     const FIXED_LINE_HEIGHT = 1.42;
+    // Al-Fatihah keeps the same 29 source tokens and the same first page, but
+    // uses a balanced seven-row presentation. These boundaries form a natural
+    // rise and fall without stretching spaces or resizing individual rows.
+    const FATIHAH_LINE_ENDS = [4, 9, 14, 19, 23, 27, 29];
     const SUFFIX_MARKS = new Set(['ۖ', 'ۚ', 'ۘ', 'ۗ', 'ۛ', 'ۙ', 'ۜ', '۩']);
     const PREFIX_MARKS = new Set(['۞']);
 
@@ -212,7 +216,7 @@
     }
 
     function renderCurrentPage() {
-        const pageLayout = pages[displayPage - 1];
+        const pageLayout = getDisplayLayout(displayPage);
         const fragment = document.createDocumentFragment();
         for (const line of pageLayout) {
             if (line[0] === 'h') fragment.appendChild(createSurahHeading(line[1]));
@@ -236,6 +240,28 @@
         window.dispatchEvent(new CustomEvent('mushaf:page-ready', {
             detail: { page: displayPage }
         }));
+    }
+
+    function getDisplayLayout(pageNumber) {
+        const sourceLayout = pages[pageNumber - 1];
+        if (pageNumber !== 1) return sourceLayout;
+
+        const textRows = sourceLayout.filter(row => row[0] === 'l');
+        const firstToken = textRows[0]?.[1];
+        const lastToken = textRows.at(-1)?.[2];
+        if (firstToken !== 0 || lastToken !== 29) {
+            throw new Error('Unexpected Al-Fatihah source range');
+        }
+
+        let start = firstToken;
+        return [
+            ...sourceLayout.filter(row => row[0] === 'h'),
+            ...FATIHAH_LINE_ENDS.map(end => {
+                const row = ['l', start, end];
+                start = end;
+                return row;
+            })
+        ];
     }
 
     function createMushafLine(start, end) {
@@ -425,41 +451,12 @@
             line.classList.add(result.lineClasses[index]);
             line.style.transform = result.transforms[index];
         });
-        // Shape the seven Fatihah rows without changing a single glyph's size.
-        // The short final row must remain a compact phrase, not be stretched
-        // across the page by justify-content: space-between.
-        if (container.dataset.openingPage === '1' && lines.length === 7) {
-            const targetFractions = [.63, .72, .89, .89, .82, .69, .46];
-            const available = Math.max(1, container.clientWidth - 12);
-            lines.forEach((line, index) => {
-                line.style.fontSize = '';
-                line.style.transform = '';
-                line.style.width = '';
-                line.style.justifyContent = 'center';
-                line.style.columnGap = '';
-
-                const children = Array.from(line.children);
-                const slots = Math.max(0, children.length - 1);
-                if (!slots) return;
-                const baseGap = parseFloat(getComputedStyle(line).columnGap) || 0;
-                const naturalWidth = children.reduce(
-                    (total, child) => total + child.getBoundingClientRect().width, 0
-                ) + slots * baseGap;
-                const extraPerSlot = Math.min(
-                    Math.max(0, available * targetFractions[index] - naturalWidth) / slots,
-                    result.fontSize * .13
-                );
-                // A modest, bounded gap preserves normal Arabic reading spacing.
-                line.style.columnGap = `${(baseGap + extraPerSlot).toFixed(2)}px`;
-            });
-        } else {
-            lines.forEach(line => {
-                line.style.fontSize = '';
-                line.style.width = '';
-                line.style.justifyContent = '';
-                line.style.columnGap = '';
-            });
-        }
+        lines.forEach(line => {
+            line.style.fontSize = '';
+            line.style.width = '';
+            line.style.justifyContent = '';
+            line.style.columnGap = '';
+        });
         container.dataset.layoutState = 'ready';
     }
 
@@ -496,9 +493,7 @@
             line.classList.remove('is-full-line', 'is-short-line', 'is-crowded-line');
         });
 
-        // Al-Fatihah has deliberately different line widths to form a printed-mushaf
-        // oval. Do not treat its narrowest line as the width of the entire page.
-        const lineWidth = pageNumber === 1 ? container.clientWidth : lines.reduce(
+        const lineWidth = lines.reduce(
             (smallest, line) => Math.min(smallest, line.clientWidth),
             container.clientWidth
         );
@@ -512,13 +507,7 @@
         }));
         let lineWidths = measureLineWidths();
         const widest = Math.max(1, ...lineWidths.values());
-        // Fit the single, consistent font size against each oval row's own width.
-        // This keeps Arabic glyphs undistorted and prevents a narrow row clipping.
-        const widthLimit = pageNumber === 1
-            ? Math.min(...lines.map(line =>
-                preferred * Math.max(1, line.clientWidth - 8) /
-                    Math.max(1, lineWidths.get(line))))
-            : preferred * availableWidth / widest;
+        const widthLimit = preferred * availableWidth / widest;
         const textStyle = getComputedStyle(container);
         const verticalPadding = parseFloat(textStyle.paddingTop) +
             parseFloat(textStyle.paddingBottom);
@@ -965,6 +954,10 @@
     // Shared interface for the interactive swipe layer.
     window.mushafReader = {
         fitElement,
+        getDisplayLayout(page) {
+            if (!Number.isInteger(page) || page < 1 || page > TOTAL_PAGES) return null;
+            return getDisplayLayout(page).map(row => [...row]);
+        },
         getSurahName(surah) { return SURAH_NAMES[surah - 1] || ""; },
         getCurrentPage() { return displayPage; },
         getSearchVerses() { return verses; },

@@ -676,7 +676,7 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
 }
 
 /* The Fatihah uses one consistent type size, including ayah markers.
-   Row widths are measured in app.js and only inter-word spacing is varied. */
+   Its seven source-order rows stay centered at their natural word widths. */
 .quran-text.opening-spread[data-opening-page='1'] {
     gap: clamp(5px, .75dvh, 10px);
 }
@@ -685,6 +685,5 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
 }
 .quran-text.opening-spread[data-opening-page='1'] .mushaf-line {
     align-self: center;
-    gap: .13em;
-    line-height: 1.35;
+    gap: .14em;
 }
