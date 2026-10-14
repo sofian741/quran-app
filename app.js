@@ -385,28 +385,37 @@
             line.classList.add(result.lineClasses[index]);
             line.style.transform = result.transforms[index];
         });
-        // The normal page-fit routine sets one common font size, and can cancel
-        // CSS-only adjustments to the Fatihah silhouette. Shape these seven
-        // lines AFTER fitting, on both the real page and swipe previews.
+        // Al-Fatihah: one font size for every word and verse marker.
+        // Shape the seven rows by distributing only the spaces BETWEEN words,
+        // never by scaling glyphs, changing per-line font sizes or stretching text.
         if (container.dataset.openingPage === '1' && lines.length === 7) {
-            const targets = [.53, .68, .89, .94, .87, .67, .48];
-            const pageWidth = container.clientWidth - 16;
+            const targetFractions = [.66, .77, .89, .89, .79, .68, .59];
+            const available = Math.max(1, container.clientWidth - 12);
             lines.forEach((line, index) => {
                 line.style.fontSize = '';
                 line.style.transform = '';
+                line.style.width = '';
+                line.style.justifyContent = 'center';
                 const children = Array.from(line.children);
                 const gap = parseFloat(getComputedStyle(line).columnGap) || 0;
-                const naturalWidth = children.reduce(
-                    (total, child) => total + child.getBoundingClientRect().width, 0
-                ) + Math.max(0, children.length - 1) * gap;
-                // Avoid the exaggerated word spacing of justify-content:
-                // adjust the text size as one intact, centered Quran phrase.
-                const targetWidth = Math.max(1, pageWidth * targets[index]);
-                const scale = Math.max(.78, Math.min(1.12, targetWidth / Math.max(1, naturalWidth)));
-                line.style.fontSize = `${(result.fontSize * scale).toFixed(2)}px`;
+                const natural = children.reduce((sum, child) =>
+                    sum + child.getBoundingClientRect().width, 0) +
+                    Math.max(0, children.length - 1) * gap;
+                // A row can only widen by spacing words, never by altering letters.
+                // Avoid overflowing the page if its natural words are wider.
+                const desired = available * targetFractions[index];
+                const width = Math.min(available, Math.max(natural, desired));
+                line.style.width = `${width.toFixed(2)}px`;
+                if (children.length > 1 && width > natural + 2) {
+                    line.style.justifyContent = 'space-between';
+                }
             });
         } else {
-            lines.forEach(line => { line.style.fontSize = ''; });
+            lines.forEach(line => {
+                line.style.fontSize = '';
+                line.style.width = '';
+                line.style.justifyContent = '';
+            });
         }
         container.dataset.layoutState = 'ready';
     }
@@ -428,7 +437,7 @@
 
         container.dataset.layoutState = 'pending';
         // The opening spread uses the compact type scale of a printed mushaf.
-        const preferred = pageNumber === 1 ? settings.fontSize * 0.78
+        const preferred = pageNumber === 1 ? settings.fontSize * 0.9
             : pageNumber === 2 ? settings.fontSize * 0.9 : settings.fontSize;
         container.style.fontSize = `${preferred}px`;
         container.style.setProperty('--mushaf-font-size', `${preferred}px`);
