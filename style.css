@@ -691,3 +691,21 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     gap: .14em;
 }
 /* Keep the original ornament size: tiny markers made the opening page uneven. */
+
+/* The reference opening has a short crown, broad central rows and a short
+   final line. Tune *glyph size* gently, not the spaces between Quran words.
+   This applies to the live page and its swipe preview, only on page one. */
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line {
+    font-size: calc(var(--fatihah-row-scale, 1) * 1em);
+}
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(2) { --fatihah-row-scale: .88; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(3) { --fatihah-row-scale: .92; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(4) { --fatihah-row-scale: 1.03; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(5) { --fatihah-row-scale: 1.15; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(6) { --fatihah-row-scale: .98; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(7) { --fatihah-row-scale: 1.15; }
+.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(8) { --fatihah-row-scale: 1.10; }
+/* Keep verse ornaments at a consistent size while adjacent text changes gently. */
+.quran-text.opening-spread[data-opening-page='1'] .ayah-marker {
+    font-size: calc(.7em / var(--fatihah-row-scale, 1));
+}
