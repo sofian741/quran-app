@@ -297,14 +297,15 @@ a { -webkit-tap-highlight-color: transparent; }
     position: relative;
     display: inline-grid;
     place-items: center;
-    flex: 0 0 2.25em;
-    width: 2.25em;
-    height: 2.45em;
+    flex: 0 0 2.35em;
+    width: 2.35em;
+    height: 2.55em;
     margin-inline: .08em;
     padding: 0;
     overflow: visible;
     font-size: .74em;
     vertical-align: middle;
+    transform: translate(-0.07em, 0.09em);
     background: transparent;
     border: 0;
 }
