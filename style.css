@@ -692,24 +692,5 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
 }
 /* Keep the original ornament size: tiny markers made the opening page uneven. */
 
-/* The reference opening has a short crown, broad central rows and a short
-   final line. Tune *glyph size* gently, not the spaces between Quran words.
-   This applies to the live page and its swipe preview, only on page one. */
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line {
-    font-size: calc(var(--fatihah-row-scale, 1) * 1em);
-}
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(2) { --fatihah-row-scale: .88; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(3) { --fatihah-row-scale: .92; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(4) { --fatihah-row-scale: 1.03; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(5) { --fatihah-row-scale: 1.15; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(6) { --fatihah-row-scale: .98; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(7) { --fatihah-row-scale: 1.15; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(8) { --fatihah-row-scale: 1.10; }
-/* Counterbalance the row font sizes so all seven ayah ornaments match. */
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(2) .ayah-marker { font-size: .795em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(3) .ayah-marker { font-size: .761em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(4) .ayah-marker { font-size: .680em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(5) .ayah-marker { font-size: .609em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(6) .ayah-marker { font-size: .714em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(7) .ayah-marker { font-size: .609em; }
-.quran-text.opening-spread[data-opening-page='1'] .mushaf-line:nth-child(8) .ayah-marker { font-size: .636em; }
+/* Al-Fatihah's seven line widths are measured and shaped after fitting in app.js.
+   Keep a single natural font and marker style during the initial measurement. */
