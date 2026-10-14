@@ -636,3 +636,20 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     .index-sheet { right: 50%; left: auto; width: min(560px, 100%); transform: translate(50%, 105%); }
     .index-sheet.is-open { transform: translate(50%, 0); }
 }
+
+/* Printed-mushaf opening spread: keep the first two pages compact and centered.
+   The same class is set before sizing both the live page and swipe previews. */
+.quran-text.opening-spread {
+    justify-content: center;
+    gap: clamp(7px, 1.5vh, 18px);
+}
+.quran-text.opening-spread .mushaf-line {
+    flex: 0 0 auto;
+    min-height: 0;
+}
+.quran-text.opening-spread .surah-heading {
+    flex: 0 0 auto;
+}
+.quran-text.opening-spread .surah-basmala {
+    flex: 0 0 auto;
+}
