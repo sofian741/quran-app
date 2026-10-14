@@ -61,6 +61,132 @@
         container.style.removeProperty('grid-template-rows');
     }
 
+    const STANDARD_FONT_WIDTH_RATIO = 0.05;
+    const STANDARD_FONT_MIN = 14;
+    const STANDARD_FONT_MAX = 19;
+    const STANDARD_LINE_MIN_SCALE = 0.75;
+
+    const layoutStyle = document.createElement('style');
+    layoutStyle.textContent = `
+        .quran-text:not(.opening-spread) {
+            padding-inline: 10px;
+        }
+        .quran-text:not(.opening-spread) .surah-basmala {
+            min-height: 1.45em;
+            margin-block: .08em .18em;
+            font-size: 1em;
+            line-height: 1.42;
+        }
+        .quran-text:not(.opening-spread) .mushaf-line.is-full-line {
+            justify-content: space-between;
+            gap: .05em;
+        }
+        .quran-text:not(.opening-spread) .mushaf-line.is-short-line,
+        .quran-text:not(.opening-spread) .mushaf-line.is-crowded-line {
+            justify-content: center;
+        }
+    `;
+    document.head.appendChild(layoutStyle);
+
+    function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+    }
+
+    function isIntentionalShortRow(container, line, pageNumber) {
+        if (pageNumber <= 2) return false;
+        const rows = Array.from(container.children);
+        const index = rows.indexOf(line);
+        if (rows[index + 1]?.classList?.contains('surah-heading')) return true;
+        if (index === rows.length - 1) {
+            if (pageNumber === 604) return true;
+            const nextLayout = window.mushafReader?.getPageLayout?.(pageNumber + 1);
+            return nextLayout?.[0]?.[0] === 'h';
+        }
+        return false;
+    }
+
+    function measureLineContent(line) {
+        const boxes = Array.from(line.children).map(child => child.getBoundingClientRect());
+        if (!boxes.length) return 0;
+        return Math.max(...boxes.map(box => box.right)) - Math.min(...boxes.map(box => box.left));
+    }
+
+    function stabilizeStandardPage(container, pageNumber) {
+        if (!container || pageNumber <= 2 || !container.clientWidth) return;
+        applyAdaptiveRows(container);
+        container.classList.remove('opening-spread');
+        container.dataset.openingPage = '';
+
+        const containerStyle = getComputedStyle(container);
+        const horizontalPadding =
+            (parseFloat(containerStyle.paddingLeft) || 0) +
+            (parseFloat(containerStyle.paddingRight) || 0);
+        const usableTextWidth = Math.max(1, container.clientWidth - horizontalPadding);
+        const fontSize = clamp(
+            usableTextWidth * STANDARD_FONT_WIDTH_RATIO,
+            STANDARD_FONT_MIN,
+            STANDARD_FONT_MAX
+        );
+        const lineHeight = parseFloat(getComputedStyle(container).lineHeight) /
+            Math.max(1, parseFloat(getComputedStyle(container).fontSize)) || 1.42;
+        container.style.fontSize = `${fontSize.toFixed(2)}px`;
+        container.style.setProperty('--mushaf-font-size', `${fontSize.toFixed(2)}px`);
+        container.style.setProperty('--mushaf-min-row-height', `${(fontSize * lineHeight).toFixed(2)}px`);
+
+        const lines = Array.from(container.querySelectorAll('.mushaf-line'));
+        lines.forEach(line => {
+            line.style.transform = '';
+            line.style.width = '';
+            line.style.fontSize = '';
+            line.style.justifyContent = '';
+            line.style.columnGap = '';
+            line.dataset.lineRole = isIntentionalShortRow(container, line, pageNumber) ? 'surah-end' : '';
+            line.classList.remove('is-measuring', 'is-full-line', 'is-short-line', 'is-crowded-line');
+            const isFull = line.dataset.lineRole !== 'surah-end' && line.children.length >= 4;
+            line.classList.add(isFull ? 'is-full-line' : 'is-short-line');
+        });
+
+        // Read after classes/font are committed, then only compress the few lines whose
+        // Amiri metrics are wider than the pinned Madani line break. The layout box is
+        // expanded by the inverse factor so full rows still touch both page margins.
+        const availableWidth = Math.max(1, (lines[0]?.clientWidth || usableTextWidth) - 4);
+        lines.forEach(line => {
+            const contentWidth = measureLineContent(line);
+            if (contentWidth <= availableWidth + 0.5) return;
+            const scale = Math.max(
+                STANDARD_LINE_MIN_SCALE,
+                Math.min(1, availableWidth / Math.max(1, contentWidth) * 0.985)
+            );
+            line.style.transform = `scaleX(${scale.toFixed(4)})`;
+            if (line.classList.contains('is-full-line')) {
+                line.style.width = `${(100 / scale).toFixed(3)}%`;
+            } else {
+                line.classList.remove('is-short-line');
+                line.classList.add('is-crowded-line');
+            }
+        });
+        container.dataset.layoutState = 'ready';
+    }
+
+    let originalFitElement = null;
+    function installStandardFitOverride() {
+        const reader = window.mushafReader;
+        if (!reader?.fitElement || reader.fitElement.__standardLayoutWrapper) return;
+        originalFitElement = reader.fitElement.bind(reader);
+        const wrapped = (container, pageNumber) => {
+            if (pageNumber <= 2) return originalFitElement(container, pageNumber);
+            stabilizeStandardPage(container, pageNumber);
+        };
+        wrapped.__standardLayoutWrapper = true;
+        reader.fitElement = wrapped;
+    }
+
+    function stabilizeVisiblePage() {
+        installStandardFitOverride();
+        const pageNumber = Math.max(1, Math.min(604, fromArabicDigits(displayPageNumber.textContent)));
+        if (pageNumber > 2) stabilizeStandardPage(text, pageNumber);
+    }
+
     function syncPageMeta() {
         applyAdaptiveRows(text);
 
@@ -94,6 +220,7 @@
         queued = true;
         requestAnimationFrame(() => {
             queued = false;
+            stabilizeVisiblePage();
             syncPageMeta();
         });
     }
@@ -106,7 +233,12 @@
             record.addedNodes.forEach(node => {
                 if (!(node instanceof HTMLElement) || !node.classList.contains('swipe-preview')) return;
                 const previewText = node.querySelector('.quran-text');
-                if (previewText) applyAdaptiveRows(previewText);
+                if (!previewText) return;
+                applyAdaptiveRows(previewText);
+                const previewNumber = fromArabicDigits(
+                    node.querySelector('.display-page-number')?.textContent || ''
+                );
+                if (previewNumber > 2) stabilizeStandardPage(previewText, previewNumber);
             });
         });
     }).observe(stage, { childList: true });
@@ -187,7 +319,11 @@
         });
     }
 
-    window.addEventListener('mushaf:data-ready', consumeVerseDeepLink);
+    window.addEventListener('mushaf:data-ready', () => {
+        stabilizeVisiblePage();
+        consumeVerseDeepLink();
+    });
+    window.addEventListener('mushaf:page-ready', stabilizeVisiblePage);
     window.addEventListener('resize', queueSync, { passive: true });
     queueSync();
     consumeVerseDeepLink();
