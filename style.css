@@ -319,17 +319,34 @@ a { -webkit-tap-highlight-color: transparent; }
     pointer-events: none;
 }
 
-.ayah-medallion-shadow { fill: var(--ayah-edge, #245b50); }
-.ayah-medallion-border { fill: var(--ayah-accent, #73a99b); stroke: var(--ayah-edge, #245b50); stroke-width: 1.6; }
-.ayah-medallion-detail { fill: var(--page-paper); stroke: var(--ayah-edge, #245b50); stroke-width: 1.7; }
-.ayah-medallion-center { fill: var(--ayah-accent, #73a99b); stroke: var(--ayah-edge, #245b50); stroke-width: 1.1; }
-.ayah-medallion-inlay { fill: var(--page-paper); stroke: var(--ayah-edge, #245b50); stroke-width: 1.5; }
-.ayah-medallion-petals { fill: var(--ayah-highlight, #d4c69a); stroke: var(--ayah-edge, #245b50); stroke-width: .7; }
+/* A single compact verse-end ornament, colored by the active reader theme. */
+.reader-page {
+    --ayah-frame-ink: #275d52;
+    --ayah-frame-metal: #ae965b;
+    --ayah-frame-field: #438977;
+    --ayah-frame-light: #f3e7c9;
+    --ayah-number-ink: #205c50;
+}
+.reader-page[data-theme='dark'] {
+    --ayah-frame-ink: #aebbb5;
+    --ayah-frame-metal: #858d88;
+    --ayah-frame-field: #354b46;
+    --ayah-frame-light: #b5c1ba;
+    --ayah-number-ink: #e5ebe7;
+}
+.ayah-frame-outline { fill: var(--ayah-frame-ink); }
+.ayah-frame-metal { fill: var(--ayah-frame-metal); }
+.ayah-frame-field { fill: var(--ayah-frame-field); }
+.ayah-frame-inner-ring { fill: var(--ayah-frame-light); stroke: var(--ayah-frame-ink); stroke-width: 1.15; }
+.ayah-frame-center { fill: var(--page-paper); stroke: var(--ayah-frame-metal); stroke-width: .8; }
+.ayah-frame-finial { fill: var(--ayah-frame-light); stroke: var(--ayah-frame-ink); stroke-width: .8; }
+.ayah-frame-filigree { fill: none; stroke: var(--ayah-frame-light); stroke-width: 1.3; stroke-linecap: round; }
+.ayah-frame-dot { fill: var(--ayah-frame-ink); }
 
 .ayah-marker .ayah-number {
     position: relative;
     z-index: 10;
-    color: var(--ayah-edge, #245b50);
+    color: var(--ayah-number-ink);
     font-family: Tahoma, Arial, sans-serif;
     font-size: .85em;
     font-weight: 700;
