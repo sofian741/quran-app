@@ -335,7 +335,17 @@
         '</svg>';
         const title = document.createElement('h2');
         title.className = 'surah-name';
-        title.textContent = `سورة ${SURAH_NAMES[surah - 1]}`;
+        const titleLine = document.createElement('span');
+        titleLine.className = 'surah-title-line';
+        const prefix = document.createElement('span');
+        prefix.className = 'surah-title-prefix';
+        prefix.textContent = 'سورة';
+        const chapter = document.createElement('span');
+        chapter.className = 'surah-title-chapter';
+        chapter.textContent = SURAH_NAMES[surah - 1];
+        // Keep a real space for accessible text and existing textContent consumers.
+        titleLine.append(prefix, document.createTextNode(' '), chapter);
+        title.appendChild(titleLine);
         heading.appendChild(title);
         return heading;
     }
