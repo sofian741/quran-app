@@ -199,6 +199,7 @@
         if (markerTemplate) {
             const marker = markerTemplate.cloneNode(true);
             marker.setAttribute('aria-label', `الآية ${ayah}`);
+            marker.dataset.digits = String(ayah).length;
             const number = marker.querySelector('.ayah-number');
             if (number) number.textContent = toArabicDigits(ayah);
             return marker;
