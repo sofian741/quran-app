@@ -374,6 +374,46 @@
     const pageFitCache = new Map();
     const MAX_FIT_CACHE = 48;
 
+    // Use Al-Baqarah's actual fitted font size as the opening-page reference.
+    // Its longest lines can make the fitted size smaller than the shared 0.9
+    // preference. Measuring a hidden copy once avoids guessing a scale.
+    function getOpeningReferenceFont(container) {
+        const key = [
+            2, container.clientWidth, container.clientHeight,
+            settings.fontSize, settings.lineHeight
+        ].join(':');
+        const cached = pageFitCache.get(key);
+        if (cached) return cached.fontSize;
+
+        const reference = document.createElement('article');
+        reference.className = 'quran-text opening-spread';
+        reference.dataset.openingPage = '2';
+        reference.setAttribute('aria-hidden', 'true');
+        Object.assign(reference.style, {
+            position: 'absolute',
+            left: '0',
+            top: '0',
+            width: `${container.getBoundingClientRect().width}px`,
+            height: `${container.getBoundingClientRect().height}px`,
+            visibility: 'hidden',
+            pointerEvents: 'none'
+        });
+        const fragment = document.createDocumentFragment();
+        for (const row of pages[1]) {
+            if (row[0] === 'h') fragment.appendChild(createSurahHeading(row[1]));
+            else if (row[0] === 'b') fragment.appendChild(createBasmala(row[1], row[2]));
+            else fragment.appendChild(createMushafLine(row[1], row[2]));
+        }
+        reference.appendChild(fragment);
+        container.parentElement.appendChild(reference);
+        try {
+            fitElement(reference, 2);
+            return Number.parseFloat(reference.style.fontSize) || settings.fontSize * .9;
+        } finally {
+            reference.remove();
+        }
+    }
+
     function applyFitResult(container, lines, result) {
         const fontSize = `${result.fontSize.toFixed(2)}px`;
         container.style.fontSize = fontSize;
@@ -385,36 +425,39 @@
             line.classList.add(result.lineClasses[index]);
             line.style.transform = result.transforms[index];
         });
-        // Al-Fatihah: one font size for every word and verse marker.
-        // Shape the seven rows by distributing only the spaces BETWEEN words,
-        // never by scaling glyphs, changing per-line font sizes or stretching text.
+        // Shape the seven Fatihah rows without changing a single glyph's size.
+        // The short final row must remain a compact phrase, not be stretched
+        // across the page by justify-content: space-between.
         if (container.dataset.openingPage === '1' && lines.length === 7) {
-            const targetFractions = [.66, .77, .89, .89, .79, .68, .59];
+            const targetFractions = [.63, .72, .89, .89, .82, .69, .46];
             const available = Math.max(1, container.clientWidth - 12);
             lines.forEach((line, index) => {
                 line.style.fontSize = '';
                 line.style.transform = '';
                 line.style.width = '';
                 line.style.justifyContent = 'center';
+                line.style.columnGap = '';
+
                 const children = Array.from(line.children);
-                const gap = parseFloat(getComputedStyle(line).columnGap) || 0;
-                const natural = children.reduce((sum, child) =>
-                    sum + child.getBoundingClientRect().width, 0) +
-                    Math.max(0, children.length - 1) * gap;
-                // A row can only widen by spacing words, never by altering letters.
-                // Avoid overflowing the page if its natural words are wider.
-                const desired = available * targetFractions[index];
-                const width = Math.min(available, Math.max(natural, desired));
-                line.style.width = `${width.toFixed(2)}px`;
-                if (children.length > 1 && width > natural + 2) {
-                    line.style.justifyContent = 'space-between';
-                }
+                const slots = Math.max(0, children.length - 1);
+                if (!slots) return;
+                const baseGap = parseFloat(getComputedStyle(line).columnGap) || 0;
+                const naturalWidth = children.reduce(
+                    (total, child) => total + child.getBoundingClientRect().width, 0
+                ) + slots * baseGap;
+                const extraPerSlot = Math.min(
+                    Math.max(0, available * targetFractions[index] - naturalWidth) / slots,
+                    result.fontSize * .13
+                );
+                // A modest, bounded gap preserves normal Arabic reading spacing.
+                line.style.columnGap = `${(baseGap + extraPerSlot).toFixed(2)}px`;
             });
         } else {
             lines.forEach(line => {
                 line.style.fontSize = '';
                 line.style.width = '';
                 line.style.justifyContent = '';
+                line.style.columnGap = '';
             });
         }
         container.dataset.layoutState = 'ready';
@@ -437,13 +480,18 @@
 
         container.dataset.layoutState = 'pending';
         // The opening spread uses the compact type scale of a printed mushaf.
-        const preferred = pageNumber === 1 ? settings.fontSize * 0.9
+        const preferred = pageNumber === 1
+            ? Math.min(settings.fontSize * 0.9, getOpeningReferenceFont(container))
             : pageNumber === 2 ? settings.fontSize * 0.9 : settings.fontSize;
         container.style.fontSize = `${preferred}px`;
         container.style.setProperty('--mushaf-font-size', `${preferred}px`);
         container.style.setProperty('--mushaf-min-row-height', '0px');
         lines.forEach(line => {
             line.style.transform = '';
+            line.style.fontSize = '';
+            line.style.width = '';
+            line.style.justifyContent = '';
+            line.style.columnGap = '';
             line.classList.add('is-measuring');
             line.classList.remove('is-full-line', 'is-short-line', 'is-crowded-line');
         });
