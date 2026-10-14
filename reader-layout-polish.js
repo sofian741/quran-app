@@ -67,9 +67,9 @@
     const STANDARD_LINE_MIN_SCALE = 0.75;
     const STANDARD_GAP_MIN_EM = 0.12;
     const STANDARD_GAP_MAX_EM = 0.30;
-    const STANDARD_TARGET_FILL = 0.985;
-    const MAX_KASHIDAS_PER_WORD = 2;
-    const MAX_KASHIDAS_PER_LINE = 12;
+    const STANDARD_TARGET_FILL = 0.997;
+    const MAX_KASHIDAS_PER_WORD = 4;
+    const MAX_KASHIDAS_PER_LINE = 32;
     const KASHIDA = '\u0640';
     const NON_JOINING_AFTER = new Set(['ء','ا','أ','إ','آ','ٱ','د','ذ','ر','ز','و','ؤ','ة']);
     const originalWordText = new WeakMap();
@@ -211,7 +211,7 @@
 
         while (totalAdded < MAX_KASHIDAS_PER_LINE && stalled < plans.length) {
             const currentWidth = measureLineContent(line);
-            if (currentWidth >= targetWidth - fontSize * .12) break;
+            if (currentWidth >= targetWidth - fontSize * .025) break;
 
             const plan = plans[cursor % plans.length];
             cursor++;
@@ -283,7 +283,7 @@
             setBoundedGap(line, availableWidth, fontSize);
 
             const beforeFill = measureLineContent(line);
-            if (shouldFill && beforeFill < availableWidth * .92) {
+            if (shouldFill && beforeFill < availableWidth * STANDARD_TARGET_FILL) {
                 extendLineWithKashidas(line, availableWidth, fontSize);
                 setBoundedGap(line, availableWidth, fontSize);
             }
