@@ -380,15 +380,19 @@
         marker.className = 'ayah-marker';
         marker.setAttribute('role', 'img');
         marker.setAttribute('aria-label', `الآية ${ayah}`);
-        // One scalable ornament for every ayah, including swipe previews.
+        // A compact vertical Uthmani-style medallion; shared by live pages and previews.
+        // The SVG stays inside the existing marker box, so page line fitting is unchanged.
         marker.innerHTML =
-            '<svg class="ayah-ornament" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
-                '<path class="ayah-medallion-shadow" d="M50 2 L61 12 L73 11 L79 23 L90 29 L89 41 L98 50 L89 59 L90 71 L79 77 L73 89 L61 88 L50 98 L39 88 L27 89 L21 77 L10 71 L11 59 L2 50 L11 41 L10 29 L21 23 L27 11 L39 12 Z"/>' +
-                '<path class="ayah-medallion-border" d="M50 7 L60 17 L70 16 L76 28 L85 33 L84 43 L92 50 L84 57 L85 67 L76 72 L70 84 L60 83 L50 93 L40 83 L30 84 L24 72 L15 67 L16 57 L8 50 L16 43 L15 33 L24 28 L30 16 L40 17 Z"/>' +
-                '<path class="ayah-medallion-detail" d="M50 13 L59 22 L68 21 L73 32 L79 37 L78 45 L85 50 L78 55 L79 63 L73 68 L68 79 L59 78 L50 87 L41 78 L32 79 L27 68 L21 63 L22 55 L15 50 L22 45 L21 37 L27 32 L32 21 L41 22 Z"/>' +
-                '<path class="ayah-medallion-center" d="M50 20 L60 27 L71 29 L73 40 L80 50 L73 60 L71 71 L60 73 L50 80 L40 73 L29 71 L27 60 L20 50 L27 40 L29 29 L40 27 Z"/>' +
-                '<path class="ayah-medallion-inlay" d="M50 24 L59 31 L68 32 L69 41 L76 50 L69 59 L68 68 L59 69 L50 76 L41 69 L32 68 L31 59 L24 50 L31 41 L32 32 L41 31 Z"/>' +
-                '<path class="ayah-medallion-petals" d="M50 7 L53 14 L50 19 L47 14 Z M50 93 L53 86 L50 81 L47 86 Z M7 50 L14 47 L19 50 L14 53 Z M93 50 L86 47 L81 50 L86 53 Z M22 22 L30 24 L29 30 L24 30 Z M78 22 L70 24 L71 30 L76 30 Z M22 78 L30 76 L29 70 L24 70 Z M78 78 L70 76 L71 70 L76 70 Z"/>' +
+            '<svg class="ayah-ornament" viewBox="0 0 76 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
+                '<path class="ayah-frame-outline" d="M38 2 L44 12 C56 14 65 26 67 39 L72 50 L67 61 C65 74 56 86 44 88 L38 98 L32 88 C20 86 11 74 9 61 L4 50 L9 39 C11 26 20 14 32 12 Z"/>' +
+                '<path class="ayah-frame-metal" d="M38 6 L43 16 C56 18 61 30 63 41 L67 50 L63 59 C61 70 56 82 43 84 L38 94 L33 84 C20 82 15 70 13 59 L9 50 L13 41 C15 30 20 18 33 16 Z"/>' +
+                '<path class="ayah-frame-field" d="M38 10 L41 19 C53 21 58 32 59 42 L63 50 L59 58 C58 68 53 79 41 81 L38 90 L35 81 C23 79 18 68 17 58 L13 50 L17 42 C18 32 23 21 35 19 Z"/>' +
+                '<path class="ayah-frame-inner-ring" d="M38 19 C52 19 57 33 57 50 C57 67 52 81 38 81 C24 81 19 67 19 50 C19 33 24 19 38 19 Z"/>' +
+                '<path class="ayah-frame-center" d="M38 23 C50 23 53 36 53 50 C53 64 50 77 38 77 C26 77 23 64 23 50 C23 36 26 23 38 23 Z"/>' +
+                '<path class="ayah-frame-finial" d="M38 3 L42 13 L38 17 L34 13 Z M38 97 L42 87 L38 83 L34 87 Z"/>' +
+                '<path class="ayah-frame-filigree" d="M20 27 Q29 16 38 19 Q47 16 56 27 M20 73 Q29 84 38 81 Q47 84 56 73 M14 43 L19 45 M62 43 L57 45 M14 57 L19 55 M62 57 L57 55"/>' +
+                '<circle class="ayah-frame-dot" cx="38" cy="13" r="2.1"/>' +
+                '<circle class="ayah-frame-dot" cx="38" cy="87" r="2.1"/>' +
             '</svg>' +
             `<span class="ayah-number">${toArabicDigits(ayah)}</span>`;
         return marker;
