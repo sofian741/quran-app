@@ -64,6 +64,13 @@
     const STANDARD_FONT_WIDTH_RATIO = 0.05;
     const STANDARD_FONT_MIN = 14;
     const STANDARD_FONT_MAX = 19;
+    // Keep the phone typography untouched, but let the Quran grow on tablets.
+    const TABLET_FONT_START_WIDTH = 480;
+    const TABLET_FONT_GROWTH_PER_PX = 0.075;
+    const TABLET_FONT_MAX = 38;
+    const TABLET_FONT_HEIGHT_ROWS = 16;
+    const TABLET_FONT_HEIGHT_LINE_RATIO = 1.65;
+    const TABLET_FONT_HEIGHT_BUDGET = 0.86;
     const STANDARD_LINE_MIN_SCALE = 0.75;
     const STANDARD_GAP_MIN_EM = 0.12;
     const STANDARD_GAP_MAX_EM = 0.30;
@@ -76,6 +83,136 @@
     const graphemeSegmenter = typeof Intl?.Segmenter === 'function'
         ? new Intl.Segmenter('ar', { granularity: 'grapheme' })
         : null;
+
+    // Persistent layout cache. A version bump intentionally invalidates old
+    // measurements whenever the line-fitting algorithm changes.
+    const LAYOUT_CACHE_VERSION = 'standard-tablet-kashida-v1-20261016';
+    const LAYOUT_CACHE_DB = 'quranMushafLayoutCache';
+    const LAYOUT_CACHE_STORE = 'layouts';
+    const layoutMemoryCache = new Map();
+    let layoutCacheDb = null;
+    const layoutCacheDiagnostics = {
+        version: LAYOUT_CACHE_VERSION,
+        hydrated: false,
+        available: 'indexedDB' in window,
+        cached: 0,
+        hits: 0,
+        misses: 0,
+        calculations: 0,
+        writes: 0,
+        invalid: 0,
+        backgroundPrepared: 0,
+        backgroundSkipped: 0,
+        backgroundLastMs: 0
+    };
+    window.mushafLayoutCacheDiagnostics = layoutCacheDiagnostics;
+
+    function layoutProfile(width, height) {
+        return `${Math.round(width)}x${Math.round(height)}`;
+    }
+
+    function layoutCacheKey(pageNumber, width, height) {
+        return `${LAYOUT_CACHE_VERSION}:${pageNumber}:${layoutProfile(width, height)}`;
+    }
+
+    function openLayoutCacheDb() {
+        if (!('indexedDB' in window)) return Promise.resolve(null);
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(LAYOUT_CACHE_DB, 1);
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(LAYOUT_CACHE_STORE)) {
+                    db.createObjectStore(LAYOUT_CACHE_STORE, { keyPath: 'key' });
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
+        });
+    }
+
+    function getAllCachedLayouts(db) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(LAYOUT_CACHE_STORE, 'readonly');
+            const request = transaction.objectStore(LAYOUT_CACHE_STORE).getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error || new Error('IndexedDB read failed'));
+        });
+    }
+
+    function deleteCachedLayouts(db, keys) {
+        if (!keys.length) return;
+        try {
+            const transaction = db.transaction(LAYOUT_CACHE_STORE, 'readwrite');
+            const store = transaction.objectStore(LAYOUT_CACHE_STORE);
+            keys.forEach(key => store.delete(key));
+        } catch (_) {
+            // Cache cleanup must never affect Quran rendering.
+        }
+    }
+
+    async function hydrateLayoutCache() {
+        try {
+            layoutCacheDb = await openLayoutCacheDb();
+            if (!layoutCacheDb) return;
+            const records = await getAllCachedLayouts(layoutCacheDb);
+            const obsolete = [];
+            records.forEach(record => {
+                if (record?.version === LAYOUT_CACHE_VERSION && record?.key) {
+                    layoutMemoryCache.set(record.key, record);
+                } else if (record?.key) {
+                    obsolete.push(record.key);
+                }
+            });
+            layoutCacheDiagnostics.cached = layoutMemoryCache.size;
+            deleteCachedLayouts(layoutCacheDb, obsolete);
+        } catch (error) {
+            console.warn('Mushaf layout cache unavailable:', error);
+            layoutCacheDb = null;
+            layoutCacheDiagnostics.available = false;
+        } finally {
+            layoutCacheDiagnostics.hydrated = true;
+            window.dispatchEvent(new CustomEvent('mushaf:layout-cache-ready', {
+                detail: { cached: layoutMemoryCache.size }
+            }));
+        }
+    }
+
+    const layoutCacheReady = hydrateLayoutCache();
+
+    function persistLayoutRecord(record) {
+        layoutMemoryCache.set(record.key, record);
+        layoutCacheDiagnostics.cached = layoutMemoryCache.size;
+        layoutCacheReady.then(() => {
+            if (!layoutCacheDb) return;
+            try {
+                const transaction = layoutCacheDb.transaction(LAYOUT_CACHE_STORE, 'readwrite');
+                transaction.objectStore(LAYOUT_CACHE_STORE).put(record);
+                transaction.oncomplete = () => { layoutCacheDiagnostics.writes++; };
+            } catch (_) {
+                // Memory caching still works if a device refuses persistent writes.
+            }
+        });
+    }
+
+    window.mushafLayoutCache = {
+        version: LAYOUT_CACHE_VERSION,
+        ready: layoutCacheReady,
+        has(pageNumber, width = text.clientWidth, height = text.clientHeight) {
+            if (!Number.isInteger(pageNumber) || pageNumber <= 2 || pageNumber > 604) return true;
+            return layoutMemoryCache.has(layoutCacheKey(pageNumber, width, height));
+        },
+        count(width = text.clientWidth, height = text.clientHeight) {
+            const suffix = `:${layoutProfile(width, height)}`;
+            let count = 0;
+            layoutMemoryCache.forEach((_, key) => {
+                if (key.endsWith(suffix)) count++;
+            });
+            return count;
+        },
+        getProfile(width = text.clientWidth, height = text.clientHeight) {
+            return layoutProfile(width, height);
+        }
+    };
 
     const layoutStyle = document.createElement('style');
     layoutStyle.textContent = `
@@ -241,12 +378,106 @@
         }
     }
 
+    function cachedLineState(line) {
+        if (line.classList.contains('is-crowded-line')) return 'is-crowded-line';
+        if (line.classList.contains('is-full-line')) return 'is-full-line';
+        return 'is-short-line';
+    }
+
+    function snapshotStandardLayout(container, pageNumber, layoutWidth) {
+        const width = Math.round(container.clientWidth);
+        const height = Math.round(container.clientHeight);
+        const lines = Array.from(container.querySelectorAll('.mushaf-line'));
+        return {
+            key: layoutCacheKey(pageNumber, width, height),
+            version: LAYOUT_CACHE_VERSION,
+            pageNumber,
+            width,
+            height,
+            fontSize: parseFloat(container.style.fontSize) || parseFloat(getComputedStyle(container).fontSize),
+            minRowHeight: container.style.getPropertyValue('--mushaf-min-row-height'),
+            standardLayoutWidth: layoutWidth,
+            lines: lines.map(line => ({
+                start: line.dataset.start || '',
+                end: line.dataset.end || '',
+                role: line.dataset.lineRole || '',
+                state: cachedLineState(line),
+                transform: line.style.transform || '',
+                columnGap: line.style.columnGap || '',
+                words: Array.from(line.querySelectorAll('.mushaf-word'), word => word.textContent || '')
+            }))
+        };
+    }
+
+    function applyCachedStandardLayout(container, pageNumber, layoutWidth, cached) {
+        if (!cached || cached.version !== LAYOUT_CACHE_VERSION ||
+            cached.pageNumber !== pageNumber || !Number.isFinite(cached.fontSize)) return false;
+        const lines = Array.from(container.querySelectorAll('.mushaf-line'));
+        if (!Array.isArray(cached.lines) || cached.lines.length !== lines.length) return false;
+
+        const wordLists = [];
+        for (let index = 0; index < lines.length; index++) {
+            const line = lines[index];
+            const saved = cached.lines[index];
+            const words = Array.from(line.querySelectorAll('.mushaf-word'));
+            if (!saved || saved.start !== (line.dataset.start || '') ||
+                saved.end !== (line.dataset.end || '') ||
+                !Array.isArray(saved.words) || saved.words.length !== words.length) {
+                return false;
+            }
+            wordLists.push(words);
+        }
+
+        applyAdaptiveRows(container);
+        container.classList.remove('opening-spread');
+        container.dataset.openingPage = '';
+        const fontSize = `${cached.fontSize.toFixed(2)}px`;
+        container.style.fontSize = fontSize;
+        container.style.setProperty('--mushaf-font-size', fontSize);
+        container.style.setProperty('--mushaf-min-row-height', cached.minRowHeight || '0px');
+
+        lines.forEach((line, index) => {
+            const saved = cached.lines[index];
+            wordLists[index].forEach((word, wordIndex) => {
+                baseWordText(word);
+                const stretched = saved.words[wordIndex];
+                if (word.textContent !== stretched) word.textContent = stretched;
+            });
+            line.style.transform = saved.transform || '';
+            line.style.width = '';
+            line.style.fontSize = '';
+            line.style.justifyContent = 'center';
+            line.style.columnGap = saved.columnGap || '';
+            line.dataset.lineRole = saved.role || '';
+            line.classList.remove('is-measuring', 'is-full-line', 'is-short-line', 'is-crowded-line');
+            line.classList.add(saved.state || 'is-short-line');
+        });
+        container.dataset.layoutState = 'ready';
+        container.dataset.standardLayoutPage = String(pageNumber);
+        container.dataset.standardLayoutWidth = layoutWidth;
+        layoutCacheDiagnostics.hits++;
+        return true;
+    }
+
     function stabilizeStandardPage(container, pageNumber) {
-        if (!container || pageNumber <= 2 || !container.clientWidth) return;
-        const layoutWidth = String(container.clientWidth);
+        if (!container || pageNumber <= 2 || !container.clientWidth || !container.clientHeight) return;
+        // Height matters on tablets because the responsive type scale is capped by
+        // the number of Quran rows that can fit vertically.
+        const layoutWidth = `${container.clientWidth}x${container.clientHeight}`;
         if (container.dataset.standardLayoutPage === String(pageNumber) &&
             container.dataset.standardLayoutWidth === layoutWidth &&
             container.dataset.layoutState === 'ready') return;
+
+        const key = layoutCacheKey(pageNumber, container.clientWidth, container.clientHeight);
+        const cached = layoutMemoryCache.get(key);
+        if (cached && applyCachedStandardLayout(container, pageNumber, layoutWidth, cached)) return;
+        if (cached) {
+            layoutMemoryCache.delete(key);
+            layoutCacheDiagnostics.invalid++;
+        }
+        layoutCacheDiagnostics.misses++;
+        layoutCacheDiagnostics.calculations++;
+
         applyAdaptiveRows(container);
         container.classList.remove('opening-spread');
         container.dataset.openingPage = '';
@@ -256,11 +487,26 @@
             (parseFloat(containerStyle.paddingLeft) || 0) +
             (parseFloat(containerStyle.paddingRight) || 0);
         const usableTextWidth = Math.max(1, container.clientWidth - horizontalPadding);
-        const fontSize = clamp(
+        const phoneFontSize = clamp(
             usableTextWidth * STANDARD_FONT_WIDTH_RATIO,
             STANDARD_FONT_MIN,
             STANDARD_FONT_MAX
         );
+        const tabletIncrease = Math.max(
+            0,
+            usableTextWidth - TABLET_FONT_START_WIDTH
+        ) * TABLET_FONT_GROWTH_PER_PX;
+        const heightLimit = container.clientHeight > 0
+            ? container.clientHeight * TABLET_FONT_HEIGHT_BUDGET /
+                (TABLET_FONT_HEIGHT_ROWS * TABLET_FONT_HEIGHT_LINE_RATIO)
+            : TABLET_FONT_MAX;
+        const fontSize = tabletIncrease > 0
+            ? clamp(
+                Math.min(phoneFontSize + tabletIncrease, heightLimit),
+                STANDARD_FONT_MIN,
+                TABLET_FONT_MAX
+            )
+            : phoneFontSize;
         const lineHeight = parseFloat(getComputedStyle(container).lineHeight) /
             Math.max(1, parseFloat(getComputedStyle(container).fontSize)) || 1.42;
         container.style.fontSize = `${fontSize.toFixed(2)}px`;
@@ -305,6 +551,7 @@
         container.dataset.layoutState = 'ready';
         container.dataset.standardLayoutPage = String(pageNumber);
         container.dataset.standardLayoutWidth = layoutWidth;
+        persistLayoutRecord(snapshotStandardLayout(container, pageNumber, layoutWidth));
     }
 
     let originalFitElement = null;
@@ -464,6 +711,17 @@
     });
     window.addEventListener('mushaf:page-ready', stabilizeVisiblePage);
     window.addEventListener('resize', queueSync, { passive: true });
+
+    // Load the idle pre-warmer after the cache API exists. It prepares nearby
+    // pages first, then slowly fills the rest of the 604-page mushaf.
+    if (!document.querySelector('script[data-mushaf-layout-prewarm]')) {
+        const prewarmScript = document.createElement('script');
+        prewarmScript.src = './mushaf-layout-prewarm-worker.js';
+        prewarmScript.async = true;
+        prewarmScript.dataset.mushafLayoutPrewarm = 'true';
+        document.head.appendChild(prewarmScript);
+    }
+
     queueSync();
     consumeVerseDeepLink();
 })();
