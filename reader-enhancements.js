@@ -496,7 +496,7 @@
     // At native pinch scale > 1, horizontal gestures pan the enlarged page.
     // A second finger cancels any pending swipe before it can turn a page.
     const activeTouchPointers = new Set();
-    const isPinchZoomed = () => (window.visualViewport?.scale || 1) > 1.01;
+    const isPinchZoomed = () => (window.visualViewport?.scale || 1) >= 1.15;
     stage.addEventListener('pointerdown', event => {
         if (event.pointerType !== 'touch') return;
         activeTouchPointers.add(event.pointerId);
