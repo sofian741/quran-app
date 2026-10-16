@@ -57,11 +57,37 @@ assert.deepEqual(sanitized.repeat, { mode: 'range', start: 3, end: 8, count: 99,
     { word: 1, start: 0, end: 900 }, { word: 2, start: 900, end: 1800 }
   ]);
 
+  // A long surah must request subsequent pages rather than silently stopping at 50 verses.
+  const requestedPages = [];
+  const paginatedTiming = new core.TimingProvider(async url => {
+    const parsed = new URL(url);
+    assert.match(parsed.pathname, /\/recitations\/7\/by_chapter\/2$/);
+    assert.equal(parsed.searchParams.get('segments'), 'true');
+    assert.equal(parsed.searchParams.get('per_page'), '50');
+    const page = Number(parsed.searchParams.get('page'));
+    requestedPages.push(page);
+    assert.ok(page === 1 || page === 2, 'unexpected pagination request');
+    const start = page === 1 ? 1 : 51;
+    const end = page === 1 ? 50 : 51;
+    return response({
+      audio_files: Array.from({ length: end - start + 1 }, (_, index) => ({
+        verse_key: `2:${start + index}`,
+        url: `Alafasy/mp3/002${String(start + index).padStart(3, '0')}.mp3`,
+        segments: [[1, 0, 100]]
+      })),
+      pagination: { total_pages: 2, next_page: page === 1 ? 2 : null }
+    });
+  });
+  const paginatedChapter = await paginatedTiming.chapter(7, 2);
+  assert.deepEqual(requestedPages, [1, 2], 'all API pages must be fetched');
+  assert.equal(paginatedChapter.size, 51, 'audio timing pages must be merged');
+  assert.ok(paginatedChapter.has(51), 'late verses must remain accessible');
+
   const service = new core.CatalogService(async () => response(rawCatalog));
   const loaded = await service.load();
   assert.equal(service.preferred(loaded).id, 1, 'Mishary must be the default when available');
   assert.equal(core.priorityIndex('ماهر المعيقلي') < core.priorityIndex('قارئ آخر'), true);
-  console.log('audio-core: 13 assertions passed');
+  console.log('audio-core: assertions passed (including paginated chapter audio)');
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;
