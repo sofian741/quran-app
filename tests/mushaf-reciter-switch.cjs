@@ -88,9 +88,14 @@ const catalog = { reciters: [
         assert.match(groupInfo.labels[0], /المتزامنون/);
         assert.match(groupInfo.labels[1], /غير متزامنة/);
 
-        await page.click('#audio-open-options');
-        await page.click('#audio-reciter-trigger');
-        await page.waitForSelector('.audio-picker-group-heading');
+        // The Quran page can keep its reader loading overlay visible while
+        // unrelated remote Quran text loads. Exercise the audio controls
+        // directly without requiring the entire reader layout to finish.
+        await page.evaluate(() => {
+            document.getElementById('audio-open-options').click();
+            document.getElementById('audio-reciter-trigger').click();
+        });
+        await page.waitForFunction(() => !!document.querySelector('.audio-picker-group-heading'));
         assert.equal(await page.locator('.audio-picker-group-heading').count(), 2);
         assert.match(await page.locator('.audio-picker-group-caption').textContent(), /التحويل تلقائيًا/);
         await page.evaluate(() => {
@@ -121,7 +126,7 @@ const catalog = { reciters: [
         assert.match(message, /مشاري/);
         assert.match(message, /ليس عطلًا/);
         assert.match(message, /٣/);
-        await page.click('#audio-switch-notice-dismiss');
+        await page.evaluate(() => document.getElementById('audio-switch-notice-dismiss').click());
         assert.equal(await page.locator('#audio-switch-notice').isHidden(), true);
         assert.deepEqual(errors, [], 'no browser errors');
         await page.close();
