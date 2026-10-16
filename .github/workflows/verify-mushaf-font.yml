@@ -1,0 +1,36 @@
+name: Verify larger Quran typography
+on:
+  push:
+    branches: [main]
+    paths:
+      - reader-layout-polish.js
+      - app.js
+      - style.css
+      - tests/mushaf-larger-font.cjs
+      - .github/workflows/verify-mushaf-font.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install browser test dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq chromium
+          npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Start local mushaf
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/quran-font-server.log 2>&1 &
+          sleep 2
+      - name: Test Quran glyph size and fit on phones/tablets
+        env:
+          QURAN_BROWSER_PATH: /usr/bin/chromium
+          QURAN_BASE_URL: http://127.0.0.1:4173
+        run: |
+          node --check reader-layout-polish.js
+          node --check tests/mushaf-larger-font.cjs
+          node tests/mushaf-larger-font.cjs
