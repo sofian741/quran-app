@@ -64,6 +64,15 @@
     const STANDARD_FONT_WIDTH_RATIO = 0.05;
     const STANDARD_FONT_MIN = 14;
     const STANDARD_FONT_MAX = 19;
+    // Phone typography is intentionally unchanged. On tablets the old 19px
+    // ceiling left most Quran rows occupying only half the available width.
+    // Grow continuously above phone widths, with a conservative height limit.
+    const TABLET_FONT_START_WIDTH = 480;
+    const TABLET_FONT_GROWTH_PER_PX = 0.047;
+    const TABLET_FONT_MAX = 38;
+    const TABLET_FONT_HEIGHT_ROWS = 16;
+    const TABLET_FONT_HEIGHT_LINE_RATIO = 1.65;
+    const TABLET_FONT_HEIGHT_BUDGET = 0.86;
     const STANDARD_LINE_MIN_SCALE = 0.75;
     const STANDARD_GAP_MIN_EM = 0.12;
     const STANDARD_GAP_MAX_EM = 0.30;
@@ -256,11 +265,29 @@
             (parseFloat(containerStyle.paddingLeft) || 0) +
             (parseFloat(containerStyle.paddingRight) || 0);
         const usableTextWidth = Math.max(1, container.clientWidth - horizontalPadding);
-        const fontSize = clamp(
+        const phoneFontSize = clamp(
             usableTextWidth * STANDARD_FONT_WIDTH_RATIO,
             STANDARD_FONT_MIN,
             STANDARD_FONT_MAX
         );
+        // Scale the Quran text on wide portrait screens without enlarging the
+        // fixed line breaks or increasing the number of inserted kashidas.
+        // The width-based increase starts only beyond ordinary phone widths.
+        const tabletIncrease = Math.max(
+            0,
+            usableTextWidth - TABLET_FONT_START_WIDTH
+        ) * TABLET_FONT_GROWTH_PER_PX;
+        const heightLimit = container.clientHeight > 0
+            ? container.clientHeight * TABLET_FONT_HEIGHT_BUDGET /
+                (TABLET_FONT_HEIGHT_ROWS * TABLET_FONT_HEIGHT_LINE_RATIO)
+            : TABLET_FONT_MAX;
+        const fontSize = tabletIncrease > 0
+            ? clamp(
+                Math.min(phoneFontSize + tabletIncrease, heightLimit),
+                STANDARD_FONT_MIN,
+                TABLET_FONT_MAX
+            )
+            : phoneFontSize;
         const lineHeight = parseFloat(getComputedStyle(container).lineHeight) /
             Math.max(1, parseFloat(getComputedStyle(container).fontSize)) || 1.42;
         container.style.fontSize = `${fontSize.toFixed(2)}px`;
