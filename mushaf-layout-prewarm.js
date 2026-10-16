@@ -9,6 +9,212 @@
     const SUFFIX_MARKS = new Set(['ۖ', 'ۚ', 'ۘ', 'ۗ', 'ۛ', 'ۙ', 'ۜ', '۩']);
     const PREFIX_MARKS = new Set(['۞']);
 
+    const LAYOUT_CACHE_VERSION = 'standard-tablet-kashida-v1-20261016';
+    const LAYOUT_CACHE_DB = 'quranMushafLayoutCache';
+    const LAYOUT_CACHE_STORE = 'layouts';
+    const layoutMemoryCache = new Map();
+    let layoutCacheDb = null;
+    const layoutCacheDiagnostics = window.mushafLayoutCacheDiagnostics || {
+        version: LAYOUT_CACHE_VERSION,
+        hydrated: false,
+        available: 'indexedDB' in window,
+        cached: 0,
+        hits: 0,
+        misses: 0,
+        writes: 0,
+        invalid: 0,
+        backgroundPrepared: 0,
+        backgroundSkipped: 0,
+        backgroundLastMs: 0
+    };
+    window.mushafLayoutCacheDiagnostics = layoutCacheDiagnostics;
+
+    function layoutProfile(width, height) {
+        return `${Math.round(width)}x${Math.round(height)}`;
+    }
+
+    function layoutCacheKey(pageNumber, width, height) {
+        return `${LAYOUT_CACHE_VERSION}:${pageNumber}:${layoutProfile(width, height)}`;
+    }
+
+    function openLayoutCacheDb() {
+        if (!('indexedDB' in window)) return Promise.resolve(null);
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(LAYOUT_CACHE_DB, 1);
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(LAYOUT_CACHE_STORE)) {
+                    db.createObjectStore(LAYOUT_CACHE_STORE, { keyPath: 'key' });
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
+        });
+    }
+
+    function getAllCachedLayouts(db) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(LAYOUT_CACHE_STORE, 'readonly');
+            const request = transaction.objectStore(LAYOUT_CACHE_STORE).getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error || new Error('IndexedDB read failed'));
+        });
+    }
+
+    async function hydrateLayoutCache() {
+        try {
+            layoutCacheDb = await openLayoutCacheDb();
+            if (!layoutCacheDb) return;
+            const records = await getAllCachedLayouts(layoutCacheDb);
+            const obsolete = [];
+            records.forEach(record => {
+                if (record?.version === LAYOUT_CACHE_VERSION && record?.key) {
+                    layoutMemoryCache.set(record.key, record);
+                } else if (record?.key) {
+                    obsolete.push(record.key);
+                }
+            });
+            layoutCacheDiagnostics.cached = layoutMemoryCache.size;
+            if (obsolete.length) {
+                const transaction = layoutCacheDb.transaction(LAYOUT_CACHE_STORE, 'readwrite');
+                const store = transaction.objectStore(LAYOUT_CACHE_STORE);
+                obsolete.forEach(key => store.delete(key));
+            }
+        } catch (error) {
+            console.warn('Mushaf layout cache unavailable:', error);
+            layoutCacheDb = null;
+            layoutCacheDiagnostics.available = false;
+        } finally {
+            layoutCacheDiagnostics.hydrated = true;
+        }
+    }
+
+    const layoutCacheReady = hydrateLayoutCache();
+
+    function persistRecord(record) {
+        layoutMemoryCache.set(record.key, record);
+        layoutCacheDiagnostics.cached = layoutMemoryCache.size;
+        layoutCacheReady.then(() => {
+            if (!layoutCacheDb) return;
+            try {
+                const transaction = layoutCacheDb.transaction(LAYOUT_CACHE_STORE, 'readwrite');
+                transaction.objectStore(LAYOUT_CACHE_STORE).put(record);
+                transaction.oncomplete = () => { layoutCacheDiagnostics.writes++; };
+            } catch (_) {
+                // Memory caching remains available if persistent writes are refused.
+            }
+        });
+    }
+
+    function lineState(line) {
+        if (line.classList.contains('is-crowded-line')) return 'is-crowded-line';
+        if (line.classList.contains('is-full-line')) return 'is-full-line';
+        return 'is-short-line';
+    }
+
+    function snapshotLayout(container, pageNumber, layoutWidth) {
+        const width = Math.round(container.clientWidth);
+        const height = Math.round(container.clientHeight);
+        const lines = Array.from(container.querySelectorAll('.mushaf-line'));
+        return {
+            key: layoutCacheKey(pageNumber, width, height),
+            version: LAYOUT_CACHE_VERSION,
+            pageNumber,
+            width,
+            height,
+            fontSize: parseFloat(container.style.fontSize) || parseFloat(getComputedStyle(container).fontSize),
+            minRowHeight: container.style.getPropertyValue('--mushaf-min-row-height'),
+            standardLayoutWidth: layoutWidth,
+            lines: lines.map(line => ({
+                start: line.dataset.start || '',
+                end: line.dataset.end || '',
+                role: line.dataset.lineRole || '',
+                state: lineState(line),
+                transform: line.style.transform || '',
+                columnGap: line.style.columnGap || '',
+                words: Array.from(line.querySelectorAll('.mushaf-word'), word => word.textContent || '')
+            }))
+        };
+    }
+
+    function applyCachedLayout(container, pageNumber, layoutWidth, captureBaseWord) {
+        const key = layoutCacheKey(pageNumber, container.clientWidth, container.clientHeight);
+        const cached = layoutMemoryCache.get(key);
+        if (!cached) {
+            layoutCacheDiagnostics.misses++;
+            return false;
+        }
+        const lines = Array.from(container.querySelectorAll('.mushaf-line'));
+        if (!Array.isArray(cached.lines) || cached.lines.length !== lines.length || !Number.isFinite(cached.fontSize)) {
+            layoutMemoryCache.delete(key);
+            layoutCacheDiagnostics.invalid++;
+            return false;
+        }
+        const wordLists = [];
+        for (let index = 0; index < lines.length; index++) {
+            const line = lines[index];
+            const saved = cached.lines[index];
+            const words = Array.from(line.querySelectorAll('.mushaf-word'));
+            if (!saved || saved.start !== (line.dataset.start || '') || saved.end !== (line.dataset.end || '') ||
+                !Array.isArray(saved.words) || saved.words.length !== words.length) {
+                layoutMemoryCache.delete(key);
+                layoutCacheDiagnostics.invalid++;
+                return false;
+            }
+            wordLists.push(words);
+        }
+
+        container.classList.remove('opening-spread');
+        container.dataset.openingPage = '';
+        const fontSize = `${cached.fontSize.toFixed(2)}px`;
+        container.style.fontSize = fontSize;
+        container.style.setProperty('--mushaf-font-size', fontSize);
+        container.style.setProperty('--mushaf-min-row-height', cached.minRowHeight || '0px');
+        lines.forEach((line, index) => {
+            const saved = cached.lines[index];
+            wordLists[index].forEach((word, wordIndex) => {
+                if (typeof captureBaseWord === 'function') captureBaseWord(word);
+                const stretched = saved.words[wordIndex];
+                if (word.textContent !== stretched) word.textContent = stretched;
+            });
+            line.style.transform = saved.transform || '';
+            line.style.width = '';
+            line.style.fontSize = '';
+            line.style.justifyContent = 'center';
+            line.style.columnGap = saved.columnGap || '';
+            line.dataset.lineRole = saved.role || '';
+            line.classList.remove('is-measuring', 'is-full-line', 'is-short-line', 'is-crowded-line');
+            line.classList.add(saved.state || 'is-short-line');
+        });
+        container.dataset.layoutState = 'ready';
+        container.dataset.standardLayoutPage = String(pageNumber);
+        container.dataset.standardLayoutWidth = layoutWidth;
+        layoutCacheDiagnostics.hits++;
+        return true;
+    }
+
+    window.mushafLayoutCache = {
+        version: LAYOUT_CACHE_VERSION,
+        ready: layoutCacheReady,
+        has(pageNumber, width = text.clientWidth, height = text.clientHeight) {
+            if (!Number.isInteger(pageNumber) || pageNumber <= 2 || pageNumber > TOTAL_PAGES) return true;
+            return layoutMemoryCache.has(layoutCacheKey(pageNumber, width, height));
+        },
+        count(width = text.clientWidth, height = text.clientHeight) {
+            const suffix = `:${layoutProfile(width, height)}`;
+            let count = 0;
+            layoutMemoryCache.forEach((_, key) => {
+                if (key.endsWith(suffix)) count++;
+            });
+            return count;
+        },
+        apply: applyCachedLayout,
+        store(container, pageNumber, layoutWidth) {
+            if (!container || pageNumber <= 2 || container.dataset.layoutState !== 'ready') return;
+            persistRecord(snapshotLayout(container, pageNumber, layoutWidth));
+        }
+    };
+
     const stage = document.getElementById('reader-stage');
     const page = document.getElementById('mushaf-page');
     const text = document.getElementById('quran-text');
@@ -22,7 +228,7 @@
     let queueRevision = 0;
     let pendingPages = [];
 
-    const diagnostics = window.mushafLayoutCacheDiagnostics || {};
+    const diagnostics = layoutCacheDiagnostics;
     diagnostics.backgroundPrepared = diagnostics.backgroundPrepared || 0;
     diagnostics.backgroundSkipped = diagnostics.backgroundSkipped || 0;
     diagnostics.backgroundLastMs = diagnostics.backgroundLastMs || 0;
@@ -309,6 +515,14 @@
             await window.mushafLayoutCache?.ready;
         } catch (_) {
             // Memory cache still works if IndexedDB initialization failed.
+        }
+        const current = getCurrentPage();
+        if (current > 2 && text.dataset.layoutState === 'ready') {
+            window.mushafLayoutCache?.store?.(
+                text,
+                current,
+                `${text.clientWidth}x${text.clientHeight}`
+            );
         }
         ready = true;
         rebuildQueue();
