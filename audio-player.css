@@ -641,3 +641,63 @@
 
 .audio-storage-info{margin:12px 2px 4px;color:#577b6b;font-size:12px;line-height:1.8}
 .reader-page[data-theme='dark'] .audio-storage-info{color:#b8d5c5}
+
+/* Distinct synchronized and full-recording sections in the reciter picker. */
+.audio-picker-group-heading {
+    margin: 10px 8px 6px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    background: #eaf3ed;
+    color: #235e4b;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.6;
+}
+.audio-picker-group-heading:not(:first-child) { margin-top: 18px; }
+.audio-picker-group-heading.audio-picker-group-mp3 {
+    background: #fff3dc;
+    color: #74572a;
+}
+.audio-picker-group-caption {
+    display: block;
+    margin: 2px 12px 9px;
+    color: #64796f;
+    font-size: 11px;
+    line-height: 1.7;
+}
+.audio-picker-option[data-value^="mp3:"] { font-weight: 500; }
+
+/* This remains visible until acknowledged, even after playback begins. */
+.audio-switch-notice[hidden] { display: none !important; }
+.audio-switch-notice {
+    position: fixed;
+    z-index: 10050;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    inset-inline: 14px;
+    max-width: 440px;
+    margin-inline: auto;
+    padding: 16px;
+    border: 2px solid #c99442;
+    border-radius: 17px;
+    background: #fffaf0;
+    color: #43321a;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .22);
+    line-height: 1.8;
+}
+.audio-switch-notice strong { display: block; font-size: 15px; margin-bottom: 6px; }
+.audio-switch-notice p { margin: 0 0 12px; font-size: 13px; }
+.audio-switch-notice button {
+    min-height: 40px;
+    padding: 7px 18px;
+    border: 0;
+    border-radius: 10px;
+    background: #176b63;
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+.reader-page[data-theme='dark'] .audio-picker-group-heading { background: #284839; color: #d2f2df; }
+.reader-page[data-theme='dark'] .audio-picker-group-mp3 { background: #55452d; color: #fce7c0; }
+.reader-page[data-theme='dark'] .audio-picker-group-caption { color: #b9ccbe; }
+.reader-page[data-theme='dark'] .audio-switch-notice { background: #322c24; color: #ffedcf; border-color: #b88b4d; }
