@@ -1,4 +1,4 @@
-name: Sync word-synced mushaf reciters
+name: Build verified word-synced mushaf reciters
 
 on:
   workflow_dispatch:
@@ -6,22 +6,19 @@ on:
     branches: [main]
     paths:
       - scripts/sync_qud_audio.py
-      - scripts/sync_final_reciters.py
-      - scripts/run_final_sync.py
-      - scripts/probe_qud_candidates.py
+      - scripts/build_verified_qud.py
       - qud-audio.js
-      - chapter-reciter-extras.js
       - .github/workflows/sync-qud-audio.yml
 
 permissions:
   contents: write
 
 concurrency:
-  group: sync-word-audio-main
+  group: build-verified-mushaf-audio-main
   cancel-in-progress: false
 
 jobs:
-  sync:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -30,43 +27,59 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Inspect QUD candidates
-        run: python3 scripts/probe_qud_candidates.py
+      - name: Build and fully validate synchronized reciters
+        run: python3 scripts/build_verified_qud.py
 
-      - name: Build fully verified reciter bundle
-        run: python3 scripts/run_final_sync.py
-
-      - name: Validate runtime and generated bundle
+      - name: Validate generated runtime
         run: |
           node --check qud-audio.js
-          node --check chapter-reciter-extras.js
           node --check mushaf-audio.js
           node --check audio-core.js
           node --check audio-downloads.js
           python3 - <<'PY'
-          import json, pathlib
-          p = pathlib.Path('data/qud/manifest.json')
-          data = json.loads(p.read_text(encoding='utf-8'))
-          count = int(data.get('reciterCount', 0))
-          assert count >= 21, f'expected >20 synchronized sheikhs, got {count}'
-          assert count == 1 + len(data.get('reciters', [])) + len(data.get('qfReciters', []))
-          for item in data['reciters']:
-              assert pathlib.Path(item['timingUrl'].removeprefix('./')).is_file()
-              assert pathlib.Path(item['catalogUrl'].removeprefix('./')).is_file()
-          quran = pathlib.Path('quran.html').read_text(encoding='utf-8')
-          assert 'data/qud/registry.js' in quran and 'qud-audio.js' in quran and 'chapter-reciter-extras.js' in quran
-          print(f"Validated {count} synchronized sheikhs: 1 built-in + {len(data['reciters'])} QUD + {len(data.get('qfReciters', []))} extra QF")
+          import gzip, json, pathlib
+
+          root = pathlib.Path('.')
+          data = json.loads((root / 'data/qud/manifest.json').read_text(encoding='utf-8'))
+          assert data['reciterCount'] == 20, data
+          assert data['builtInReciters'] == 1
+          assert data['qudReciterCount'] == 19
+          assert len(data['reciters']) == 19
+          assert len({r['name'] for r in data['reciters']}) == 19
+          assert len({r['id'] for r in data['reciters']}) == 19
+
+          for reciter in data['reciters']:
+              timing = root / reciter['timingUrl'].removeprefix('./')
+              catalog = root / reciter['catalogUrl'].removeprefix('./')
+              assert timing.is_file() and timing.stat().st_size > 0
+              assert catalog.is_file() and catalog.stat().st_size > 0
+              with gzip.open(timing, 'rt', encoding='utf-8') as fh:
+                  doc = json.load(fh)
+              canonical = [row for row in doc['rows'] if row[3] is True]
+              assert doc['_meta']['tier'] == 'word'
+              assert doc['_meta']['verse_count'] == 6236
+              assert len(canonical) == 6236
+              cat = json.loads(catalog.read_text(encoding='utf-8'))
+              assert len(cat['audio']['chapter_urls']) == 114
+
+          quran = (root / 'quran.html').read_text(encoding='utf-8')
+          mushaf = (root / 'mushaf-audio.js').read_text(encoding='utf-8')
+          sw = (root / 'sw.js').read_text(encoding='utf-8')
+          assert 'data/qud/registry.js' in quran and 'qud-audio.js' in quran
+          assert "if (!window.QudAudioRegistry?.reciters?.length) loadAlignedReciters();" in mushaf
+          assert 'quran-reader-shell-v10' in sw
+          print('Validated 20 unique synchronized readers and all 19 x 6236 word-timing datasets.')
           PY
           git diff --check
 
-      - name: Commit generated bundle
+      - name: Commit final generated bundle
         run: |
           if git diff --quiet && [ -z "$(git status --porcelain)" ]; then
-            echo "No changes to commit."
+            echo "No generated changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/qud quran.html mushaf-audio.js sw.js SOURCES.md
-          git commit -m "feat(audio): add verified word-synced mushaf reciters [skip ci]"
+          git commit -m "feat(audio): ship 20 verified word-synced mushaf readers [skip ci]"
           git push origin HEAD:main
