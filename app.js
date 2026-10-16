@@ -770,8 +770,26 @@
             if (event.target.closest('button, a, input') || isSettingsOpen() || isIndexOpen()) return;
             els.body.classList.toggle('tools-visible');
         });
+    // Native pinch zoom must never trigger a one-finger page turn.
+    const activeTouchPointers = new Set();
+    const isPinchZoomed = () => (window.visualViewport?.scale || 1) > 1.01;
+    els.stage.addEventListener('pointerdown', event => {
+        if (event.pointerType !== 'touch') return;
+        activeTouchPointers.add(event.pointerId);
+        if (activeTouchPointers.size > 1 || isPinchZoomed()) {
+            pointerStart = null;
+            resetDrag();
+        }
+    }, true);
+    const releaseTouchPointer = event => {
+        if (event.pointerType === 'touch') activeTouchPointers.delete(event.pointerId);
+    };
+    els.stage.addEventListener('pointerup', releaseTouchPointer, true);
+    els.stage.addEventListener('pointercancel', releaseTouchPointer, true);
+    window.addEventListener('blur', () => activeTouchPointers.clear());
         els.stage.addEventListener('pointerdown', event => {
             if (event.pointerType === 'mouse' && event.button !== 0) return;
+            if (isPinchZoomed() || activeTouchPointers.size > 1) return;
             if (isTurningPage || isSettingsOpen() || isIndexOpen()) return;
             pointerStart = {
                 id: event.pointerId,
@@ -783,7 +801,7 @@
             };
         });
         els.stage.addEventListener('pointermove', event => {
-            if (!pointerStart || pointerStart.id !== event.pointerId || isSettingsOpen() || isIndexOpen()) return;
+            if (!pointerStart || pointerStart.id !== event.pointerId || isSettingsOpen() || isIndexOpen() || isPinchZoomed() || activeTouchPointers.size > 1) return;
             const dx = event.clientX - pointerStart.x;
             const dy = event.clientY - pointerStart.y;
             if (!pointerStart.dragging) {
@@ -804,7 +822,7 @@
             suppressStageClick = true;
         });
         els.stage.addEventListener('pointerup', event => {
-            if (!pointerStart || pointerStart.id !== event.pointerId) return;
+            if (!pointerStart || pointerStart.id !== event.pointerId || isPinchZoomed() || activeTouchPointers.size > 1) return;
             const gesture = pointerStart;
             pointerStart = null;
             if (!gesture.dragging) return;
