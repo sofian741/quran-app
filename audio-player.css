@@ -280,13 +280,15 @@
     background: color-mix(in srgb, var(--reader-accent) 20%, transparent);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--reader-accent) 9%, transparent);
 }
-/* A restrained active-word cue, without the former bright green rectangle. */
+/* Keep the verse-wide band. The currently recited word changes ink color
+   only: no extra highlight box, underline, or geometry changes. */
 .quran-text .mushaf-word.is-audio-word {
     position: relative;
     z-index: 1;
-    border-radius: .1em;
-    background: color-mix(in srgb, var(--reader-accent) 12%, transparent);
-    box-shadow: inset 0 -.085em 0 color-mix(in srgb, var(--reader-accent) 56%, transparent);
+    color: var(--reader-accent);
+    background: transparent;
+    box-shadow: none;
+    text-shadow: none;
 }
 
 .reader-page[data-theme='dark'] .settings-saved-button,
