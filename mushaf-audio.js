@@ -41,6 +41,7 @@
     const MAX_ALIGNED = 35;
     const alignedReciters = [...core.ALIGNED_RECITERS];
     let lastAlignedId = engine.state.provider === 'quran-foundation' ? engine.state.reciterId : 7;
+    let alignedDiscoveryStatus = 'جاري فحص القراء المتاح لهم تظليل الكلمات…';
     let activeReciter = null;
     let closeTimer = null;
     let renderedVerse = '';
@@ -99,11 +100,13 @@
             `aligned:${state.reciterId}` : `mp3:${state.reciterId}`;
         alignedReciters.forEach(reciter => option(ui.reciter,
             `aligned:${reciter.id}`, reciter.label || `${reciter.name} • تظليل الكلمات`));
-        // Keep the word-aligned Mashary option first instead of showing two Mashary choices.
-        catalog.filter(reciter =>
-            !core.normalizeArabic(reciter.name).includes(core.normalizeArabic('العفاسي')) ||
-            selectedValue === `mp3:${reciter.id}`)
-            .forEach(reciter => option(ui.reciter, `mp3:${reciter.id}`, reciter.name));
+        // The mushaf picker is for word-synchronized reciters only. The
+        // 200+ MP3Quran choices remain in the separate recitations page.
+        // Keep a legacy MP3 choice visible only if it is currently selected.
+        if (state.provider === 'mp3quran') {
+            option(ui.reciter, selectedValue,
+                `${state.reciterName} • تسجيل بدون تظليل`);
+        }
         ui.reciter.value = selectedValue;
         if (!ui.reciter.value) ui.reciter.selectedIndex = 0;
         const selected = catalog.find(reciter => reciter.id === Number(state.reciterId)) ||
@@ -287,8 +290,8 @@
                 : 'تكرار الآية يعيد الآية الحالية، وتكرار النطاق يعيد الآيات من البداية للنهاية بعدد المرات المحدد.';
             ui.syncNote.classList.toggle('is-unavailable', state.provider !== 'quran-foundation');
             ui.syncNote.textContent = state.provider === 'quran-foundation'
-                ? 'المزامنة الدقيقة مفعّلة: توقيت الكلمة مأخوذ من ملف التسجيل نفسه عبر Quran Foundation. تُعطّل الكلمة تلقائيًا إذا لم يتطابق عدد كلمات الآية.'
-                : 'هذا تسجيل سورة كاملة من MP3Quran ولا تتوفر له توقيتات كلمات مطابقة. سيعمل الصوت دون تظليل زائف، ويظل تكرار السورة متاحًا.';
+                ? alignedDiscoveryStatus
+                : 'هذا تسجيل سورة كاملة من MP3Quran ولا تتوفر له توقيتات كلمات مطابقة. اختر قارئًا متزامنًا من القائمة لتفعيل تظليل الكلمات.';
         }
         applyingState = false;
     }
@@ -786,7 +789,15 @@
         });
     }
 
+    function updateAlignedDiscoveryStatus(message) {
+        alignedDiscoveryStatus = message;
+        if (engine.state.provider === 'quran-foundation') {
+            ui.syncNote.textContent = message;
+        }
+    }
+
     async function loadAlignedReciters() {
+        updateAlignedDiscoveryStatus('جاري البحث عن قراء بتوقيتات كلمات حقيقية…');
         try {
             const saved = JSON.parse(localStorage.getItem(ALIGNED_CACHE_KEY) || 'null');
             if (saved && Date.now() - saved.savedAt < 14 * 86400000 && Array.isArray(saved.reciters)) {
@@ -798,15 +809,16 @@
         try {
             const response = await fetch(`${core.QURAN_API}/resources/chapter_reciters?language=ar`,
                 { cache: 'no-cache' });
-            if (!response.ok) return;
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const payload = await response.json();
-            if (!Array.isArray(payload?.reciters)) return;
+            if (!Array.isArray(payload?.reciters)) throw new Error('No chapter reciter catalog');
             const candidates = payload.reciters
                 .map(item => ({ id: Number(item.id),
                     name: String(item.name || item.translated_name?.name || '').trim() }))
                 .filter(item => Number.isSafeInteger(item.id) && item.id > 0 && item.name && item.id !== 7);
             let cursor = 0;
             let confirmed = 0;
+            let tested = 0;
             async function verifyNext() {
                 while (cursor < candidates.length && confirmed < MAX_ALIGNED - 1 &&
                     alignedReciters.length < MAX_ALIGNED) {
@@ -820,8 +832,14 @@
                             `${core.QURAN_API}/chapter_recitations/${item.id}/1?segments=true`,
                             { cache: 'force-cache' });
                         if (!result.ok || !hasWordTimings(await result.json())) continue;
-                        if (addAlignedReciter(item)) confirmed++;
-                    } catch (_) { /* Skip this candidate without mislabeling its timing. */ }
+                        if (addAlignedReciter(item)) {
+                            confirmed++;
+                            fillReciters(engine.snapshot());
+                            updateAlignedDiscoveryStatus(
+                                `تم التحقق من ${core.arabicDigits(alignedReciters.length)} قارئ بتظليل كلمات (اختبار الفاتحة). جارٍ فحص الباقي…`);
+                        }
+                    } catch (_) { /* A candidate without valid timing is not advertised. */ }
+                    finally { tested++; }
                 }
             }
             await Promise.all([verifyNext(), verifyNext(), verifyNext()]);
@@ -834,7 +852,13 @@
                 }));
             } catch (_) { /* Cache is optional. */ }
             fillReciters(engine.snapshot());
-        } catch (_) { /* Keep the already working reciters on network failures. */ }
+            updateAlignedDiscoveryStatus(
+                `تم فحص ${core.arabicDigits(tested)} تسجيلًا؛ ${core.arabicDigits(alignedReciters.length)} قارئ بتوقيتات كلمات متاحة. يجب اختبار كل سورة قبل الاعتماد عليها.`);
+        } catch (error) {
+            updateAlignedDiscoveryStatus(
+                `تعذّر جلب قائمة القراء المتزامنين (${error?.message || 'مشكلة اتصال'}). المتاح حاليًا: ${core.arabicDigits(alignedReciters.length)}. ` +
+                'التلاوات الأخرى موجودة في صفحة التلاوات.');
+        }
     }
 
     async function loadCatalog() {
