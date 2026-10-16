@@ -72,3 +72,9 @@
   للقراءة حتى يستمر السحب داخل التسجيل.
 - لا ينزّل التطبيق مصحفًا صوتيًا كاملًا تلقائيًا. تنزيل السورة المتزامنة يجلب ملفات آياتها
   بعد أمر واحد صريح، وتنزيل MP3Quran يجلب ملف السورة المختارة فقط.
+
+## Quranic Universal Audio (QUD)
+
+- Word-level timing metadata is mirrored from `QUD-Technologies/quranic-universal-audio` release `v3.2.0`.
+- QUD timing data is licensed CC-BY-4.0. Audio is not redistributed by this app; the generated catalogs retain the upstream source URLs paired with those timings.
+- The build only includes complete Hafs recitations with word timing and 114 directly streamable HTTPS chapter URLs.

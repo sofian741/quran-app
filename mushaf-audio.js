@@ -41,7 +41,7 @@
     const MAX_ALIGNED = 35;
     const alignedReciters = [...core.ALIGNED_RECITERS];
     let lastAlignedId = engine.state.provider === 'quran-foundation' ? engine.state.reciterId : 7;
-    let alignedDiscoveryStatus = 'جاري فحص القراء المتاح لهم تظليل الكلمات…';
+    let alignedDiscoveryStatus = 'تظليل الكلمات مفعّل للقراء الموثقين بتوقيتات QUD، مع مشاري العفاسي كخيار احتياطي.';
     let activeReciter = null;
     let closeTimer = null;
     let renderedVerse = '';
@@ -881,5 +881,5 @@
     }
     applyState(engine.snapshot(), true);
     loadCatalog();
-    loadAlignedReciters();
+    if (!window.QudAudioRegistry?.reciters?.length) loadAlignedReciters();
 })();

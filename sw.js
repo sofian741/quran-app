@@ -1,13 +1,13 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v9';
+const APP_CACHE = 'quran-reader-shell-v10';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html',
     './style.css', './home.css', './home.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
     './app.js', './reader-enhancements.js', './reader-layout-polish.js',
     './verse-actions.js', './tafsir.js', './quran-search.js', './verse-tools.js',
-    './audio-core.js', './audio-downloads.js', './offline-reciter-catalog.js',
+    './audio-core.js', './audio-downloads.js', './data/qud/registry.js', './qud-audio.js', './offline-reciter-catalog.js',
     './audio-library.js', './audio-bulk-download.js', './mushaf-audio.js', './recitations.js',
     './data/quran-uthmani.txt', './data/mushaf-layout.json',
     './scripts/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2'
