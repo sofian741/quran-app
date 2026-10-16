@@ -1,0 +1,62 @@
+name: Sync QUD word-synced reciters
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/sync_qud_audio.py
+      - qud-audio.js
+      - .github/workflows/sync-qud-audio.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-qud-audio-main
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build verified QUD bundle
+        run: python3 scripts/sync_qud_audio.py
+
+      - name: Validate JavaScript and generated registry
+        run: |
+          node --check qud-audio.js
+          node --check mushaf-audio.js
+          node --check audio-core.js
+          node --check audio-downloads.js
+          python3 - <<'PY'
+          import json, pathlib
+          p = pathlib.Path('data/qud/manifest.json')
+          data = json.loads(p.read_text(encoding='utf-8'))
+          count = int(data.get('reciterCount', 0))
+          assert count >= 21, f'expected >20 synchronized reciters, got {count}'
+          assert count == len(data.get('reciters', []))
+          for item in data['reciters']:
+              assert pathlib.Path(item['timingUrl'].removeprefix('./')).is_file()
+              assert pathlib.Path(item['catalogUrl'].removeprefix('./')).is_file()
+          print(f'Validated {count} synchronized reciters')
+          PY
+          git diff --check
+
+      - name: Commit generated bundle
+        run: |
+          if git diff --quiet && [ -z "$(git status --porcelain)" ]; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/qud quran.html mushaf-audio.js sw.js SOURCES.md
+          git commit -m "feat(audio): add verified QUD word-synced reciters [skip ci]"
+          git push origin HEAD:main
