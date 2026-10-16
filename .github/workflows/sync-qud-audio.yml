@@ -74,8 +74,10 @@ jobs:
 
       - name: Commit final generated bundle
         run: |
-          if git diff --quiet && [ -z "$(git status --porcelain)" ]; then
-            echo "No generated changes to commit."
+          rm -rf scripts/__pycache__
+          GENERATED_STATUS="$(git status --porcelain -- data/qud quran.html mushaf-audio.js sw.js SOURCES.md)"
+          if [ -z "$GENERATED_STATUS" ]; then
+            echo "Generated bundle is already current."
             exit 0
           fi
           git config user.name "github-actions[bot]"
