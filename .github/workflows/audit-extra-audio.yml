@@ -1,0 +1,67 @@
+name: Audit additional synchronized reciters
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/audit-extra-audio.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect QUD candidates and Quran Foundation
+        run: |
+          python3 - <<'PY'
+          import sys, collections, json, urllib.request
+          sys.path.insert(0, 'scripts')
+          import sync_qud_audio as base
+          release = base.request_json(base.RELEASE_API)
+          assets = {x['name']:x for x in release['assets']}
+          manifest = base.request_json(assets['manifest.json']['browser_download_url'])
+          catalog = base.request_json(assets['catalog.json']['browser_download_url'])
+          catalogs = {r['slug']:r for r in catalog['recitations']}
+          print('QUD RECAP: total',len(catalogs),flush=True)
+          accepted, rejected = [],[]
+          for slug, item in manifest['recitations'].items():
+              cat = catalogs.get(slug,{})
+              urls = (cat.get('audio') or {}).get('chapter_urls') or {}
+              reasons=[]
+              if str(item.get('riwayah') or cat.get('riwayah') or 'hafs').lower()!='hafs': reasons.append('non_hafs')
+              if 'word' not in (item.get('tiers') or []): reasons.append('no_word')
+              if int(item.get('coverage_ayahs') or 0)!=6236: reasons.append('not_full_ayahs')
+              if (cat.get('coverage') or {}).get('surahs')!=114: reasons.append('not_114_surahs')
+              if cat.get('audio_category')!='by_surah': reasons.append('not_by_surah:'+str(cat.get('audio_category')))
+              if len(urls)!=114: reasons.append('not_114_audio_urls:'+str(len(urls)))
+              if len(urls)==114 and not all(base.safe_https_audio_url(urls.get(str(i))) for i in range(1,115)): reasons.append('not_direct_audio')
+              if slug.startswith('mishary_rashid_al_afasy'): reasons.append('built_in_mishary')
+              if not reasons: accepted.append((slug,cat))
+              else: rejected.append((slug,cat,reasons))
+          print('QUD acceptable recordings',len(accepted))
+          print('QUD acceptable distinct IDs',len(set(base.reciter_identity(cat) for slug,cat in accepted)))
+          print('QUD rejected by reason',dict(collections.Counter(x for _,_,rr in rejected for x in rr)))
+          for slug,cat,rr in rejected:
+              print('REJECT',slug,cat.get('name_ar'),','.join(rr))
+          print('QUD ACCEPTED',[(slug,cat.get('name_ar')) for slug,cat in accepted])
+          print('FOUNDATION AUDIT')
+          endpoints=[
+              'https://api.quran.com/api/v4/resources/chapter_reciters?language=ar',
+              'https://api.quran.com/api/v4/resources/recitations?language=ar',
+              'https://api.quran.com/api/v4/chapter_recitations/7/1?segments=true',
+              'https://api.quran.com/api/v4/recitations/7/by_chapter/1?segments=true',
+          ]
+          for url in endpoints:
+              try:
+                  req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept':'application/json'})
+                  with urllib.request.urlopen(req,timeout=15) as r:
+                      payload=json.load(r)
+                      print('ENDPOINT',url,'HTTP',r.status,'keys',list(payload.keys()),'count',len(payload.get('reciters') or payload.get('recitations') or []))
+                      if 'audio_file' in payload: print('AUDIOFILE',str(payload['audio_file'])[:350])
+                      if 'reciters' in payload: print('RECITERS',[(x.get('id'),x.get('name')) for x in payload['reciters']][:60])
+                      if 'recitations' in payload: print('RECITATIONS',[(x.get('id'),x.get('reciter_name')) for x in payload['recitations']][:60])
+              except Exception as e: print('ENDPOINT_ERROR',url,repr(e))
+          PY
