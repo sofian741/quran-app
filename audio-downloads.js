@@ -141,228 +141,392 @@
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
 
-// Gapless handoff for the word-aligned Quran Foundation reader. This layer is
-// loaded after audio-core.js and before mushaf-audio.js, so it can refine the
-// engine without changing MP3Quran playback or the public player API.
+// The aligned reader must play one continuous chapter file. Quran.com's chapter
+// endpoint supplies that file plus absolute verse/word timestamps, so there is
+// no media-element handoff at every ayah and therefore no artificial gap.
 (() => {
     'use strict';
 
     if (typeof window === 'undefined') return;
-    const AudioEngine = window.QuranAudio?.AudioEngine;
-    if (!AudioEngine || AudioEngine.prototype.__gaplessAlignedV2) return;
+    const core = window.QuranAudio;
+    const AudioEngine = core?.AudioEngine;
+    if (!AudioEngine || AudioEngine.prototype.__continuousChapterAudioV1) return;
 
     const proto = AudioEngine.prototype;
-    const originalPlay = proto.play;
-    const originalPause = proto.pause;
-    const originalSeek = proto.seek;
-    const originalSetSpeed = proto.setSpeed;
-    const originalSetRepeat = proto.setRepeat;
-    const originalClearUpcomingVerse = proto.clearUpcomingVerse;
+    const originalBindAudio = proto.bindAudio;
+    const originalPrepare = proto.prepare;
+    const originalGoTo = proto.goTo;
+    const originalNext = proto.next;
+    const originalPrevious = proto.previous;
+    const originalHandleEnded = proto.handleEnded;
+    const originalPreloadUpcomingVerse = proto.preloadUpcomingVerse;
     const originalDestroy = proto.destroy;
-    const PRIME_SECONDS = 0.20;
-    const TAIL_GUARD_SECONDS = 0.035;
-    const HANDOFF_TOLERANCE_SECONDS = 0.012;
-    const raf = window.requestAnimationFrame?.bind(window) ||
-        (callback => setTimeout(() => callback(performance.now()), 16));
-    const caf = window.cancelAnimationFrame?.bind(window) || clearTimeout;
+    const chapterCache = new Map();
+    const boundElements = new WeakSet();
 
-    function firstSegmentSecond(timing) {
-        const segment = timing?.segments?.[0];
-        return Number.isFinite(segment?.start) ? Math.max(0, segment.start / 1000) : 0;
-    }
-
-    function lastSegmentSecond(timing) {
-        const segments = timing?.segments;
-        const segment = Array.isArray(segments) ? segments[segments.length - 1] : null;
-        return Number.isFinite(segment?.end) ? Math.max(0, segment.end / 1000) : 0;
-    }
-
-    proto.__cancelGaplessPrime = function(resetAudio = true) {
-        if (this._gaplessFrame) {
-            caf(this._gaplessFrame);
-            this._gaplessFrame = 0;
+    function isTrustedAudioUrl(value) {
+        try {
+            const url = new URL(value);
+            return url.protocol === 'https:' && (
+                url.hostname === 'download.quranicaudio.com' ||
+                url.hostname.endsWith('.qurancdn.com') ||
+                url.hostname.endsWith('.quran.com')
+            );
+        } catch (_) {
+            return false;
         }
-        const primed = this._gaplessPrimed;
-        this._gaplessPrimed = null;
-        if (!primed?.audio || primed.audio === this.audio || !resetAudio) return;
-        try {
-            primed.audio.pause();
-            primed.audio.muted = primed.originalMuted;
-            primed.audio.currentTime = 0;
-        } catch (_) { /* best-effort cleanup */ }
-    };
+    }
 
-    proto.__primeGaplessNext = function(pending, boundary) {
-        if (!pending?.audio || this._gaplessPrimed?.audio === pending.audio) return;
-        const current = this.audio;
-        const first = firstSegmentSecond(pending.timing);
-        const remaining = Math.max(0, boundary - current.currentTime);
-        const next = pending.audio;
-        const originalMuted = next.muted;
-        try {
-            next.playbackRate = this.state.speed;
-            next.currentTime = Math.max(0, first - remaining);
-            next.muted = true;
-        } catch (_) { return; }
+    function parseChapterPayload(payload, reciterId, surah) {
+        const file = payload?.audio_file;
+        if (!file || Number(file.chapter_id) !== Number(surah) ||
+            !isTrustedAudioUrl(file.audio_url) || !Array.isArray(file.timestamps)) {
+            throw new Error('Invalid chapter audio response');
+        }
 
-        const primed = {
-            audio: next,
-            pending,
-            first,
-            originalMuted,
-            started: false
-        };
-        this._gaplessPrimed = primed;
-        Promise.resolve(next.play()).then(() => {
-            if (this._gaplessPrimed === primed) primed.started = true;
-        }).catch(() => {
-            if (this._gaplessPrimed === primed) {
-                next.muted = originalMuted;
-                this._gaplessPrimed = null;
+        const verses = file.timestamps.map(item => {
+            const match = /^(\d+):(\d+)$/.exec(String(item.verse_key || ''));
+            if (!match || Number(match[1]) !== Number(surah)) return null;
+            const ayah = Number(match[2]);
+            const timestampFrom = Number(item.timestamp_from);
+            const timestampTo = Number(item.timestamp_to);
+            if (!Number.isInteger(ayah) || !Number.isFinite(timestampFrom) ||
+                !Number.isFinite(timestampTo) || timestampFrom < 0 || timestampTo <= timestampFrom) {
+                return null;
             }
+            const segments = (Array.isArray(item.segments) ? item.segments : [])
+                .map(segment => Array.isArray(segment) ? {
+                    word: Number(segment[0]),
+                    start: Number(segment[1]),
+                    end: Number(segment[2])
+                } : null)
+                .filter(segment => segment && Number.isInteger(segment.word) && segment.word > 0 &&
+                    Number.isFinite(segment.start) && Number.isFinite(segment.end) &&
+                    segment.start >= timestampFrom && segment.end > segment.start)
+                .sort((a, b) => a.start - b.start);
+            return {
+                surah: Number(surah), ayah, audioUrl: file.audio_url,
+                timestampFrom, timestampTo, duration: timestampTo - timestampFrom,
+                segments, source: 'Quran Foundation chapter audio'
+            };
+        }).filter(Boolean).sort((a, b) => a.ayah - b.ayah);
+
+        if (verses.length !== core.VERSE_COUNTS[Number(surah) - 1]) {
+            throw new Error(`Incomplete chapter timing data: ${verses.length}`);
+        }
+        const byAyah = new Map(verses.map(item => [item.ayah, item]));
+        return {
+            reciterId: Number(reciterId), surah: Number(surah),
+            audioUrl: file.audio_url, fileSize: Number(file.file_size) || 0,
+            format: String(file.format || 'mp3'), verses, byAyah
+        };
+    }
+
+    async function loadChapter(reciterId, surah) {
+        const key = `${Number(reciterId)}:${Number(surah)}`;
+        if (chapterCache.has(key)) return chapterCache.get(key);
+        const promise = (async () => {
+            const url = `${core.QURAN_API}/chapter_recitations/${Number(reciterId)}/${Number(surah)}?segments=true`;
+            const response = await fetch(url, { cache: 'force-cache' });
+            if (!response.ok) throw new Error(`Quran chapter audio HTTP ${response.status}`);
+            return parseChapterPayload(await response.json(), reciterId, surah);
+        })().catch(error => {
+            chapterCache.delete(key);
+            throw error;
         });
+        chapterCache.set(key, promise);
+        return promise;
+    }
+
+    function findTiming(chapter, milliseconds) {
+        if (!chapter?.verses?.length) return null;
+        let low = 0;
+        let high = chapter.verses.length - 1;
+        while (low <= high) {
+            const mid = (low + high) >> 1;
+            const timing = chapter.verses[mid];
+            if (milliseconds < timing.timestampFrom) high = mid - 1;
+            else if (milliseconds >= timing.timestampTo) low = mid + 1;
+            else return timing;
+        }
+        if (low <= 0) return chapter.verses[0];
+        if (low >= chapter.verses.length) return chapter.verses.at(-1);
+        return chapter.verses[low];
+    }
+
+    function waitForMetadata(audio, timeout = 5000) {
+        if (audio.readyState >= 1) return Promise.resolve(true);
+        return new Promise((resolve, reject) => {
+            let timer = null;
+            const cleanup = () => {
+                clearTimeout(timer);
+                audio.removeEventListener('loadedmetadata', onReady);
+                audio.removeEventListener('error', onError);
+            };
+            const onReady = () => { cleanup(); resolve(true); };
+            const onError = () => { cleanup(); reject(new Error('Chapter audio metadata failed to load')); };
+            timer = setTimeout(() => {
+                cleanup();
+                reject(new Error('Chapter audio metadata timed out'));
+            }, timeout);
+            audio.addEventListener('loadedmetadata', onReady, { once: true });
+            audio.addEventListener('error', onError, { once: true });
+        });
+    }
+
+    function clampAyah(surah, ayah) {
+        return Math.min(core.VERSE_COUNTS[surah - 1], Math.max(1, Number(ayah) || 1));
+    }
+
+    proto.getAlignedChapterAudio = function(surah = this.state.surah) {
+        return loadChapter(this.state.reciterId, Number(surah));
     };
 
-    proto.__commitGaplessNext = function() {
-        const primed = this._gaplessPrimed;
-        const pending = this.nextVerseAudio;
-        if (!primed?.started || !pending || primed.pending !== pending ||
-            pending.audio !== primed.audio) return false;
-        if (pending.audio.currentTime + 0.06 < primed.first) return false;
+    proto.__syncContinuousChapter = function() {
+        const chapter = this.__continuousChapter;
+        if (!chapter || this.state.provider !== 'quran-foundation' ||
+            this.audio !== this.__continuousAudio) return;
+        const milliseconds = Math.max(0, Number(this.audio.currentTime) || 0) * 1000;
+        const timing = findTiming(chapter, milliseconds);
+        if (!timing) return;
 
-        const old = this.audio;
-        const next = pending.audio;
-        if (this._gaplessFrame) {
-            caf(this._gaplessFrame);
-            this._gaplessFrame = 0;
+        const repeat = this.state.repeat;
+        const previousTiming = this.currentTiming;
+        if (repeat?.mode === 'verse' && previousTiming &&
+            milliseconds >= previousTiming.timestampTo && this.intentToPlay) {
+            repeat.completed += 1;
+            if (repeat.completed < repeat.count) {
+                this.audio.currentTime = previousTiming.timestampFrom / 1000;
+                this.state.position = this.audio.currentTime;
+                this.persist();
+                return;
+            }
+            repeat.completed = 0;
+            repeat.mode = 'off';
+            this.persist();
         }
 
-        this.audio = next;
-        this.nextVerseAudio = null;
-        this.nextVerseVersion++;
-        this._gaplessPrimed = null;
-        this.currentTiming = pending.timing;
-        this.trackUrl = pending.timing.audioUrl;
-        this.state.surah = pending.surah;
-        this.state.ayah = pending.ayah;
-        this.state.position = Number(next.currentTime) || 0;
-        this.pendingResume = 0;
-        next.volume = old.volume;
-        next.muted = old.muted;
-        next.playbackRate = this.state.speed;
-        this.bindAudio();
+        if (repeat?.mode === 'range' && previousTiming && previousTiming.ayah === repeat.end &&
+            milliseconds >= previousTiming.timestampTo && this.intentToPlay) {
+            repeat.completed += 1;
+            if (repeat.completed < repeat.count) {
+                const restart = chapter.byAyah.get(repeat.start);
+                if (restart) {
+                    this.state.ayah = restart.ayah;
+                    this.currentTiming = restart;
+                    this.audio.currentTime = restart.timestampFrom / 1000;
+                    this.state.position = this.audio.currentTime;
+                    this.persist();
+                    this.updateMediaMetadata();
+                    this.emit();
+                    return;
+                }
+            } else {
+                repeat.completed = 0;
+                repeat.mode = 'off';
+                this.persist();
+            }
+        }
 
-        try {
-            old.pause();
-            old.removeAttribute('src');
-        } catch (_) { /* the retired element no longer controls state */ }
-
-        this.status = 'playing';
-        this.error = '';
+        if (this.currentTiming?.ayah === timing.ayah) return;
+        this.currentTiming = timing;
+        this.state.surah = timing.surah;
+        this.state.ayah = timing.ayah;
+        this.state.position = Number(this.audio.currentTime) || 0;
         this.updateMediaMetadata();
         this.persist();
-        this.channel?.postMessage({ type: 'playing', sessionId: this.sessionId });
         this.emit();
-        this.preloadUpcomingVerse();
-        this.__startGaplessMonitor();
-        return true;
     };
 
-    proto.__startGaplessMonitor = function() {
-        if (this._gaplessFrame) caf(this._gaplessFrame);
-        const active = this.audio;
-        const generation = (this._gaplessGeneration || 0) + 1;
-        this._gaplessGeneration = generation;
+    proto.bindAudio = function(...args) {
+        const element = this.audio;
+        if (element && !boundElements.has(element)) {
+            boundElements.add(element);
+            element.addEventListener('timeupdate', () => {
+                if (element === this.audio) this.__syncContinuousChapter();
+            });
+            element.addEventListener('seeked', () => {
+                if (element === this.audio) this.__syncContinuousChapter();
+            });
+        }
+        return originalBindAudio.apply(this, args);
+    };
 
-        const tick = () => {
-            this._gaplessFrame = 0;
-            if (generation !== this._gaplessGeneration || this.audio !== active ||
-                active.paused || !this.intentToPlay) return;
+    proto.preloadUpcomingVerse = function(...args) {
+        if (this.__continuousChapter && this.state.provider === 'quran-foundation') return;
+        return originalPreloadUpcomingVerse.apply(this, args);
+    };
 
-            const pending = this.nextVerseAudio;
-            const normalSequentialPlayback =
-                this.state.provider === 'quran-foundation' &&
-                this.state.repeat?.mode === 'off' &&
-                this.state.ayah < window.QuranAudio.VERSE_COUNTS[this.state.surah - 1] &&
-                pending?.reciterId === this.state.reciterId &&
-                pending.surah === this.state.surah &&
-                pending.ayah === this.state.ayah + 1 &&
-                pending.audio?.readyState >= 2;
+    proto.prepare = async function(options = {}) {
+        if (this.state.provider !== 'quran-foundation') {
+            this.__continuousChapter = null;
+            this.__continuousAudio = null;
+            return originalPrepare.apply(this, [options]);
+        }
 
-            const spokenEnd = lastSegmentSecond(this.currentTiming);
-            if (normalSequentialPlayback && spokenEnd > 0) {
-                const duration = Number(active.duration);
-                const safeEnd = Number.isFinite(duration) && duration > 0
-                    ? Math.max(0, duration - 0.015)
-                    : spokenEnd + TAIL_GUARD_SECONDS;
-                const boundary = Math.min(
-                    safeEnd,
-                    spokenEnd + TAIL_GUARD_SECONDS
-                );
-                const remaining = boundary - active.currentTime;
-                if (remaining <= PRIME_SECONDS && remaining > -0.08) {
-                    this.__primeGaplessNext(pending, boundary);
+        const autoplay = !!options.autoplay;
+        const previousPosition = Number(this.state.position) || 0;
+        const version = ++this.prepareVersion;
+        if (autoplay) this.intentToPlay = true;
+        this.status = 'loading';
+        this.error = '';
+        this.emit();
+
+        try {
+            const chapter = await loadChapter(this.state.reciterId, this.state.surah);
+            if (version !== this.prepareVersion) return false;
+            const ayah = clampAyah(this.state.surah, this.state.ayah);
+            const timing = chapter.byAyah.get(ayah);
+            if (!timing) throw new Error('Verse timing is unavailable');
+
+            this.clearUpcomingVerse();
+            this.__continuousChapter = chapter;
+            this.__continuousAudio = this.audio;
+            this.currentTiming = timing;
+            const sameTrack = this.trackUrl === chapter.audioUrl;
+            this.trackUrl = chapter.audioUrl;
+            this.state.ayah = ayah;
+            const verseStart = timing.timestampFrom / 1000;
+            const verseEnd = timing.timestampTo / 1000;
+            const target = previousPosition >= verseStart && previousPosition < verseEnd
+                ? previousPosition : verseStart;
+            this.state.position = target;
+            this.pendingResume = 0;
+
+            if (!sameTrack || this.audio.src !== chapter.audioUrl) {
+                this.audio.preload = 'auto';
+                this.audio.src = chapter.audioUrl;
+                this.audio.load();
+                if (target > 0) {
+                    await waitForMetadata(this.audio);
+                    if (version !== this.prepareVersion) return false;
+                    this.audio.currentTime = target;
                 }
-                if (remaining <= HANDOFF_TOLERANCE_SECONDS &&
-                    this.__commitGaplessNext()) return;
+            } else if (Math.abs((Number(this.audio.currentTime) || 0) - target) > 0.05) {
+                this.audio.currentTime = target;
             }
 
-            this._gaplessFrame = raf(tick);
-        };
-        this._gaplessFrame = raf(tick);
-    };
-
-    proto.play = async function(...args) {
-        const played = await originalPlay.apply(this, args);
-        if (played) this.__startGaplessMonitor();
-        return played;
-    };
-
-    proto.pause = function(...args) {
-        this._gaplessGeneration = (this._gaplessGeneration || 0) + 1;
-        this.__cancelGaplessPrime(true);
-        return originalPause.apply(this, args);
-    };
-
-    proto.seek = function(...args) {
-        this._gaplessGeneration = (this._gaplessGeneration || 0) + 1;
-        this.__cancelGaplessPrime(true);
-        const result = originalSeek.apply(this, args);
-        if (!this.audio.paused && this.intentToPlay) this.__startGaplessMonitor();
-        return result;
-    };
-
-    proto.setSpeed = function(...args) {
-        const result = originalSetSpeed.apply(this, args);
-        if (this.nextVerseAudio?.audio) {
-            this.nextVerseAudio.audio.playbackRate = this.state.speed;
+            this.audio.playbackRate = this.state.speed;
+            this.updateMediaMetadata();
+            this.status = this.audio.paused ? 'ready' : 'playing';
+            this.persist();
+            this.emit();
+            if (autoplay) await this.play();
+            return true;
+        } catch (error) {
+            if (version !== this.prepareVersion) return false;
+            this.__continuousChapter = null;
+            this.__continuousAudio = null;
+            this.state.position = previousPosition;
+            console.warn('Continuous chapter audio unavailable; falling back to verse files.', error);
+            return originalPrepare.apply(this, [options]);
         }
-        return result;
     };
 
-    proto.setRepeat = function(...args) {
-        this._gaplessGeneration = (this._gaplessGeneration || 0) + 1;
-        this.__cancelGaplessPrime(true);
-        return originalSetRepeat.apply(this, args);
-    };
-
-    proto.clearUpcomingVerse = function(...args) {
-        const primed = this._gaplessPrimed;
-        if (primed?.audio) {
-            try {
-                primed.audio.pause();
-                primed.audio.muted = primed.originalMuted;
-            } catch (_) { /* best-effort cleanup */ }
-            this._gaplessPrimed = null;
+    proto.goTo = async function(surah, ayah = 1, options = {}) {
+        if (this.state.provider !== 'quran-foundation') {
+            return originalGoTo.apply(this, [surah, ayah, options]);
         }
-        return originalClearUpcomingVerse.apply(this, args);
+
+        const autoplay = options.autoplay ?? (!this.audio.paused || this.intentToPlay);
+        surah = Math.min(114, Math.max(1, Number(surah) || 1));
+        ayah = clampAyah(surah, ayah);
+        const sameChapter = this.__continuousChapter?.surah === surah &&
+            this.__continuousChapter?.reciterId === this.state.reciterId &&
+            this.trackUrl === this.__continuousChapter?.audioUrl;
+
+        this.state.surah = surah;
+        this.state.ayah = ayah;
+        const maxAyah = core.VERSE_COUNTS[surah - 1];
+        this.state.repeat.start = Math.min(maxAyah, Math.max(1, this.state.repeat.start));
+        this.state.repeat.end = Math.min(maxAyah, Math.max(1, this.state.repeat.end));
+        if (this.state.repeat.start > this.state.repeat.end) {
+            [this.state.repeat.start, this.state.repeat.end] = [this.state.repeat.end, this.state.repeat.start];
+        }
+        if (!options.preserveRepeat) this.state.repeat.completed = 0;
+
+        if (sameChapter) {
+            const timing = this.__continuousChapter.byAyah.get(ayah);
+            if (!timing) return false;
+            this.currentTiming = timing;
+            const target = timing.timestampFrom / 1000;
+            this.state.position = target;
+            this.pendingResume = 0;
+            if (!autoplay && !this.audio.paused) this.audio.pause();
+            this.audio.currentTime = target;
+            this.updateMediaMetadata();
+            this.persist();
+            this.emit();
+            if (autoplay) await this.play();
+            return true;
+        }
+
+        this.audio.pause();
+        this.trackUrl = '';
+        this.__continuousChapter = null;
+        this.__continuousAudio = null;
+        this.currentTiming = null;
+        this.pendingResume = 0;
+        return this.prepare({ autoplay });
+    };
+
+    proto.next = async function(options = {}) {
+        if (this.state.provider !== 'quran-foundation') {
+            return originalNext.apply(this, [options]);
+        }
+        const autoplay = options.autoplay ?? (!this.audio.paused || this.intentToPlay);
+        if (this.state.ayah < core.VERSE_COUNTS[this.state.surah - 1]) {
+            return this.goTo(this.state.surah, this.state.ayah + 1, { autoplay });
+        }
+        if (this.state.surah < 114) return this.goTo(this.state.surah + 1, 1, { autoplay });
+        return false;
+    };
+
+    proto.previous = async function(options = {}) {
+        if (this.state.provider !== 'quran-foundation') {
+            return originalPrevious.apply(this, [options]);
+        }
+        const autoplay = options.autoplay ?? (!this.audio.paused || this.intentToPlay);
+        const start = (this.currentTiming?.timestampFrom || 0) / 1000;
+        if ((Number(this.audio.currentTime) || 0) > start + 3) {
+            this.audio.currentTime = start;
+            this.state.position = start;
+            this.persist();
+            this.emit('time');
+            return true;
+        }
+        if (this.state.ayah > 1) return this.goTo(this.state.surah, this.state.ayah - 1, { autoplay });
+        if (this.state.surah > 1) {
+            return this.goTo(this.state.surah - 1, core.VERSE_COUNTS[this.state.surah - 2], { autoplay });
+        }
+        return false;
+    };
+
+    proto.handleEnded = async function(...args) {
+        if (this.state.provider !== 'quran-foundation' || !this.__continuousChapter) {
+            return originalHandleEnded.apply(this, args);
+        }
+        const repeat = this.state.repeat;
+        if (repeat.mode === 'surah') {
+            repeat.completed = 0;
+            this.state.ayah = 1;
+            this.currentTiming = this.__continuousChapter.byAyah.get(1) || null;
+            this.audio.currentTime = 0;
+            this.state.position = 0;
+            this.persist();
+            await this.play();
+            return;
+        }
+        if (this.state.surah < 114) {
+            await this.goTo(this.state.surah + 1, 1, { autoplay: true });
+        }
     };
 
     proto.destroy = function(...args) {
-        this._gaplessGeneration = (this._gaplessGeneration || 0) + 1;
-        this.__cancelGaplessPrime(true);
+        this.__continuousChapter = null;
+        this.__continuousAudio = null;
         return originalDestroy.apply(this, args);
     };
 
-    proto.__gaplessAlignedV2 = true;
+    proto.__continuousChapterAudioV1 = true;
 })();
