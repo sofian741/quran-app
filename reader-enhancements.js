@@ -494,11 +494,8 @@
     }
 
     stage.addEventListener('pointerdown', event => {
-        // Share the already-prepared swipe preview with desktop left-button drags.
-        // Touch/pen behavior stays unchanged; app.js's legacy mouse handler is
-        // bypassed by the capture-phase stopImmediatePropagation below.
-        if (!previewReady || finishingSwipe || !['touch', 'pen', 'mouse'].includes(event.pointerType)) return;
-        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        // Keep the original desktop mouse animation in app.js; use the enhanced preview only for touch/pen.
+        if (!previewReady || finishingSwipe || !['touch', 'pen'].includes(event.pointerType)) return;
         if (resetSwipeTimer !== null) {
             clearTimeout(resetSwipeTimer);
             resetSwipeTimer = null;
