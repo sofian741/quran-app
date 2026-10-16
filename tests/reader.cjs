@@ -91,6 +91,7 @@ const root = path.join(__dirname, '..');
                             const rect = word.getBoundingClientRect();
                             return rect.left < bounds.left - 1 || rect.right > bounds.right + 1;
                         }).length,
+                        fontSize: parseFloat(getComputedStyle(text).fontSize),
                         overflowX: getComputedStyle(text).overflowX,
                         verticalOverflow: text.scrollHeight - text.clientHeight,
                         outsideRowsVertical: rows.filter(rect => (
@@ -106,6 +107,17 @@ const root = path.join(__dirname, '..');
                 assert.ok(result.rows >= 8 && result.rows <= 16);
                 assert.ok(result.words > 0 && result.markers > 0);
                 assert.equal(result.outside, 0);
+                // The 19px phone cap must remain unchanged, but tablets must
+                // no longer display Quran rows at the tiny phone font size.
+                if (pageNumber >= 3) {
+                    if (width <= 430) {
+                        assert.ok(result.fontSize <= 19.05,
+                            `phone font grew on page ${pageNumber} at ${width}x${height}`);
+                    } else if (width >= 768) {
+                        assert.ok(result.fontSize >= 26,
+                            `tablet font stayed too small on page ${pageNumber} at ${width}x${height}: ${result.fontSize}px`);
+                    }
+                }
                 assert.equal(result.overflowX, 'hidden');
                 assert.equal(
                     result.outsideRowsVertical,
