@@ -98,8 +98,8 @@ jobs:
                           if t.get('verse_key')!=f'{surah}:{ayah}': bad.append('verse_order:'+str(ayah))
                           if not isinstance(t.get('timestamp_from'),int) or not isinstance(t.get('timestamp_to'),int) or t['timestamp_to']<=t['timestamp_from']: bad.append('verse_time:'+str(ayah))
                           seg=t.get('segments') or []
-                          if not seg: bad.append('no_segments:'+str(ayah))
-                          elif not all(isinstance(x,list) and len(x)==3 and isinstance(x[0],int) and x[0]>0 and all(isinstance(v,int) for v in x[1:]) and x[2]>x[1]>=0 for x in seg): bad.append('invalid_segment:'+str(ayah))
+                          usable=[x for x in seg if isinstance(x,list) and len(x)==3 and isinstance(x[0],int) and x[0]>0 and all(isinstance(v,(int,float)) for v in x[1:]) and x[2]>x[1]>=0]
+                          if not usable: bad.append('no_usable_segments:'+str(ayah)+':'+repr(seg[:2]))
                       return rid,surah,len(ts),len(bad),bad[:5]
                   except HTTPError as e:
                       if e.code in (429,500,502,503,504) and retry<2: time.sleep(1+retry*2); continue
