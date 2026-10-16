@@ -252,7 +252,9 @@
 
     function stabilizeStandardPage(container, pageNumber) {
         if (!container || pageNumber <= 2 || !container.clientWidth) return;
-        const layoutWidth = String(container.clientWidth);
+        // The responsive font now depends on height as well as width.
+        // Keep the existing cache field for prepared-page compatibility.
+        const layoutWidth = `${container.clientWidth}x${container.clientHeight}`;
         if (container.dataset.standardLayoutPage === String(pageNumber) &&
             container.dataset.standardLayoutWidth === layoutWidth &&
             container.dataset.layoutState === 'ready') return;
