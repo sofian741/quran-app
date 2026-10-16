@@ -379,6 +379,7 @@
             this.audio = audio;
             this.timing = options.timingProvider || new TimingProvider(options.fetcher);
             this.state = sanitizeState(readJson(STATE_KEY));
+            this.alignedReciters = new Map(ALIGNED_RECITERS.map(reciter => [reciter.id, reciter]));
             this.chapter = null;
             this.currentTiming = null;
             this.trackUrl = '';
@@ -632,8 +633,16 @@
             this.persist(); this.emit();
         }
 
+        registerAlignedReciter(reciter) {
+            const id = Number(reciter?.id);
+            const name = String(reciter?.name || '').trim();
+            if (!Number.isSafeInteger(id) || id < 1 || id > 10000 || !name || name.length > 120) return false;
+            this.alignedReciters.set(id, { id, name, label: name + ' • تظليل الكلمات' });
+            return true;
+        }
+
         async selectAligned(reciterId = 7, options = {}) {
-            const reciter = ALIGNED_RECITERS.find(item => item.id === Number(reciterId));
+            const reciter = this.alignedReciters.get(Number(reciterId));
             if (!reciter) return false;
             const autoplay = options.autoplay ?? (!this.audio.paused || this.intentToPlay);
             this.audio.pause();
