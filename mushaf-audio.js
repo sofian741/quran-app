@@ -41,6 +41,9 @@
     let closeTimer = null;
     let renderedVerse = '';
     let renderedWord = null;
+    let highlightedWords = [];
+    let activeWordElement = null;
+    let highlightFrame = 0;
     let applyingState = false;
     let downloadBatch = false;
     let cancelRequested = false;
@@ -284,9 +287,13 @@
 
     function clearHighlights() {
         ui.text.querySelectorAll('.audio-verse-band').forEach(element => element.remove());
+        if (activeWordElement) activeWordElement.classList.remove('is-audio-word');
+        // A page change can detach the previous active word from the reader.
         ui.text.querySelectorAll('.mushaf-word.is-audio-word').forEach(element => element.classList.remove('is-audio-word'));
         renderedVerse = '';
         renderedWord = null;
+        highlightedWords = [];
+        activeWordElement = null;
     }
 
     function drawVerseBand(verseKey) {
@@ -330,25 +337,86 @@
 
     function syncHighlight(state) {
         if (!state.playing || state.provider !== 'quran-foundation' || !state.timing) {
-            clearHighlights();
+            if (renderedVerse || activeWordElement) clearHighlights();
             return;
         }
+
         const verseKey = `${state.surah}:${state.ayah}`;
-        const words = [...ui.text.querySelectorAll(`.mushaf-word[data-verse="${verseKey}"]`)];
-        if (!words.length) return;
-        if (renderedVerse !== verseKey) drawVerseBand(verseKey);
+        if (renderedVerse !== verseKey) {
+            // Remove the previous verse's word cue immediately, even if the
+            // next verse is on a page that has not finished rendering.
+            if (activeWordElement) activeWordElement.classList.remove('is-audio-word');
+            activeWordElement = null;
+            renderedWord = null;
+            highlightedWords = [...ui.text.querySelectorAll(`.mushaf-word[data-verse="${verseKey}"]`)];
+            if (!highlightedWords.length) {
+                clearHighlights();
+                return;
+            }
+            drawVerseBand(verseKey);
+        }
+
         const segments = state.timing.segments || [];
-        const maxWord = segments.reduce((max, segment) => Math.max(max, segment.word), 0);
-        const canMapWords = maxWord > 0 && maxWord === words.length;
+        const count = highlightedWords.length;
+        const firstIndex = segments.length ? Math.min(...segments.map(item => item.word)) : -1;
+        const lastIndex = segments.length ? Math.max(...segments.map(item => item.word)) : -1;
+        const zeroBased = firstIndex === 0 && lastIndex <= count - 1;
+        const validMapping = segments.length > 0 && (
+            (zeroBased && lastIndex < count) ||
+            (!zeroBased && firstIndex >= 1 && lastIndex <= count)
+        );
         const milliseconds = state.currentTime * 1000;
-        const segment = canMapWords
-            ? segments.find(item => milliseconds >= item.start && milliseconds < item.end)
-            : null;
-        const nextWord = segment?.word || null;
+        const verseStart = Number(state.timing.timestampFrom);
+        const verseEnd = Number(state.timing.timestampTo);
+        let nextWord = null;
+
+        if (validMapping &&
+            (!Number.isFinite(verseStart) || milliseconds >= verseStart) &&
+            (!Number.isFinite(verseEnd) || milliseconds < verseEnd)) {
+            // Keep the previous word active through tiny gaps in the timing
+            // metadata, but never leave the final word stuck after it ends.
+            const first = segments[0];
+            const last = segments[segments.length - 1];
+            if (milliseconds < first.start) {
+                // Some recordings omit the first word's segment.
+                nextWord = 1;
+            } else if (milliseconds <= last.end + 60) {
+                for (let index = segments.length - 1; index >= 0; index--) {
+                    if (milliseconds >= segments[index].start) {
+                        nextWord = segments[index].word + (zeroBased ? 1 : 0);
+                        break;
+                    }
+                }
+            }
+        }
+
         if (nextWord === renderedWord) return;
-        words.forEach(word => word.classList.remove('is-audio-word'));
-        if (nextWord) words[nextWord - 1]?.classList.add('is-audio-word');
+        if (activeWordElement) activeWordElement.classList.remove('is-audio-word');
+        activeWordElement = nextWord ? highlightedWords[nextWord - 1] || null : null;
+        if (activeWordElement) activeWordElement.classList.add('is-audio-word');
         renderedWord = nextWord;
+    }
+
+    // HTMLAudioElement timeupdate fires only a few times per second. That can
+    // skip short first words and leave a cue behind after the reciter moves on.
+    // This lightweight frame loop reads audio.currentTime directly; DOM word
+    // queries and verse geometry run only when the verse itself changes.
+    function startWordTracking() {
+        if (highlightFrame || engine.audio.paused ||
+            engine.state.provider !== 'quran-foundation') return;
+        const tick = () => {
+            highlightFrame = 0;
+            if (engine.audio.paused || engine.state.provider !== 'quran-foundation') {
+                syncHighlight(engine.snapshot());
+                return;
+            }
+            // Advance the continuous recording's verse state at the actual
+            // boundary, rather than waiting for the next timeupdate event.
+            engine.__syncContinuousChapter?.();
+            syncHighlight(engine.snapshot());
+            if (!highlightFrame) highlightFrame = requestAnimationFrame(tick);
+        };
+        highlightFrame = requestAnimationFrame(tick);
     }
 
     function followVerse(state) {
@@ -362,11 +430,13 @@
         const state = event.detail;
         applyState(state, true);
         followVerse(state);
-        requestAnimationFrame(() => syncHighlight(state));
+        requestAnimationFrame(() => syncHighlight(engine.snapshot()));
+        startWordTracking();
     });
     engine.addEventListener('time', event => {
         applyState(event.detail, false);
         syncHighlight(event.detail);
+        startWordTracking();
     });
 
     ui.open.addEventListener('click', openOptions);
