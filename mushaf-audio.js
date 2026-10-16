@@ -921,5 +921,13 @@
     }
     applyState(engine.snapshot(), true);
     loadCatalog();
-    if (!window.QudAudioRegistry?.reciters?.length) loadAlignedReciters();
+    if (!window.QudAudioRegistry?.reciters?.length) {
+        loadAlignedReciters();
+    } else if (engine.state.provider === 'quran-foundation' &&
+        window.QuranQud?.reciters?.some(reciter => Number(reciter.id) === Number(engine.state.reciterId))) {
+        // Warm the selected QUD track immediately. This keeps the first press on
+        // Play synchronous with HTMLAudioElement.play() instead of making the
+        // user wait while timing metadata and the chapter source are discovered.
+        engine.prepare({ autoplay: false }).catch(() => { /* The UI reports prepare errors. */ });
+    }
 })();
