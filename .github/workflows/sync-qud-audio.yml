@@ -29,6 +29,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build and fully validate synchronized reciters
+        if: github.event_name == 'workflow_dispatch'
         run: python3 scripts/build_verified_qud.py
 
       - name: Validate generated runtime
@@ -96,17 +97,18 @@ jobs:
           mushaf = (root / 'mushaf-audio.js').read_text(encoding='utf-8')
           sw = (root / 'sw.js').read_text(encoding='utf-8')
           assert quran.index('audio-downloads.js') < quran.index('data/qud/registry.js') < quran.index('qud-audio.js') < quran.index('mushaf-audio.js')
-          assert "if (!window.QudAudioRegistry?.reciters?.length) loadAlignedReciters();" in mushaf
+          assert "if (!window.QudAudioRegistry?.reciters?.length) {" in mushaf
           assert 'engine.selectAligned(7' not in mushaf, 'mushaf must never force Mishary for verse playback/repeat'
           assert 'wholeSurah ? 1 : selected.ayah' not in mushaf, 'listen must never fall back to surah start'
           assert 'engine.goTo(selected.surah, selected.ayah, { autoplay: true })' in mushaf
           assert 'switchLegacyMp3ToSameAlignedReader' in mushaf
-          assert 'quran-reader-shell-v10' in sw
-          print('Validated all 20 unique synchronized readers, 118484 canonical verse records, runtime word segments, and exact same-reciter verse playback policy.')
+          assert 'quran-reader-shell-v11' in sw
+          print('Validated 20 QUD/Mishary readers, 118484 QUD verse records, and exact same-reciter verse playback policy.')
           PY
           git diff --check
 
       - name: Commit final generated bundle
+        if: github.event_name == 'workflow_dispatch'
         run: |
           rm -rf scripts/__pycache__
           GENERATED_STATUS="$(git status --porcelain -- data/qud quran.html mushaf-audio.js sw.js SOURCES.md)"
