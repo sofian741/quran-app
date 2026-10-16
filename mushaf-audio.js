@@ -808,7 +808,8 @@
             let cursor = 0;
             let confirmed = 0;
             async function verifyNext() {
-                while (cursor < candidates.length && confirmed < MAX_ALIGNED - 1) {
+                while (cursor < candidates.length && confirmed < MAX_ALIGNED - 1 &&
+                    alignedReciters.length < MAX_ALIGNED) {
                     const item = candidates[cursor++];
                     if (alignedReciters.some(reciter => reciter.id === item.id)) {
                         confirmed++;
