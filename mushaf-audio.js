@@ -296,10 +296,20 @@
         activeWordElement = null;
     }
 
+    function spokenVerseWords(verseKey) {
+        const surah = Number(verseKey.split(':')[0]);
+        const words = [...ui.text.querySelectorAll(`.mushaf-word[data-verse="${verseKey}"]`)];
+        // The printed basmala is part of the mushaf layout, but for every
+        // surah except Al-Fatihah it is not part of this reciter's aligned
+        // first-ayah recording. Do not count or highlight its words.
+        if (surah === 1) return words;
+        return words.filter(word => !word.closest('.surah-basmala'));
+    }
+
     function drawVerseBand(verseKey) {
         ui.text.querySelectorAll('.audio-verse-band').forEach(element => element.remove());
         const rows = new Map();
-        ui.text.querySelectorAll(`.mushaf-word[data-verse="${verseKey}"]`).forEach(word => {
+        spokenVerseWords(verseKey).forEach(word => {
             const row = word.closest('.mushaf-line, .surah-basmala');
             if (!row) return;
             if (!rows.has(row)) rows.set(row, []);
@@ -348,7 +358,7 @@
             if (activeWordElement) activeWordElement.classList.remove('is-audio-word');
             activeWordElement = null;
             renderedWord = null;
-            highlightedWords = [...ui.text.querySelectorAll(`.mushaf-word[data-verse="${verseKey}"]`)];
+            highlightedWords = spokenVerseWords(verseKey);
             if (!highlightedWords.length) {
                 clearHighlights();
                 return;
