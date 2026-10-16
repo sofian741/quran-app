@@ -64,4 +64,16 @@ jobs:
                       if 'reciters' in payload: print('RECITERS',[(x.get('id'),x.get('name')) for x in payload['reciters']][:60])
                       if 'recitations' in payload: print('RECITATIONS',[(x.get('id'),x.get('reciter_name')) for x in payload['recitations']][:60])
               except Exception as e: print('ENDPOINT_ERROR',url,repr(e))
+
+          print('FOUNDATION TIMINGS: check all 12 recitations for Fatiha and Baqarah')
+          for item in base.request_json('https://api.quran.com/api/v4/resources/recitations?language=en')['recitations']:
+              rid=item['id']
+              for surah in (1,2,114):
+                  try:
+                      data=base.request_json(f'https://api.quran.com/api/v4/chapter_recitations/{rid}/{surah}?segments=true')
+                      f=data.get('audio_file') or {}
+                      times=f.get('timestamps') or []
+                      full=sum(bool(t.get('segments')) and isinstance(t.get('timestamp_from'),int) and isinstance(t.get('timestamp_to'),int) for t in times)
+                      print('TEST',rid,item.get('reciter_name'),surah,'timings',len(times),'with_segments',full,'url',str(f.get('audio_url'))[:100])
+                  except Exception as e: print('TEST_ERROR',rid,surah,repr(e))
           PY
