@@ -286,7 +286,7 @@
                 : `تحميل كل التلاوات المتاحة (${core.arabicDigits(state.availableSurahs.length)} سورة)`;
             ui.quickRepeat.setAttribute('aria-pressed', String(state.repeat.mode !== 'off'));
             ui.repeatHint.textContent = state.provider === 'mp3quran'
-                ? 'تكرار الآية أو نطاق الآيات متاح. عند تطبيقه سننتقل تلقائيًا لتسجيل مشاري العفاسي المتزامن لتحديد الآيات بدقة.'
+                ? 'تكرار الآية أو نطاق الآيات يحتاج نسخة متزامنة من القارئ نفسه؛ لن يتم تبديل الشيخ تلقائيًا.'
                 : 'تكرار الآية يعيد الآية الحالية، وتكرار النطاق يعيد الآيات من البداية للنهاية بعدد المرات المحدد.';
             ui.syncNote.classList.toggle('is-unavailable', state.provider !== 'quran-foundation');
             ui.syncNote.textContent = state.provider === 'quran-foundation'
@@ -539,6 +539,39 @@
     ui.speed.addEventListener('change', () => engine.setSpeed(ui.speed.value));
     ui.autoFollow.addEventListener('change', () => engine.setAutoFollow(ui.autoFollow.checked));
 
+    function readerIdentity(name) {
+        return core.normalizeArabic(String(name || ''))
+            .replace(/الشيخ|القارئ/g, '')
+            .replace(/[^ء-ي0-9]/g, '');
+    }
+
+    function alignedForCurrentReader(state = engine.state) {
+        if (state.provider === 'quran-foundation') {
+            return alignedReciters.find(reciter => reciter.id === Number(state.reciterId)) || null;
+        }
+        const wanted = readerIdentity(state.reciterName);
+        if (!wanted) return null;
+        return alignedReciters.find(reciter => readerIdentity(reciter.name) === wanted) ||
+            alignedReciters.find(reciter => {
+                const candidate = readerIdentity(reciter.name);
+                return candidate.length >= 8 && wanted.length >= 8 &&
+                    (candidate.includes(wanted) || wanted.includes(candidate));
+            }) || null;
+    }
+
+    async function switchLegacyMp3ToSameAlignedReader({ surah, ayah = 1, autoplay = false } = {}) {
+        if (engine.state.provider !== 'mp3quran') return true;
+        const reciter = alignedForCurrentReader(engine.state);
+        if (!reciter) return false;
+        const ready = await engine.selectAligned(reciter.id, {
+            surah: Number(surah) || engine.state.surah,
+            ayah: Number(ayah) || 1,
+            autoplay
+        });
+        if (ready) lastAlignedId = reciter.id;
+        return ready;
+    }
+
     async function applyRepeat() {
         const mode = ui.repeatMode.value;
         const maxAyah = core.VERSE_COUNTS[engine.state.surah - 1];
@@ -549,15 +582,21 @@
         const switching = engine.state.provider === 'mp3quran' && (mode === 'verse' || mode === 'range');
 
         if (switching) {
+            const sameReader = alignedForCurrentReader(engine.state);
+            if (!sameReader) {
+                ui.repeatHint.textContent = 'القارئ الحالي من مكتبة التلاوات لا يملك نسخة متزامنة داخل المصحف. اختر قارئًا متزامنًا من القائمة؛ لن نغيّر الشيخ تلقائيًا.';
+                return;
+            }
             ui.applyRepeatButton.disabled = true;
-            ui.repeatHint.textContent = 'جاري تجهيز التسجيل المتزامن لمشاري العفاسي لتكرار الآيات بدقة…';
-            const changed = await engine.selectAligned(7, {
-                surah: engine.state.surah, ayah: mode === 'range' ? start : 1,
+            ui.repeatHint.textContent = `جاري تجهيز النسخة المتزامنة للقارئ ${sameReader.name} لتكرار الآيات بدقة…`;
+            const changed = await switchLegacyMp3ToSameAlignedReader({
+                surah: engine.state.surah,
+                ayah: mode === 'range' ? start : 1,
                 autoplay: false
             });
             ui.applyRepeatButton.disabled = false;
             if (!changed) {
-                ui.repeatHint.textContent = 'تعذّر تجهيز تسجيل الآيات. تحقق من الإنترنت وحاول مرة أخرى.';
+                ui.repeatHint.textContent = 'تعذّر تجهيز النسخة المتزامنة للقارئ نفسه. تحقق من الاتصال وحاول مرة أخرى.';
                 return;
             }
         }
@@ -578,10 +617,14 @@
     }
     ui.repeatMode.addEventListener('change', () => {
         repeatClasses(ui.repeatMode.value);
-        ui.repeatHint.textContent = engine.state.provider === 'mp3quran' &&
-            ['verse', 'range'].includes(ui.repeatMode.value)
-            ? 'سيتم استخدام تسجيل مشاري العفاسي المتزامن تلقائيًا حتى يعمل تكرار الآيات بدقة.'
-            : 'تكرار الآية يعيد الآية الحالية، وتكرار النطاق يعيد الآيات من البداية للنهاية بعدد المرات المحدد.';
+        if (engine.state.provider === 'mp3quran' && ['verse', 'range'].includes(ui.repeatMode.value)) {
+            const sameReader = alignedForCurrentReader(engine.state);
+            ui.repeatHint.textContent = sameReader
+                ? `سيتم استخدام النسخة المتزامنة لنفس القارئ ${sameReader.name} حتى يعمل التكرار بدقة.`
+                : 'هذا التسجيل غير متزامن داخل المصحف. اختر قارئًا متزامنًا من القائمة؛ لن نغيّر الشيخ تلقائيًا.';
+            return;
+        }
+        ui.repeatHint.textContent = 'تكرار الآية يعيد الآية الحالية، وتكرار النطاق يعيد الآيات من البداية للنهاية بعدد المرات المحدد.';
     });
     ui.applyRepeatButton.addEventListener('click', applyRepeat);
 
@@ -589,35 +632,32 @@
         const selected = window.mushafVerseActions?.getSelectedVerse?.();
         if (!selected) return;
         window.mushafVerseActions.close();
-
-        // MP3Quran exposes complete surah recordings, not verse timestamps.
-        // Respect the selected reciter: play that reciter's surah from its
-        // beginning rather than silently replacing them with Mishary.
-        const wholeSurah = engine.state.provider === 'mp3quran';
         listenNotice = '';
         listenNoticeUntil = 0;
 
-        if (wholeSurah && !engine.state.availableSurahs.includes(selected.surah)) {
-            listenNotice = 'السورة دي مش متاحة بصوت القارئ المختار. اختار سورة متاحة أو قارئ تاني.';
-            listenNoticeUntil = Date.now() + 8000;
-            ui.status.textContent = listenNotice;
-            return;
+        let started = false;
+        if (engine.state.provider === 'quran-foundation') {
+            started = await engine.goTo(selected.surah, selected.ayah, { autoplay: true });
+        } else {
+            const sameReader = alignedForCurrentReader(engine.state);
+            if (!sameReader) {
+                listenNotice = 'القارئ الحالي من مكتبة التلاوات لا يملك توقيتًا دقيقًا للآيات داخل المصحف. اختر قارئًا متزامنًا من القائمة؛ لن يتم تحويلك إلى شيخ آخر.';
+                listenNoticeUntil = Date.now() + 9000;
+                ui.status.textContent = listenNotice;
+                return;
+            }
+            started = await switchLegacyMp3ToSameAlignedReader({
+                surah: selected.surah,
+                ayah: selected.ayah,
+                autoplay: true
+            });
         }
-
-        const started = await engine.goTo(
-            selected.surah,
-            wholeSurah ? 1 : selected.ayah,
-            { autoplay: true, ...(wholeSurah ? { position: 0 } : {}) }
-        );
 
         if (!started) {
-            listenNotice = 'تعذّر بدء التلاوة. تحقق من الاتصال وحاول مجددًا.';
+            listenNotice = 'تعذّر بدء الآية بصوت القارئ المحدد. تحقق من الاتصال وحاول مجددًا.';
             listenNoticeUntil = Date.now() + 8000;
-        } else if (wholeSurah) {
-            listenNotice = 'يعمل القارئ المختار من بداية السورة؛ تسجيله لا يوفّر توقيتًا لكل آية.';
-            listenNoticeUntil = Date.now() + 8000;
+            ui.status.textContent = listenNotice;
         }
-        if (listenNotice) ui.status.textContent = listenNotice;
     });
 
     window.addEventListener('mushaf:page-ready', () => {
