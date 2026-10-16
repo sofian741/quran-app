@@ -29,6 +29,10 @@
         cancelDownload: $('audio-cancel-download'), downloadProgress: $('audio-download-progress'),
         downloadList: $('audio-download-list'), storageInfo: $('audio-storage-info'),
         listenAction: document.querySelector('[data-verse-action="listen"]'),
+        switchNotice: $('audio-switch-notice'),
+        switchNoticeTitle: $('audio-switch-notice-title'),
+        switchNoticeMessage: $('audio-switch-notice-message'),
+        switchNoticeDismiss: $('audio-switch-notice-dismiss'),
         text: $('quran-text')
     };
     if (Object.values(ui).some(value => !value)) return;
@@ -98,15 +102,23 @@
         ui.reciter.replaceChildren();
         const selectedValue = state.provider === 'quran-foundation' ?
             `aligned:${state.reciterId}` : `mp3:${state.reciterId}`;
-        alignedReciters.forEach(reciter => option(ui.reciter,
+
+        const syncedGroup = document.createElement('optgroup');
+        syncedGroup.label = `القراء المتزامنون (${core.arabicDigits(alignedReciters.length)}) • تشغيل من أي آية + تظليل الكلمات`;
+        alignedReciters.forEach(reciter => option(syncedGroup,
             `aligned:${reciter.id}`, reciter.label || `${reciter.name} • تظليل الكلمات`));
-        // The mushaf picker is for word-synchronized reciters only. The
-        // 200+ MP3Quran choices remain in the separate recitations page.
-        // Keep a legacy MP3 choice visible only if it is currently selected.
-        if (state.provider === 'mp3quran') {
-            option(ui.reciter, selectedValue,
-                `${state.reciterName} • تسجيل بدون تظليل`);
+        ui.reciter.appendChild(syncedGroup);
+
+        const mp3Group = document.createElement('optgroup');
+        mp3Group.label = `مكتبة التلاوات (${core.arabicDigits(catalog.length)}) • تسجيلات غير متزامنة`;
+        catalog.forEach(reciter => option(mp3Group,
+            `mp3:${reciter.id}`, `${reciter.name} • يبدأ التسجيل من بدايته`));
+        if (state.provider === 'mp3quran' && !catalog.some(item => item.id === Number(state.reciterId))) {
+            option(mp3Group, selectedValue,
+                `${state.reciterName} • تسجيل غير متزامن`);
         }
+        if (mp3Group.children.length) ui.reciter.appendChild(mp3Group);
+
         ui.reciter.value = selectedValue;
         if (!ui.reciter.value) ui.reciter.selectedIndex = 0;
         const selected = catalog.find(reciter => reciter.id === Number(state.reciterId)) ||
@@ -155,7 +167,25 @@
             !search || core.normalizeArabic(item.textContent).includes(search) ||
             String(item.value).includes(search));
         const fragment = document.createDocumentFragment();
+        let lastGroup = null;
         options.forEach(item => {
+            if (kind === 'reciter') {
+                const group = item.parentElement?.tagName === 'OPTGROUP' ? item.parentElement : null;
+                if (group !== lastGroup) {
+                    lastGroup = group;
+                    const heading = document.createElement('div');
+                    heading.className = 'audio-picker-group-heading' +
+                        (group?.label.startsWith('مكتبة التلاوات') ? ' audio-picker-group-mp3' : '');
+                    heading.textContent = group?.label || 'القراء';
+                    fragment.appendChild(heading);
+                    if (group?.label.startsWith('مكتبة التلاوات')) {
+                        const caption = document.createElement('small');
+                        caption.className = 'audio-picker-group-caption';
+                        caption.textContent = 'لا يوجد تظليل كلمات أو تشغيل من آية محددة. عند اختيار آية للاستماع، سيتم التحويل تلقائيًا إلى مشاري العفاسي مع تنبيه واضح.';
+                        fragment.appendChild(caption);
+                    }
+                }
+            }
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'audio-picker-option';
@@ -291,7 +321,7 @@
             ui.syncNote.classList.toggle('is-unavailable', state.provider !== 'quran-foundation');
             ui.syncNote.textContent = state.provider === 'quran-foundation'
                 ? alignedDiscoveryStatus
-                : 'هذا تسجيل سورة كاملة من MP3Quran ولا تتوفر له توقيتات كلمات مطابقة. اختر قارئًا متزامنًا من القائمة لتفعيل تظليل الكلمات.';
+                : 'القارئ الحالي من مكتبة التلاوات غير المتزامنة: يبدأ التسجيل من بدايته، ولا يدعم تظليل الكلمات أو التشغيل من آية محددة. عند الضغط على «الاستماع» لآية، سيتحول التطبيق تلقائيًا إلى مشاري العفاسي مع تنبيه واضح.';
         }
         applyingState = false;
     }
@@ -628,6 +658,15 @@
     });
     ui.applyRepeatButton.addEventListener('click', applyRepeat);
 
+    function showSwitchNotice(title, message) {
+        ui.switchNoticeTitle.textContent = title;
+        ui.switchNoticeMessage.textContent = message;
+        ui.switchNotice.hidden = false;
+    }
+    ui.switchNoticeDismiss.addEventListener('click', () => {
+        ui.switchNotice.hidden = true;
+    });
+
     ui.listenAction.addEventListener('click', async () => {
         const selected = window.mushafVerseActions?.getSelectedVerse?.();
         if (!selected) return;
@@ -639,22 +678,29 @@
         if (engine.state.provider === 'quran-foundation') {
             started = await engine.goTo(selected.surah, selected.ayah, { autoplay: true });
         } else {
-            const sameReader = alignedForCurrentReader(engine.state);
-            if (!sameReader) {
-                listenNotice = 'القارئ الحالي من مكتبة التلاوات لا يملك توقيتًا دقيقًا للآيات داخل المصحف. اختر قارئًا متزامنًا من القائمة؛ لن يتم تحويلك إلى شيخ آخر.';
-                listenNoticeUntil = Date.now() + 9000;
-                ui.status.textContent = listenNotice;
-                return;
-            }
-            started = await switchLegacyMp3ToSameAlignedReader({
+            const previousReader = engine.state.reciterName;
+            showSwitchNotice('تنبيه: هذا القارئ لا يدعم التشغيل من آية محددة',
+                `القارئ «${previousReader}» من مكتبة التلاوات غير المتزامنة، وتسجيله لا يوفر توقيتًا دقيقًا للآيات والكلمات. لذلك يتم التحويل تلقائيًا إلى مشاري راشد العفاسي لتشغيل الآية ${core.arabicDigits(selected.ayah)} من سورة ${core.SURAH_NAMES[selected.surah - 1]} مع التظليل. تغيير القارئ مقصود وليس خطأ في التطبيق. جاري التجهيز…`);
+            // An explicit user request to listen to an individual verse is the
+            // only action that switches a non-aligned MP3 reader to Mishary.
+            // Never try to seek inside an unaligned full-surah MP3 recording.
+            started = await engine.selectAligned(7, {
                 surah: selected.surah,
                 ayah: selected.ayah,
                 autoplay: true
             });
+            if (started) {
+                lastAlignedId = 7;
+                showSwitchNotice('تم التحويل إلى مشاري العفاسي لتشغيل الآية',
+                    `القارئ «${previousReader}» لا يدعم البدء من آية محددة. تم اختيار مشاري راشد العفاسي تلقائيًا، وبدأ تشغيل الآية ${core.arabicDigits(selected.ayah)} من سورة ${core.SURAH_NAMES[selected.surah - 1]} مع التظليل. هذا سلوك مقصود في التطبيق وليس عطلًا. يمكنك الرجوع لقارئك السابق من «مكتبة التلاوات» في أي وقت.`);
+            } else {
+                showSwitchNotice('تعذّر تشغيل الآية بمشاري العفاسي',
+                    `تسجيل «${previousReader}» لا يدعم البدء من آية محددة. حاول التطبيق التحويل إلى مشاري العفاسي، لكن تعذّر بدء الصوت. تحقق من الاتصال وحاول مجددًا. هذا ليس تغييرًا عشوائيًا للقارئ.`);
+            }
         }
 
         if (!started) {
-            listenNotice = 'تعذّر بدء الآية بصوت القارئ المحدد. تحقق من الاتصال وحاول مجددًا.';
+            listenNotice = 'تعذّر بدء الآية المحددة. تحقق من الاتصال وحاول مجددًا.';
             listenNoticeUntil = Date.now() + 8000;
             ui.status.textContent = listenNotice;
         }
