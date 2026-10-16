@@ -772,7 +772,19 @@
         });
     // Native pinch zoom must never trigger a one-finger page turn.
     const activeTouchPointers = new Set();
-    const isPinchZoomed = () => (window.visualViewport?.scale || 1) > 1.01;
+    // Small accidental magnification should not disable page turns.
+    const PAGE_TURN_ZOOM_LIMIT = 1.15;
+    const isPinchZoomed = () => (window.visualViewport?.scale || 1) >= PAGE_TURN_ZOOM_LIMIT;
+    const syncZoomPanning = () => {
+        els.body.classList.toggle('is-pinch-panning', isPinchZoomed());
+        if (isPinchZoomed() && pointerStart) {
+            pointerStart = null;
+            resetDrag();
+        }
+    };
+    window.visualViewport?.addEventListener('resize', syncZoomPanning, { passive: true });
+    window.visualViewport?.addEventListener('scroll', syncZoomPanning, { passive: true });
+    syncZoomPanning();
     els.stage.addEventListener('pointerdown', event => {
         if (event.pointerType !== 'touch') return;
         activeTouchPointers.add(event.pointerId);
