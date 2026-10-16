@@ -390,6 +390,8 @@
             this.pendingResume = this.state.position;
             this.intentToPlay = false;
             this.prepareVersion = 0;
+            this.nextVerseAudio = null;
+            this.nextVerseVersion = 0;
             this.bindAudio();
             this.bindChannel();
             this.audio.playbackRate = this.state.speed;
@@ -437,27 +439,34 @@
         }
 
         bindAudio() {
-            this.audio.addEventListener('loadstart', () => { this.status = 'loading'; this.error = ''; this.emit(); });
-            this.audio.addEventListener('waiting', () => { this.status = 'loading'; this.emit(); });
-            this.audio.addEventListener('playing', () => {
+            // Each element keeps its own handlers. Events from a retired track
+            // must never mutate the active playback state.
+            const element = this.audio;
+            const listen = (name, handler) => element.addEventListener(name, event => {
+                if (element === this.audio) handler(event);
+            });
+            listen('loadstart', () => { this.status = 'loading'; this.error = ''; this.emit(); });
+            listen('waiting', () => { this.status = 'loading'; this.emit(); });
+            listen('playing', () => {
                 this.intentToPlay = true;
-                this.status = 'playing'; this.error = '';
+                this.status = 'playing';
+                this.preloadUpcomingVerse(); this.error = '';
                 this.channel?.postMessage({ type: 'playing', sessionId: this.sessionId });
                 this.emit();
             });
-            this.audio.addEventListener('play', () => { this.status = 'playing'; this.emit(); });
-            this.audio.addEventListener('pause', () => {
+            listen('play', () => { this.status = 'playing'; this.emit(); });
+            listen('pause', () => {
                 if (!this.audio.ended) this.status = 'paused';
                 this.persist(); this.emit();
             });
-            this.audio.addEventListener('loadedmetadata', () => {
+            listen('loadedmetadata', () => {
                 if (this.pendingResume > 0 && Number.isFinite(this.audio.duration)) {
                     this.audio.currentTime = Math.min(this.pendingResume, Math.max(0, this.audio.duration - .25));
                 }
                 this.pendingResume = 0;
                 this.emit();
             });
-            this.audio.addEventListener('timeupdate', () => {
+            listen('timeupdate', () => {
                 const now = Date.now();
                 if (now - this.lastSave > 3000) { this.lastSave = now; this.persist(); }
                 if (navigator.mediaSession?.setPositionState && Number.isFinite(this.audio.duration) && this.audio.duration > 0) {
@@ -471,15 +480,55 @@
                 }
                 this.emit('time');
             });
-            this.audio.addEventListener('ratechange', () => this.emit());
-            this.audio.addEventListener('ended', () => this.handleEnded());
-            this.audio.addEventListener('error', () => {
+            listen('ratechange', () => this.emit());
+            listen('ended', () => this.handleEnded());
+            listen('error', () => {
                 this.status = 'error';
                 this.error = navigator.onLine === false
                     ? 'التسجيل غير محفوظ على الجهاز ولا يوجد اتصال بالإنترنت.'
                     : 'تعذّر تحميل التسجيل. جرّب قارئًا أو سورة أخرى.';
                 this.emit();
             });
+        }
+
+        clearUpcomingVerse() {
+            this.nextVerseVersion++;
+            const pending = this.nextVerseAudio;
+            this.nextVerseAudio = null;
+            if (pending?.audio && pending.audio !== this.audio) {
+                pending.audio.pause();
+                pending.audio.removeAttribute('src');
+            }
+        }
+
+        async preloadUpcomingVerse() {
+            if (this.state.provider !== 'quran-foundation') return;
+            const reciterId = this.state.reciterId;
+            let surah = this.state.surah;
+            let ayah = this.state.ayah + 1;
+            if (ayah > VERSE_COUNTS[surah - 1]) {
+                if (surah === 114) return;
+                surah++;
+                ayah = 1;
+            }
+            const existing = this.nextVerseAudio;
+            if (existing && existing.reciterId === reciterId &&
+                existing.surah === surah && existing.ayah === ayah) return;
+            this.clearUpcomingVerse();
+            const version = this.nextVerseVersion;
+            try {
+                const timing = await this.timing.verse(reciterId, surah, ayah);
+                if (version !== this.nextVerseVersion || this.state.provider !== 'quran-foundation' ||
+                    this.state.reciterId !== reciterId) return;
+                const audio = new Audio();
+                audio.preload = 'auto';
+                audio.playbackRate = this.state.speed;
+                audio.src = timing.audioUrl;
+                audio.load();
+                this.nextVerseAudio = { audio, timing, reciterId, surah, ayah };
+            } catch (_) {
+                // Network failures are handled by normal on-demand playback.
+            }
         }
 
         async prepare(options = {}) {
@@ -499,7 +548,27 @@
                     if (!url) throw new Error('Surah is unavailable for this recording');
                 }
                 if (version !== this.prepareVersion) return false;
-                if (url !== this.trackUrl) {
+                const pending = this.nextVerseAudio;
+                const canReuse = this.state.provider === 'quran-foundation' &&
+                    pending?.reciterId === this.state.reciterId &&
+                    pending.surah === this.state.surah &&
+                    pending.ayah === this.state.ayah &&
+                    pending.audio.src === url &&
+                    pending.audio.readyState >= 2;
+                if (canReuse) {
+                    // The next recording was already downloaded and decoded
+                    // while the current verse was playing.
+                    const retired = this.audio;
+                    this.audio = pending.audio;
+                    this.nextVerseAudio = null;
+                    this.nextVerseVersion++;
+                    this.bindAudio();
+                    this.audio.playbackRate = this.state.speed;
+                    retired.pause();
+                    retired.removeAttribute('src');
+                    this.trackUrl = url;
+                } else if (url !== this.trackUrl) {
+                    this.clearUpcomingVerse();
                     this.trackUrl = url;
                     this.audio.src = url;
                     this.audio.load();
@@ -568,6 +637,7 @@
             if (!reciter) return false;
             const autoplay = options.autoplay ?? (!this.audio.paused || this.intentToPlay);
             this.audio.pause();
+            this.clearUpcomingVerse();
             this.trackUrl = '';
             this.state = sanitizeState({
                 ...this.state,
@@ -586,6 +656,7 @@
             if (!reciter || !moshaf || !validMp3Server(moshaf.server)) return false;
             const autoplay = options.autoplay ?? (!this.audio.paused || this.intentToPlay);
             this.audio.pause();
+            this.clearUpcomingVerse();
             this.trackUrl = '';
             const requestedSurah = Number(options.surah) || this.state.surah;
             const surah = moshaf.surahs.includes(requestedSurah) ? requestedSurah : moshaf.surahs[0];
@@ -727,6 +798,7 @@
         }
 
         destroy() {
+            this.clearUpcomingVerse();
             this.persist();
             this.channel?.close();
         }
