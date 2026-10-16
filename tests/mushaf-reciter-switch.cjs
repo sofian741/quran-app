@@ -120,6 +120,8 @@ const catalog = { reciters: [
             window.quranAudioEngine.state.ayah === 3 &&
             !document.getElementById('audio-switch-notice').hidden);
         assert.equal(await page.locator('#audio-reader-name').textContent(), 'مشاري راشد العفاسي');
+        await page.waitForFunction(() => /تم التحويل|تعذّر تشغيل/.test(
+            document.getElementById('audio-switch-notice-title').textContent), { timeout: 30000 });
         assert.match(await page.locator('#audio-switch-notice-title').textContent(), /تم التحويل/);
         const message = await page.locator('#audio-switch-notice-message').textContent();
         assert.match(message, /قارئ تجريبي غير متزامن/);
