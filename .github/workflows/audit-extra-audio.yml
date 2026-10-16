@@ -1,86 +1,24 @@
 name: Audit additional synchronized reciters
-
 on:
   push:
     branches: [main]
     paths: [.github/workflows/audit-extra-audio.yml]
-
 permissions:
   contents: read
-
 jobs:
   audit:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect QUD candidates and Quran Foundation
+      - name: Verify every verse and word timing for candidate readers
         run: |
           python3 - <<'PY'
-          import sys, collections, json, urllib.request
-          sys.path.insert(0, 'scripts')
+          import sys, time
+          sys.path.insert(0,'scripts')
           import sync_qud_audio as base
-          release = base.request_json(base.RELEASE_API)
-          assets = {x['name']:x for x in release['assets']}
-          manifest = base.request_json(assets['manifest.json']['browser_download_url'])
-          catalog = base.request_json(assets['catalog.json']['browser_download_url'])
-          catalogs = {r['slug']:r for r in catalog['recitations']}
-          print('QUD RECAP: total',len(catalogs),flush=True)
-          accepted, rejected = [],[]
-          for slug, item in manifest['recitations'].items():
-              cat = catalogs.get(slug,{})
-              urls = (cat.get('audio') or {}).get('chapter_urls') or {}
-              reasons=[]
-              if str(item.get('riwayah') or cat.get('riwayah') or 'hafs').lower()!='hafs': reasons.append('non_hafs')
-              if 'word' not in (item.get('tiers') or []): reasons.append('no_word')
-              if int(item.get('coverage_ayahs') or 0)!=6236: reasons.append('not_full_ayahs')
-              if (cat.get('coverage') or {}).get('surahs')!=114: reasons.append('not_114_surahs')
-              if cat.get('audio_category')!='by_surah': reasons.append('not_by_surah:'+str(cat.get('audio_category')))
-              if len(urls)!=114: reasons.append('not_114_audio_urls:'+str(len(urls)))
-              if len(urls)==114 and not all(base.safe_https_audio_url(urls.get(str(i))) for i in range(1,115)): reasons.append('not_direct_audio')
-              if slug.startswith('mishary_rashid_al_afasy'): reasons.append('built_in_mishary')
-              if not reasons: accepted.append((slug,cat))
-              else: rejected.append((slug,cat,reasons))
-          print('QUD acceptable recordings',len(accepted))
-          print('QUD acceptable distinct IDs',len(set(base.reciter_identity(cat) for slug,cat in accepted)))
-          print('QUD rejected by reason',dict(collections.Counter(x for _,_,rr in rejected for x in rr)))
-          for slug,cat,rr in rejected:
-              print('REJECT',slug,cat.get('name_ar'),','.join(rr))
-          print('QUD ACCEPTED',[(slug,cat.get('name_ar')) for slug,cat in accepted])
-          print('FOUNDATION AUDIT')
-          endpoints=[
-              'https://api.quran.com/api/v4/resources/chapter_reciters?language=ar',
-              'https://api.quran.com/api/v4/resources/recitations?language=ar',
-              'https://api.quran.com/api/v4/chapter_recitations/7/1?segments=true',
-              'https://api.quran.com/api/v4/recitations/7/by_chapter/1?segments=true',
-          ]
-          for url in endpoints:
-              try:
-                  req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Accept':'application/json'})
-                  with urllib.request.urlopen(req,timeout=15) as r:
-                      payload=json.load(r)
-                      print('ENDPOINT',url,'HTTP',r.status,'keys',list(payload.keys()),'count',len(payload.get('reciters') or payload.get('recitations') or []))
-                      if 'audio_file' in payload: print('AUDIOFILE',str(payload['audio_file'])[:350])
-                      if 'reciters' in payload: print('RECITERS',[(x.get('id'),x.get('name')) for x in payload['reciters']][:60])
-                      if 'recitations' in payload: print('RECITATIONS',[(x.get('id'),x.get('reciter_name')) for x in payload['recitations']][:60])
-              except Exception as e: print('ENDPOINT_ERROR',url,repr(e))
-
-          print('FOUNDATION TIMINGS: check all 12 recitations for Fatiha and Baqarah')
-          for item in base.request_json('https://api.quran.com/api/v4/resources/recitations?language=en')['recitations']:
-              rid=item['id']
-              for surah in (1,2,114):
-                  try:
-                      data=base.request_json(f'https://api.quran.com/api/v4/chapter_recitations/{rid}/{surah}?segments=true')
-                      f=data.get('audio_file') or {}
-                      times=f.get('timestamps') or []
-                      full=sum(bool(t.get('segments')) and isinstance(t.get('timestamp_from'),int) and isinstance(t.get('timestamp_to'),int) for t in times)
-                      print('TEST',rid,item.get('reciter_name'),surah,'timings',len(times),'with_segments',full,'url',str(f.get('audio_url'))[:100])
-                  except Exception as e: print('TEST_ERROR',rid,surah,repr(e))
-
-          print('FOUNDATION FULL COVERAGE 114 chapters per new sheikh',flush=True)
           from concurrent.futures import ThreadPoolExecutor, as_completed
           from urllib.error import HTTPError
-          import time
           ids={3:'عبد الرحمن السديس',5:'هاني الرفاعي',10:'سعود الشريم'}
           def check_one(item):
               rid,surah=item
@@ -100,7 +38,7 @@ jobs:
                           seg=t.get('segments') or []
                           usable=[x for x in seg if isinstance(x,list) and len(x)==3 and isinstance(x[0],int) and x[0]>0 and all(isinstance(v,(int,float)) for v in x[1:]) and x[2]>x[1]>=0]
                           if not usable: bad.append('no_usable_segments:'+str(ayah)+':'+repr(seg[:2]))
-                      return rid,surah,len(ts),len(bad),bad[:5]
+                      return rid,surah,len(ts),len(bad),bad[:3]
                   except HTTPError as e:
                       if e.code in (429,500,502,503,504) and retry<2: time.sleep(1+retry*2); continue
                       return rid,surah,0,1,[str(e)]
@@ -109,12 +47,13 @@ jobs:
                       return rid,surah,0,1,[repr(e)]
           tasks=[(rid,surah) for rid in ids for surah in range(1,115)]
           results=[]
-          with ThreadPoolExecutor(max_workers=6) as pool:
+          with ThreadPoolExecutor(max_workers=5) as pool:
               futures=[pool.submit(check_one,t) for t in tasks]
-              for f in as_completed(futures):
-                  results.append(f.result())
+              for f in as_completed(futures): results.append(f.result())
           for rid,name in ids.items():
               rs=[x for x in results if x[0]==rid]
               bad=[x for x in rs if x[3]]
-              print('FULL_RESULT',rid,name,'valid_chapters',len(rs)-len(bad),'of',len(rs),'verses',sum(x[2] for x in rs),'bad',bad[:20],flush=True)
+              print('FULL_RESULT',rid,name,'valid_chapters',len(rs)-len(bad),'of',len(rs),'verses',sum(x[2] for x in rs),'bad',bad[:12],flush=True)
+          sample=base.request_json('https://api.quran.com/api/v4/chapter_recitations/3/1?segments=true')['audio_file']['timestamps']
+          print('SAMPLE_SEGMENTS',[(x['verse_key'],x['timestamp_from'],x['timestamp_to'],x.get('segments',[])[:4]) for x in sample[:3]])
           PY
