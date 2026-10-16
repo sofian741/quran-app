@@ -61,9 +61,9 @@
         container.style.removeProperty('grid-template-rows');
     }
 
-    const STANDARD_FONT_WIDTH_RATIO = 0.060;
+    const STANDARD_FONT_WIDTH_RATIO = 0.067;
     const STANDARD_FONT_MIN = 16;
-    const STANDARD_FONT_MAX = 22;
+    const STANDARD_FONT_MAX = 24;
     // Increase actual Quran glyph size on phones; tablets retain responsive growth.
     const TABLET_FONT_START_WIDTH = 480;
     const TABLET_FONT_GROWTH_PER_PX = 0.075;
@@ -86,7 +86,7 @@
 
     // Persistent layout cache. A version bump intentionally invalidates old
     // measurements whenever the line-fitting algorithm changes.
-    const LAYOUT_CACHE_VERSION = 'standard-larger-type-v2-20261016';
+    const LAYOUT_CACHE_VERSION = 'standard-larger-type-v3-20261016';
     const LAYOUT_CACHE_DB = 'quranMushafLayoutCache';
     const LAYOUT_CACHE_STORE = 'layouts';
     const layoutMemoryCache = new Map();
