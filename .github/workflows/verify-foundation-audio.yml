@@ -1,0 +1,25 @@
+name: Verify Quran Foundation synced readers
+on:
+  push:
+    branches: [main]
+    paths:
+      - qud-audio.js
+      - scripts/test_foundation_audio.cjs
+      - .github/workflows/verify-foundation-audio.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate scripts
+        run: |
+          node --check qud-audio.js
+          node --check mushaf-audio.js
+          node --check scripts/test_foundation_audio.cjs
+          git diff --check
+      - name: Test real timing and audio hosts
+        run: node scripts/test_foundation_audio.cjs
