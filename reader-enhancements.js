@@ -493,9 +493,28 @@
         }));
     }
 
+    // At native pinch scale > 1, horizontal gestures pan the enlarged page.
+    // A second finger cancels any pending swipe before it can turn a page.
+    const activeTouchPointers = new Set();
+    const isPinchZoomed = () => (window.visualViewport?.scale || 1) > 1.01;
+    stage.addEventListener('pointerdown', event => {
+        if (event.pointerType !== 'touch') return;
+        activeTouchPointers.add(event.pointerId);
+        if (activeTouchPointers.size > 1 || isPinchZoomed()) {
+            gesture = null;
+            resetSwipe(false);
+        }
+    }, true);
+    const releaseTouchPointer = event => {
+        if (event.pointerType === 'touch') activeTouchPointers.delete(event.pointerId);
+    };
+    stage.addEventListener('pointerup', releaseTouchPointer, true);
+    stage.addEventListener('pointercancel', releaseTouchPointer, true);
+    window.addEventListener('blur', () => activeTouchPointers.clear());
     stage.addEventListener('pointerdown', event => {
         // Keep the original desktop mouse animation in app.js; use the enhanced preview only for touch/pen.
         if (!previewReady || finishingSwipe || !['touch', 'pen'].includes(event.pointerType)) return;
+        if (isPinchZoomed() || activeTouchPointers.size > 1) return;
         if (resetSwipeTimer !== null) {
             clearTimeout(resetSwipeTimer);
             resetSwipeTimer = null;
@@ -520,7 +539,7 @@
     }, true);
 
     stage.addEventListener('pointermove', event => {
-        if (!gesture || gesture.id !== event.pointerId) return;
+        if (!gesture || gesture.id !== event.pointerId || isPinchZoomed() || activeTouchPointers.size > 1) return;
         const dx = event.clientX - gesture.x;
         const dy = event.clientY - gesture.y;
         if (!gesture.dragging) {
