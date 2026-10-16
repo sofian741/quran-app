@@ -102,7 +102,7 @@ jobs:
           assert 'wholeSurah ? 1 : selected.ayah' not in mushaf, 'listen must never fall back to surah start'
           assert 'engine.goTo(selected.surah, selected.ayah, { autoplay: true })' in mushaf
           assert 'switchLegacyMp3ToSameAlignedReader' in mushaf
-          assert 'quran-reader-shell-v11' in sw
+          assert 'quran-reader-shell-v12' in sw
           print('Validated 20 QUD/Mishary readers, 118484 QUD verse records, and exact same-reciter verse playback policy.')
           PY
           git diff --check
