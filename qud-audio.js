@@ -5,8 +5,21 @@
     const registry = window.QudAudioRegistry;
     if (!core || !registry?.reciters?.length || !core.AudioEngine) return;
 
-    const reciters = registry.reciters.filter(item =>
-        Number.isSafeInteger(Number(item.id)) && item.slug && item.name && item.timingUrl && item.catalogUrl);
+    // These three *different* Hafs sheikhs have Quran Foundation chapter audio
+    // paired with actual word timestamps. All 114 chapters were audited on
+    // 2026-10-16 (6236 verses each). Two isolated verses have no word segments;
+    // they retain accurate verse highlighting without fabricated word timings.
+    // Keep the IDs separate from the QUD bundle (9000–9018).
+    const FOUNDATION_RECITERS = Object.freeze([
+        { id: 9020, foundationId: 3, slug: 'foundation-abdur-rahman-as-sudais', name: 'عبد الرحمن السديس' },
+        { id: 9021, foundationId: 5, slug: 'foundation-hani-ar-rifai', name: 'هاني الرفاعي' },
+        { id: 9022, foundationId: 10, slug: 'foundation-saud-ash-shuraym', name: 'سعود الشريم' }
+    ]);
+    const reciters = [
+        ...registry.reciters.filter(item =>
+            Number.isSafeInteger(Number(item.id)) && item.slug && item.name && item.timingUrl && item.catalogUrl),
+        ...FOUNDATION_RECITERS
+    ];
     if (!reciters.length) return;
 
     const byId = new Map(reciters.map(item => [Number(item.id), item]));
@@ -102,6 +115,58 @@
         return timingDocCache.get(reciter.slug);
     }
 
+    async function loadFoundationChapter(reciter, surah) {
+        const endpoint = `https://api.quran.com/api/v4/chapter_recitations/${reciter.foundationId}/${surah}?segments=true`;
+        const response = await fetch(endpoint, { cache: 'force-cache' });
+        if (!response.ok) throw new Error(`تعذّر تحميل توقيت القارئ (HTTP ${response.status}).`);
+        const payload = await response.json();
+        const file = payload?.audio_file;
+        const expected = core.VERSE_COUNTS[surah - 1];
+        const audioUrl = String(file?.audio_url || '');
+        if (Number(file?.chapter_id) !== surah ||
+            !Array.isArray(file?.timestamps) || file.timestamps.length !== expected) {
+            throw new Error('بيانات توقيت السورة غير مكتملة.');
+        }
+        if (!safeAudioUrl(audioUrl) ||
+            new URL(audioUrl).hostname.toLowerCase() !== 'download.quranicaudio.com') {
+            throw new Error('مصدر التسجيل غير معتمد لهذا القارئ.');
+        }
+        const knownMissing = new Set(['5:89:1', '10:12:76']);
+        const verses = file.timestamps.map((timing, index) => {
+            const ayah = index + 1;
+            const start = Number(timing.timestamp_from);
+            const end = Number(timing.timestamp_to);
+            if (timing.verse_key !== `${surah}:${ayah}` ||
+                !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start) {
+                throw new Error(`توقيت الآية ${surah}:${ayah} غير صالح.`);
+            }
+            const segments = (Array.isArray(timing.segments) ? timing.segments : [])
+                .map(segment => Array.isArray(segment) && segment.length === 3 ? {
+                    word: Number(segment[0]),
+                    start: Number(segment[1]),
+                    end: Number(segment[2])
+                } : null)
+                .filter(segment => segment && Number.isSafeInteger(segment.word) &&
+                    segment.word > 0 && Number.isFinite(segment.start) &&
+                    Number.isFinite(segment.end) && segment.start >= 0 &&
+                    segment.end > segment.start)
+                .sort((a, b) => a.start - b.start);
+            if (!segments.length && !knownMissing.has(`${reciter.foundationId}:${surah}:${ayah}`)) {
+                throw new Error(`تظليل الكلمات غير متاح للآية ${surah}:${ayah}.`);
+            }
+            return {
+                surah, ayah, audioUrl,
+                timestampFrom: start, timestampTo: end, duration: end - start,
+                segments, source: 'Quran Foundation chapter audio'
+            };
+        });
+        return {
+            reciterId: Number(reciter.id), reciterSlug: reciter.slug, surah,
+            audioUrl, fileSize: 0, format: 'mp3',
+            verses, byAyah: new Map(verses.map(item => [item.ayah, item]))
+        };
+    }
+
     async function loadChapter(reciterOrId, surah) {
         const reciter = typeof reciterOrId === 'object' ? reciterOrId : byId.get(Number(reciterOrId));
         surah = Number(surah);
@@ -112,6 +177,7 @@
         if (chapterCache.has(key)) return chapterCache.get(key);
 
         const promise = (async () => {
+            if (reciter.foundationId) return loadFoundationChapter(reciter, surah);
             const [catalog, timingDoc] = await Promise.all([loadCatalog(reciter), loadTimingDoc(reciter)]);
             const chapterKey = String(surah);
             const audioUrl = String(catalog.audio.chapter_urls?.[chapterKey] || '');
@@ -319,6 +385,7 @@
         release: registry.qudRelease,
         license: registry.license,
         reciters: Object.freeze([...reciters]),
+        foundationReciters: Object.freeze([...FOUNDATION_RECITERS]),
         loadChapter
     });
 })();
