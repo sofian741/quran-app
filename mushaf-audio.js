@@ -37,6 +37,10 @@
     const catalogService = new core.CatalogService();
     const downloads = new downloadsApi.DownloadManager();
     let catalog = [];
+    const ALIGNED_CACHE_KEY = 'quranAlignedRecitersV1';
+    const MAX_ALIGNED = 35;
+    const alignedReciters = [...core.ALIGNED_RECITERS];
+    let lastAlignedId = engine.state.provider === 'quran-foundation' ? engine.state.reciterId : 7;
     let activeReciter = null;
     let closeTimer = null;
     let renderedVerse = '';
@@ -91,9 +95,10 @@
 
     function fillReciters(state) {
         ui.reciter.replaceChildren();
-        const alignedName = 'مشاري راشد العفاسي • تظليل الكلمات';
-        const selectedValue = state.provider === 'quran-foundation' ? 'aligned:7' : `mp3:${state.reciterId}`;
-        option(ui.reciter, 'aligned:7', alignedName);
+        const selectedValue = state.provider === 'quran-foundation' ?
+            `aligned:${state.reciterId}` : `mp3:${state.reciterId}`;
+        alignedReciters.forEach(reciter => option(ui.reciter,
+            `aligned:${reciter.id}`, reciter.label || `${reciter.name} • تظليل الكلمات`));
         // Keep the word-aligned Mashary option first instead of showing two Mashary choices.
         catalog.filter(reciter =>
             !core.normalizeArabic(reciter.name).includes(core.normalizeArabic('العفاسي')) ||
@@ -493,7 +498,7 @@
     ui.provider.addEventListener('change', async () => {
         if (applyingState) return;
         if (ui.provider.value === 'quran-foundation') {
-            await engine.selectAligned(7, { surah: Number(ui.surah.value) || 1, ayah: 1 });
+            await engine.selectAligned(lastAlignedId, { surah: Number(ui.surah.value) || 1, ayah: 1 });
         } else {
             const reciter = catalog.find(item => item.id === Number(ui.reciter.value)) || catalogService.preferred(catalog);
             const moshaf = reciter?.moshaf.find(item => item.id === Number(ui.moshaf.value)) || core.bestMoshaf(reciter);
@@ -507,8 +512,14 @@
     ui.reciter.addEventListener('change', async () => {
         const value = ui.reciter.value;
         const wasPlaying = !engine.audio.paused;
-        if (value === 'aligned:7') {
-            await engine.selectAligned(7, { surah: Number(ui.surah.value) || 1, ayah: 1, autoplay: wasPlaying });
+        if (value.startsWith('aligned:')) {
+            const id = Number(value.slice('aligned:'.length));
+            if (!alignedReciters.some(reciter => reciter.id === id)) return;
+            const ready = await engine.selectAligned(id, {
+                surah: Number(ui.surah.value) || 1, ayah: 1, autoplay: wasPlaying
+            });
+            if (ready) lastAlignedId = id;
+            else ui.status.textContent = 'تعذّر تجهيز تلاوة القارئ المتزامنة لهذه السورة. جرّب قارئًا آخر.';
             return;
         }
         const reciter = catalog.find(item => item.id === Number(value.replace('mp3:', '')));
@@ -747,6 +758,84 @@
     });
     window.addEventListener('pagehide', () => engine.destroy());
 
+
+    // Discover additional reciters from the same provider as the synchronized
+    // Mishary recording. Only display reciters whose sample chapter actually
+    // contains usable verse AND word timestamps; names alone are not proof.
+    function addAlignedReciter(item) {
+        const id = Number(item?.id);
+        const name = String(item?.name || '').trim();
+        if (!Number.isSafeInteger(id) || !name || alignedReciters.some(reciter => reciter.id === id)) return false;
+        if (!engine.registerAlignedReciter({ id, name })) return false;
+        alignedReciters.push({ id, name, label: `${name} • تظليل الكلمات` });
+        return true;
+    }
+
+    function hasWordTimings(payload) {
+        const file = payload?.audio_file;
+        if (Number(file?.chapter_id) !== 1 || !Array.isArray(file?.timestamps) ||
+            file.timestamps.length !== core.VERSE_COUNTS[0]) return false;
+        return file.timestamps.every(verse => {
+            const segments = verse.segments;
+            return /^1:[1-7]$/.test(String(verse.verse_key || '')) &&
+                Array.isArray(segments) && segments.length > 0 &&
+                segments.every(segment => Array.isArray(segment) && segment.length === 3 &&
+                    Number.isInteger(Number(segment[0])) && Number(segment[0]) > 0 &&
+                    Number.isFinite(Number(segment[1])) && Number.isFinite(Number(segment[2])) &&
+                    Number(segment[2]) > Number(segment[1]));
+        });
+    }
+
+    async function loadAlignedReciters() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(ALIGNED_CACHE_KEY) || 'null');
+            if (saved && Date.now() - saved.savedAt < 14 * 86400000 && Array.isArray(saved.reciters)) {
+                saved.reciters.slice(0, MAX_ALIGNED - 1).forEach(addAlignedReciter);
+                fillReciters(engine.snapshot());
+            }
+        } catch (_) { /* Private browsing or invalid cache. */ }
+
+        try {
+            const response = await fetch(`${core.QURAN_API}/resources/chapter_reciters?language=ar`,
+                { cache: 'no-cache' });
+            if (!response.ok) return;
+            const payload = await response.json();
+            if (!Array.isArray(payload?.reciters)) return;
+            const candidates = payload.reciters
+                .map(item => ({ id: Number(item.id),
+                    name: String(item.name || item.translated_name?.name || '').trim() }))
+                .filter(item => Number.isSafeInteger(item.id) && item.id > 0 && item.name && item.id !== 7);
+            let cursor = 0;
+            let confirmed = 0;
+            async function verifyNext() {
+                while (cursor < candidates.length && confirmed < MAX_ALIGNED - 1) {
+                    const item = candidates[cursor++];
+                    if (alignedReciters.some(reciter => reciter.id === item.id)) {
+                        confirmed++;
+                        continue;
+                    }
+                    try {
+                        const result = await fetch(
+                            `${core.QURAN_API}/chapter_recitations/${item.id}/1?segments=true`,
+                            { cache: 'force-cache' });
+                        if (!result.ok || !hasWordTimings(await result.json())) continue;
+                        if (addAlignedReciter(item)) confirmed++;
+                    } catch (_) { /* Skip this candidate without mislabeling its timing. */ }
+                }
+            }
+            await Promise.all([verifyNext(), verifyNext(), verifyNext()]);
+            alignedReciters.sort((a, b) => a.id === 7 ? -1 : b.id === 7 ? 1 :
+                core.priorityIndex(a.name) - core.priorityIndex(b.name) ||
+                a.name.localeCompare(b.name, 'ar'));
+            try {
+                localStorage.setItem(ALIGNED_CACHE_KEY, JSON.stringify({
+                    savedAt: Date.now(), reciters: alignedReciters.filter(item => item.id !== 7)
+                }));
+            } catch (_) { /* Cache is optional. */ }
+            fillReciters(engine.snapshot());
+        } catch (_) { /* Keep the already working reciters on network failures. */ }
+    }
+
     async function loadCatalog() {
         catalog = catalogService.cached();
         if (catalog.length) fillReciters(engine.state);
@@ -767,4 +856,5 @@
     }
     applyState(engine.snapshot(), true);
     loadCatalog();
+    loadAlignedReciters();
 })();
