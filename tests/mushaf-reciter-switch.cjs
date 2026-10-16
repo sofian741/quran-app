@@ -73,7 +73,7 @@ const catalog = { reciters: [
             });
         });
         await page.goto(`${base}/quran.html`, { waitUntil: 'domcontentloaded' });
-        await page.waitForSelector('#audio-reciter option[value="mp3:123"]');
+        await page.waitForFunction(() => !!document.querySelector('#audio-reciter option[value="mp3:123"]'));
         const groupInfo = await page.evaluate(() => {
             const select = document.getElementById('audio-reciter');
             return {
