@@ -56,7 +56,7 @@
 
 - بيانات الصوت والتوقيت: [Quran Foundation Content API](https://api-docs.quran.com/docs/content_apis_versioned/audio/)،
   المسار `GET /recitations/{id}/by_chapter/{chapter}?segments=true`.
-- التسجيل المتزامن المفعّل حاليًا هو مشاري راشد العفاسي، معرّف التلاوة `7` في الواجهة.
+- القراء المتزامنون من Quran Foundation هم مشاري راشد العفاسي (معرّف 7)، وعبد الرحمن السديس (3)، وهاني الرفاعي (5)، وسعود الشريم (10). أُجري فحص لكل 114 سورة و6236 آية للقراء الثلاثة الجدد في 2026-10-16، مع روابط MP3 مباشرة من `download.quranicaudio.com`.
 - كل عنصر `segments` يُستخدم فقط مع عنوان ملف الآية الموجود في الاستجابة نفسها. لا تُنقل
   التوقيتات إلى ملف MP3Quran أو قارئ آخر، ولا يُقدّر زمن الكلمات بتقسيم مدة الآية.
 - قبل تظليل كلمة، يقارن التطبيق أعلى رقم كلمة في المقاطع بعدد عناصر كلمات الآية المعروضة.
@@ -78,3 +78,11 @@
 - Word-level timing metadata is mirrored from `QUD-Technologies/quranic-universal-audio` release `v3.2.0`.
 - QUD timing data is licensed CC-BY-4.0. Audio is not redistributed by this app; the generated catalogs retain the upstream source URLs paired with those timings.
 - The build only includes complete Hafs recitations with word timing and 114 directly streamable HTTPS chapter URLs.
+
+## إضافة قراء Quran Foundation (2026-10-16)
+
+- لا تُنسخ بيانات توقيتاتهم أو ملفات الصوت إلى المستودع؛ تُجلب بيانات السورة عند الطلب من `GET https://api.quran.com/api/v4/chapter_recitations/{id}/{surah}?segments=true`، ويُشغّل الملف الصوتي المقترن بها فقط.
+- السديس: 114/114 سورة و6236/6236 آية بها توقيتات كلمات قابلة للاستخدام.
+- هاني الرفاعي: 114/114 سورة و6236/6236 آية بتوقيتات آيات، لكن `89:1` لا تحتوي توقيت كلمات؛ يعرض التطبيق تظليل الآية فقط.
+- سعود الشريم: 114/114 سورة و6236/6236 آية بتوقيتات آيات، لكن `12:76` لا تحتوي توقيت كلمات؛ يعرض التطبيق تظليل الآية فقط.
+- فُحصت روابط تشغيل الفاتحة للقراء الثلاثة باستخدام HTTP Range واستجاب كل رابط ببيانات صوت (`206`). تظل إتاحة واجهة Quran Foundation وروابط المصدر مرتبطة بالمزود الخارجي.
