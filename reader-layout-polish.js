@@ -68,7 +68,7 @@
     // ceiling left most Quran rows occupying only half the available width.
     // Grow continuously above phone widths, with a conservative height limit.
     const TABLET_FONT_START_WIDTH = 480;
-    const TABLET_FONT_GROWTH_PER_PX = 0.047;
+    const TABLET_FONT_GROWTH_PER_PX = 0.075;
     const TABLET_FONT_MAX = 38;
     const TABLET_FONT_HEIGHT_ROWS = 16;
     const TABLET_FONT_HEIGHT_LINE_RATIO = 1.65;
