@@ -8,6 +8,7 @@ on:
       - scripts/sync_qud_audio.py
       - scripts/sync_final_reciters.py
       - scripts/run_final_sync.py
+      - scripts/probe_qud_candidates.py
       - qud-audio.js
       - chapter-reciter-extras.js
       - .github/workflows/sync-qud-audio.yml
@@ -28,6 +29,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Inspect QUD candidates
+        run: python3 scripts/probe_qud_candidates.py
 
       - name: Build fully verified reciter bundle
         run: python3 scripts/run_final_sync.py
