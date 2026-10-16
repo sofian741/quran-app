@@ -38,6 +38,8 @@
     let markerTemplate = null;
     let metaQueued = false;
     let suppressSwipeClick = false;
+    let finishingSwipe = false;
+    let resetSwipeTimer = null;
     let previewPreparationHandle = null;
     let previewPreparationRevision = 0;
     const preparedPreviews = new Map();
@@ -354,7 +356,7 @@
 
     function schedulePreviewPreparation() {
         cancelPreviewPreparation(false);
-        if (!previewReady || gesture || preview) return;
+        if (!previewReady || gesture || preview || finishingSwipe) return;
 
         const revision = previewPreparationRevision;
         const current = getCurrentPage();
@@ -377,7 +379,7 @@
 
         const prepareNext = deadline => {
             previewPreparationHandle = null;
-            if (revision !== previewPreparationRevision || gesture || preview) return;
+            if (revision !== previewPreparationRevision || gesture || preview || finishingSwipe) return;
             const item = missing.shift();
             if (!item) return;
 
@@ -395,26 +397,6 @@
             if (missing.length) scheduleIdle(prepareNext);
         };
         if (missing.length) scheduleIdle(prepareNext);
-    }
-
-    function scheduleLookaheadPreparation(targetPage, direction) {
-        if (targetPage < 1 || targetPage > TOTAL_PAGES) return;
-        const key = previewKey(targetPage, direction);
-        if (preparedPreviews.has(key)) return;
-        const revision = previewPreparationRevision;
-        setTimeout(() => {
-            if (revision !== previewPreparationRevision || gesture || preparedPreviews.has(key)) return;
-            const node = createPreview(targetPage, direction);
-            if (revision !== previewPreparationRevision || !node) {
-                node?.remove();
-                return;
-            }
-            node.remove();
-            node.dataset.preparedPreview = 'true';
-            preparedPreviews.set(key, node);
-            swipeDiagnostics.preparedBuilds++;
-            syncPreparedDiagnostics();
-        }, 0);
     }
 
     function buildPreview(targetPage, direction) {
@@ -447,6 +429,7 @@
         if (!preview) {
             page.style.transform = '';
             page.style.transition = '';
+            schedulePreviewPreparation();
             return;
         }
         const direction = Number(preview.dataset.direction) || 1;
@@ -461,7 +444,8 @@
         preview.style.transition = 'transform 180ms ease-out';
         page.style.transform = 'translateX(0)';
         preview.style.transform = `translateX(${-direction * width}px)`;
-        setTimeout(() => {
+        resetSwipeTimer = setTimeout(() => {
+            resetSwipeTimer = null;
             page.style.transition = '';
             page.style.transform = '';
             removePreview();
@@ -470,12 +454,16 @@
     }
 
     function finishSwipe(direction, targetPage) {
-        const width = page.getBoundingClientRect().width;
+        finishingSwipe = true;
+        // The 175ms transition must remain compositor-only. Never build or fit
+        // another Quran page while either page is moving.
+        const width = page.clientWidth;
         const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (!preview || reduced) {
             const preparedText = preview?.querySelector('.quran-text') || null;
             dispatchPageTurn(direction, preparedText);
             removePreview();
+            finishingSwipe = false;
             schedulePreviewPreparation();
             return;
         }
@@ -484,7 +472,6 @@
         page.style.transform = `translateX(${direction * width}px)`;
         preview.style.transform = 'translateX(0)';
         preview.classList.add('is-front');
-        scheduleLookaheadPreparation(targetPage + direction, direction);
         setTimeout(() => {
             page.style.transition = '';
             page.style.transform = '';
@@ -492,6 +479,7 @@
             requestAnimationFrame(() => {
                 removePreview();
                 queueMetaSync();
+                finishingSwipe = false;
                 schedulePreviewPreparation();
             });
         }, 180);
@@ -507,7 +495,14 @@
 
     stage.addEventListener('pointerdown', event => {
         // Keep the original desktop mouse animation in app.js; use the enhanced preview only for touch/pen.
-        if (!previewReady || !['touch', 'pen'].includes(event.pointerType)) return;
+        if (!previewReady || finishingSwipe || !['touch', 'pen'].includes(event.pointerType)) return;
+        if (resetSwipeTimer !== null) {
+            clearTimeout(resetSwipeTimer);
+            resetSwipeTimer = null;
+            page.style.transition = '';
+            page.style.transform = '';
+            removePreview();
+        }
         if (event.target.closest('button, a, input, [role="button"]')) return;
         if (document.querySelector('.settings-sheet.is-open, .index-sheet.is-open')) return;
         gesture = {
@@ -546,7 +541,7 @@
         const canTurn = target >= 1 && target <= TOTAL_PAGES;
         const effectiveDx = canTurn ? dx : dx * 0.16;
 
-        if (canTurn && (!preview || gesture.direction !== direction)) {
+        if (canTurn && gesture.direction !== direction) {
             buildPreview(target, direction);
             gesture.direction = direction;
             gesture.targetPage = target;
@@ -557,6 +552,13 @@
         }
 
         gesture.dx = effectiveDx;
+        // Without a prepared neighbor, do not reveal an empty half-page.
+        // Commit on release instead of showing a broken overlapping spread.
+        if (!preview) {
+            page.style.transition = '';
+            page.style.transform = '';
+            return;
+        }
         page.style.transition = 'none';
         page.style.transform = `translateX(${effectiveDx}px)`;
         if (preview) {

@@ -41,7 +41,9 @@
 /* The target page sits beside the current page while the finger is dragging. */
 .swipe-preview {
     position: absolute;
-    z-index: 1;
+    /* Keep the adjacent page in the same visual plane, not tucked behind
+       the moving page while the finger drags the spread. */
+    z-index: 3;
     max-width: 720px;
     margin: 0;
     pointer-events: none;
