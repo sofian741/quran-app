@@ -184,6 +184,8 @@ a { -webkit-tap-highlight-color: transparent; }
     padding: max(8px, env(safe-area-inset-top)) 0 max(8px, env(safe-area-inset-bottom));
     overflow: hidden;
     perspective: 1200px;
+    /* Keep one-finger page gestures while allowing native two-finger pinch zoom. */
+    touch-action: pan-y pinch-zoom;
     user-select: none;
 }
 
@@ -251,7 +253,7 @@ a { -webkit-tap-highlight-color: transparent; }
     scrollbar-width: none;
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
+    touch-action: pan-y pinch-zoom;
 }
 
 .quran-text::-webkit-scrollbar { display: none; }
