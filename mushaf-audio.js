@@ -45,6 +45,8 @@
     let activeWordElement = null;
     let highlightFrame = 0;
     let applyingState = false;
+    let listenNotice = '';
+    let listenNoticeUntil = 0;
     let downloadBatch = false;
     let cancelRequested = false;
     const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
@@ -245,7 +247,8 @@
         ui.root.classList.toggle('is-loading', state.loading);
         ui.readerName.textContent = state.reciterName;
         ui.nowLabel.textContent = state.provider === 'quran-foundation' ? 'تسجيل متزامن' : state.moshafName;
-        ui.status.textContent = statusText(state);
+        ui.status.textContent = listenNotice && Date.now() < listenNoticeUntil
+            ? listenNotice : statusText(state);
         ui.current.textContent = core.timeText(state.currentTime);
         ui.duration.textContent = core.timeText(state.duration);
         ui.seek.disabled = !Number.isFinite(state.duration) || state.duration <= 0;
@@ -573,24 +576,34 @@
         if (!selected) return;
         window.mushafVerseActions.close();
 
-        // A long-press targets an exact ayah. Full-surah MP3 recordings have no
-        // trustworthy ayah offsets, so switch to the word-aligned recitation.
-        // Never silently start at the beginning of the surah instead.
-        if (engine.state.provider !== 'quran-foundation') {
-            ui.status.textContent = 'جاري تجهيز التلاوة من الآية المحددة…';
-            const ready = await engine.selectAligned(7, {
-                surah: selected.surah, ayah: selected.ayah, autoplay: true
-            });
-            if (!ready) {
-                ui.status.textContent = 'تعذّر بدء التلاوة من الآية المحددة. تحقق من الاتصال وحاول مجددًا.';
-            }
+        // MP3Quran exposes complete surah recordings, not verse timestamps.
+        // Respect the selected reciter: play that reciter's surah from its
+        // beginning rather than silently replacing them with Mishary.
+        const wholeSurah = engine.state.provider === 'mp3quran';
+        listenNotice = '';
+        listenNoticeUntil = 0;
+
+        if (wholeSurah && !engine.state.availableSurahs.includes(selected.surah)) {
+            listenNotice = 'السورة دي مش متاحة بصوت القارئ المختار. اختار سورة متاحة أو قارئ تاني.';
+            listenNoticeUntil = Date.now() + 8000;
+            ui.status.textContent = listenNotice;
             return;
         }
 
-        const started = await engine.goTo(selected.surah, selected.ayah, { autoplay: true });
+        const started = await engine.goTo(
+            selected.surah,
+            wholeSurah ? 1 : selected.ayah,
+            { autoplay: true, ...(wholeSurah ? { position: 0 } : {}) }
+        );
+
         if (!started) {
-            ui.status.textContent = 'تعذّر بدء التلاوة من الآية المحددة. حاول مرة أخرى.';
+            listenNotice = 'تعذّر بدء التلاوة. تحقق من الاتصال وحاول مجددًا.';
+            listenNoticeUntil = Date.now() + 8000;
+        } else if (wholeSurah) {
+            listenNotice = 'يعمل القارئ المختار من بداية السورة؛ تسجيله لا يوفّر توقيتًا لكل آية.';
+            listenNoticeUntil = Date.now() + 8000;
         }
+        if (listenNotice) ui.status.textContent = listenNotice;
     });
 
     window.addEventListener('mushaf:page-ready', () => {
