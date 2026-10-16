@@ -130,13 +130,17 @@
                 const words = Array.isArray(row[5]) ? row[5] : [];
                 if (!Number.isInteger(ayah) || !Number.isFinite(start) || !Number.isFinite(end) ||
                     start < 0 || end <= start || !words.length) continue;
+                // QUD's v3 schema permits a reviewed word span to touch or
+                // slightly cross its verse occurrence boundary. Keep the
+                // producer timing intact; syncHighlight already clips drawing
+                // to the active verse's timestampFrom/timestampTo interval.
                 const segments = words.map(word => Array.isArray(word) ? {
                     word: Number(word[0]),
                     start: offset + Number(word[1]),
                     end: offset + Number(word[2])
                 } : null).filter(word => word && Number.isInteger(word.word) && word.word > 0 &&
                     Number.isFinite(word.start) && Number.isFinite(word.end) &&
-                    word.start >= offset + start && word.end > word.start && word.end <= offset + end)
+                    word.start >= 0 && word.end > word.start)
                     .sort((a, b) => a.start - b.start);
                 if (!segments.length) continue;
                 verses.push({
