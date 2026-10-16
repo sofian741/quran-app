@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v10';
+const APP_CACHE = 'quran-reader-shell-v11';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html',
