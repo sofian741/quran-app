@@ -41,7 +41,7 @@
     const MAX_ALIGNED = 35;
     const alignedReciters = [...core.ALIGNED_RECITERS];
     let lastAlignedId = engine.state.provider === 'quran-foundation' ? engine.state.reciterId : 7;
-    let alignedDiscoveryStatus = 'تظليل الكلمات مفعّل للقراء الموثقين بتوقيتات QUD، مع مشاري العفاسي كخيار احتياطي.';
+    let alignedDiscoveryStatus = `${core.arabicDigits(core.ALIGNED_RECITERS.length)} قارئًا متزامنًا من QUD وQuran Foundation. آيتان فقط من القراء الجدد لهما تظليل آية دون كلمات لعدم وجود توقيتات كلمات أصلية.`;
     let activeReciter = null;
     let closeTimer = null;
     let renderedVerse = '';
