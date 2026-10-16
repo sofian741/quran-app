@@ -98,7 +98,9 @@ jobs:
           sw = (root / 'sw.js').read_text(encoding='utf-8')
           assert quran.index('audio-downloads.js') < quran.index('data/qud/registry.js') < quran.index('qud-audio.js') < quran.index('mushaf-audio.js')
           assert "if (!window.QudAudioRegistry?.reciters?.length) {" in mushaf
-          assert 'engine.selectAligned(7' not in mushaf, 'mushaf must never force Mishary for verse playback/repeat'
+          assert 'engine.selectAligned(7, {' in mushaf, 'MP3Quran verse selection must explicitly switch to Mishary'
+          assert 'هذا سلوك مقصود في التطبيق وليس عطلًا' in mushaf, 'explain automatic change to the listener'
+          assert 'audio-picker-group-heading' in mushaf, 'keep aligned and MP3Quran readers visually separate'
           assert 'wholeSurah ? 1 : selected.ayah' not in mushaf, 'listen must never fall back to surah start'
           assert 'engine.goTo(selected.surah, selected.ayah, { autoplay: true })' in mushaf
           assert 'switchLegacyMp3ToSameAlignedReader' in mushaf
