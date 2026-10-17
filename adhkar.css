@@ -15,3 +15,11 @@
 .reader-viewport{touch-action:pan-y}
 .dhikr-slide{will-change:transform;transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .22s ease}
 @media(max-width:600px){.tasbih{width:168px;height:168px}.dhikr-slide{padding-bottom:14px}}
+
+/* Gentle count feedback: a quick pulse and a fading ring. */
+.tasbih{isolation:isolate}
+.tasbih.tap-bloom{animation:dhikr-tap .28s cubic-bezier(.22,.7,.2,1)}
+.tasbih.tap-bloom::after{content:"";position:absolute;inset:-5px;border:2px solid var(--green);border-radius:50%;pointer-events:none;animation:dhikr-ripple .48s ease-out forwards}
+@keyframes dhikr-tap{0%{transform:scale(1)}38%{transform:scale(.945)}75%{transform:scale(1.035)}100%{transform:scale(1)}}
+@keyframes dhikr-ripple{0%{opacity:.45;transform:scale(1)}100%{opacity:0;transform:scale(1.16)}}
+@media(prefers-reduced-motion:reduce){.tasbih.tap-bloom,.tasbih.tap-bloom::after{animation:none}}
