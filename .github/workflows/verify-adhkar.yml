@@ -1,0 +1,32 @@
+name: Verify Adhkar library
+
+on:
+  push:
+    paths:
+      - 'adhkar.html'
+      - 'adhkar.css'
+      - 'adhkar-polish.css'
+      - 'adhkar.js'
+      - 'data/adhkar.json'
+      - 'data/adhkar-source.json'
+      - 'tests/adhkar-data.cjs'
+      - '.github/workflows/verify-adhkar.yml'
+  pull_request:
+    paths:
+      - 'adhkar.html'
+      - 'adhkar.css'
+      - 'adhkar-polish.css'
+      - 'adhkar.js'
+      - 'data/adhkar.json'
+      - 'data/adhkar-source.json'
+      - 'tests/adhkar-data.cjs'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: node --check adhkar.js
+      - name: Verify Hisn al-Muslim corpus integrity
+        run: node tests/adhkar-data.cjs
