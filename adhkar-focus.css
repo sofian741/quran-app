@@ -1,0 +1,97 @@
+/* Reader hierarchy: the dhikr/duaa text is the main event. */
+.reader .dhikr-slide{
+  padding-top:18px;
+}
+.reader .dhikr-meta{
+  align-self:center;
+  width:min(100%,680px);
+  padding:0 4px;
+  color:var(--muted);
+  font-size:9px;
+}
+.reader .dhikr-text{
+  position:relative;
+  width:min(100%,680px);
+  margin:14px auto 18px;
+  padding:30px 22px 32px;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 50% -26px,color-mix(in srgb,var(--gold) 11%,transparent),transparent 105px),
+    linear-gradient(180deg,color-mix(in srgb,var(--paper) 96%,var(--pale)),var(--paper));
+  border:1px solid color-mix(in srgb,var(--gold) 34%,var(--line));
+  border-radius:24px;
+  box-shadow:0 12px 34px rgba(25,65,47,.07),inset 0 1px rgba(255,255,255,.55);
+  font-family:"Amiri Quran","Amiri",Georgia,serif;
+  font-size:clamp(28px,6vw,38px);
+  line-height:2.08;
+  text-align:center;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.reader .dhikr-text::before{
+  content:"";
+  position:absolute;
+  top:0;
+  right:50%;
+  width:76px;
+  height:3px;
+  border-radius:999px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  transform:translate(50%,-1px);
+}
+.reader .dhikr-text::after{
+  content:"✦";
+  position:absolute;
+  top:8px;
+  right:50%;
+  padding:0 8px;
+  color:var(--gold);
+  background:var(--paper);
+  font-family:Georgia,serif;
+  font-size:11px;
+  line-height:1;
+  transform:translateX(50%);
+}
+.reader .tasbih-zone{
+  margin:6px 0 12px;
+  padding:8px 0 4px;
+}
+.reader .dhikr-reference{
+  width:min(100%,620px);
+  margin:2px auto 18px;
+  padding:9px 13px;
+  color:var(--muted);
+  background:color-mix(in srgb,var(--paper) 92%,var(--pale));
+  border-color:color-mix(in srgb,var(--line) 85%,var(--green));
+  box-shadow:none;
+}
+body.dark .reader .dhikr-text{
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 50% -26px,rgba(180,151,98,.11),transparent 105px),
+    linear-gradient(180deg,#23362c,#1d3026);
+  border-color:rgba(180,151,98,.28);
+  box-shadow:0 12px 34px rgba(0,0,0,.14),inset 0 1px rgba(255,255,255,.03);
+}
+body.dark .reader .dhikr-text::after{
+  background:#22352b;
+}
+@media(max-width:600px){
+  .reader .dhikr-slide{padding-top:14px}
+  .reader .dhikr-text{
+    margin-top:12px;
+    padding:27px 17px 28px;
+    border-radius:21px;
+    font-size:clamp(27px,7.4vw,33px);
+    line-height:2.04;
+  }
+  .reader .tasbih-zone{margin-top:2px}
+}
+@media(max-height:700px){
+  .reader .dhikr-text{
+    padding-block:22px 24px;
+    margin-block:10px 12px;
+    font-size:clamp(25px,6.5vw,31px);
+    line-height:1.95;
+  }
+}
