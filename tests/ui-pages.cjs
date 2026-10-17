@@ -1,10 +1,13 @@
 const fs=require('fs');const assert=require('assert');
 const files=['adhkar.html','recitations.html','library.html'];const text=Object.fromEntries(files.map(f=>[f,fs.readFileSync(f,'utf8')]));
-const home=fs.readFileSync('index.html','utf8');
+const home=fs.readFileSync('index.html','utf8'),quran=fs.readFileSync('quran.html','utf8');
 const forbidden=/[☀☾☽۞✦✧♡♥⌂♫▤⌕✓‹↗]/u;
 for(const [file,html] of Object.entries(text)){assert(!forbidden.test(html),`${file} still contains a font-dependent UI glyph`);assert((html.match(/<nav class="bottom-nav"/g)||[]).length===1,`${file} must have one unified bottom nav`);assert((html.match(/<svg/g)||[]).length>=8,`${file} should use vector UI marks`);assert(html.includes('unified-nav.css'),`${file} must load the shared bottom-navigation style`)}
 assert(!forbidden.test(home),'index.html still contains a font-dependent UI glyph');
 assert((home.match(/<svg/g)||[]).length>=10,'Home dashboard should use vector UI marks');
+assert(!quran.includes('>×</button>'),'Quran reader still contains a font-dependent close glyph');
+assert(!quran.includes('class="loading-mark" aria-hidden="true">۞'),'Quran loading screen still contains a font-dependent ornament glyph');
+assert(/class="loading-mark"[^>]*>[\s\S]*?<svg/.test(quran),'Quran loading mark should be vector-based');
 assert(!/class="back"/.test(text['recitations.html']),'Recitations must not have a redundant home back button');
 assert(/href="library\.html"/.test(text['recitations.html']),'Recitations must link to My Library');
 assert(!/downloads-section/.test(text['recitations.html']),'Offline downloads must live on the separate My Library page');
@@ -17,4 +20,4 @@ assert(/BENEFITS=\[/.test(adhkarJs),'Adhkar completion report must have verified
 assert(/moshaf-block/.test(libraryJs),'My Library must group a reader by moshaf/recording before tracks');
 assert(!/downloadsList|downloadsCount|downloadsStatus/.test(recitationsJs),'Recitations controller should no longer own the offline library list');
 const sw=fs.readFileSync('sw.js','utf8');for(const asset of ['library.html','library.css','library.js','adhkar.html','adhkar.css','adhkar.js','recitations-overrides.css','unified-nav.css'])assert(sw.includes(`./${asset}`),`Service worker shell missing ${asset}`);
-console.log('UI pages OK: stable vector marks, unified navigation, separate My Library, swipe Adhkar reader, and offline shell verified.');
+console.log('UI pages OK: stable vector marks, unified navigation, vectorized Quran controls, separate My Library, swipe Adhkar reader, and offline shell verified.');
