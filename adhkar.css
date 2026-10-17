@@ -29,3 +29,8 @@
 .tasbih{outline:none;user-select:none;-webkit-user-select:none}
 .tasbih:focus:not(:focus-visible){outline:none;box-shadow:0 10px 28px rgba(20,85,67,.20),0 0 0 1px var(--line)}
 .tasbih:focus-visible{outline:3px solid var(--green);outline-offset:5px}
+
+/* Shared Noor Al Quran header identity: original book glyph, muted app gold. */
+.home-brand-mark, .brand-mark { position: relative; isolation: isolate; color: #c6a46a; }
+.home-brand-mark svg, .brand-mark svg { position: relative; z-index: 1; color: #c6a46a; filter: drop-shadow(0 1px 2px rgba(198,164,106,.20)); }
+.home-brand-mark::after, .brand-mark::after { content: ''; position: absolute; z-index: 0; left: 28%; right: 28%; bottom: 4px; height: 5px; border-radius: 50%; background: rgba(198,164,106,.24); filter: blur(5px); pointer-events: none; }
