@@ -409,17 +409,14 @@
 
         const segments = state.timing.segments || [];
         const count = highlightedWords.length;
-        const firstIndex = segments.length ? Math.min(...segments.map(item => item.word)) : -1;
-        const lastIndex = segments.length ? Math.max(...segments.map(item => item.word)) : -1;
-        const zeroBased = firstIndex === 0 && lastIndex <= count - 1;
-        const coveredWords = new Set(segments.map(item => item.word));
-        // A partial segment list must never look like trustworthy word sync.
-        // Require every displayed Quran word in the timing index range;
-        // verse highlighting remains available when the source is incomplete.
-        const validMapping = count > 0 && coveredWords.size === count && (
-            (zeroBased && firstIndex === 0 && lastIndex === count - 1) ||
-            (!zeroBased && firstIndex === 1 && lastIndex === count)
-        );
+        // Timing providers can omit punctuation or a word segment. Keep the
+        // available real word cues instead of disabling the entire verse.
+        const indices = segments.map(item => item.word).filter(Number.isInteger);
+        const firstIndex = indices.length ? Math.min(...indices) : -1;
+        const lastIndex = indices.length ? Math.max(...indices) : -1;
+        const zeroBased = firstIndex === 0;
+        const validMapping = count > 0 && indices.length > 0 &&
+            firstIndex >= 0 && lastIndex <= (zeroBased ? count - 1 : count);
         const milliseconds = state.currentTime * 1000;
         const verseStart = Number(state.timing.timestampFrom);
         const verseEnd = Number(state.timing.timestampTo);
