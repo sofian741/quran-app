@@ -55,8 +55,10 @@ jobs:
       - name: Sync web app
         run: npx cap sync android
 
-      - name: Prepare approved app icon
+      - name: Reconstruct approved app icon
         run: |
+          cat android-assets/icon-b64/*.part | base64 -d > android-assets/icon-source.jpg
+          echo "ac53289fe8888727ec5e26700ed89e497ff0e80224b6489ac4c293f5354adcb7  android-assets/icon-source.jpg" | sha256sum -c -
           python3 -m pip install --quiet pillow
           python3 - <<'PY'
           from PIL import Image
