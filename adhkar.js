@@ -34,7 +34,31 @@ function setCurrent(ch,it,value){progress[key(ch,it)]=Math.min(target(it),Math.m
 function chapterCard(ch,compact=false){const b=document.createElement('button');b.type='button';b.className=compact?'index-entry':'chapter';b.dataset.id=ch.id;const num=document.createElement('span');num.className='chapter-index';num.textContent=digits(ch.id);const copy=document.createElement('span');copy.className='chapter-copy';const title=document.createElement('strong');title.textContent=ch.title;const small=document.createElement('small');const done=chapterDone(ch);small.textContent=`${CATEGORY_META[categoryFor(ch)]} • ${digits(ch.items.length)} ${ch.items.length===1?'ذكر':'أذكار'}${done?` • ${digits(done)}/${digits(ch.items.length)}`:''}`;copy.append(title,small);const state=document.createElement('span');state.className='chapter-state'+(done===ch.items.length&&ch.items.length?' done':'');state.setAttribute('aria-hidden','true');b.append(num,copy,state);return b}
 function filtered(q=query,f=filter){const n=normalize(q);return chapters.filter(ch=>(f==='all'||(f==='saved'?favorites.has(ch.id):categoryFor(ch)===f))&&(!n||normalize(ch.title).includes(n)||ch.items.some(it=>normalize(it.text).includes(n)||normalize(it.reference).includes(n))))}
 function renderList(){const list=filtered();$('chapter-list').replaceChildren(...list.map(ch=>chapterCard(ch)));$('visible-count').textContent=`${digits(list.length)} باب`;$('empty').hidden=!!list.length}
-function renderIndex(q=''){const n=normalize(q);const list=chapters.filter(ch=>!n||normalize(ch.title).includes(n)||ch.items.some(it=>normalize(it.text).includes(n)));$('index-list').replaceChildren(...list.map(ch=>chapterCard(ch,true)))}
+function renderIndex(q=''){
+ const n=normalize(q),container=$('index-list');
+ const expanded=new Set([...container.querySelectorAll('details[open]')].map(el=>el.dataset.category));
+ const groups=Object.entries(CATEGORY_META).map(([key,label])=>({
+  key,label,items:chapters.filter(ch=>categoryFor(ch)===key&&(!n||normalize(ch.title).includes(n)||ch.items.some(it=>normalize(it.text).includes(n)||normalize(it.reference).includes(n))))
+ })).filter(g=>g.items.length);
+ const fragment=document.createDocumentFragment();
+ groups.forEach((group,i)=>{
+  const section=document.createElement('details');
+  section.className='adhkar-index-group';
+  section.dataset.category=group.key;
+  section.open=n?true:expanded.has(group.key);
+  const heading=document.createElement('summary');
+  heading.className='adhkar-index-heading';
+  const name=document.createElement('strong');name.textContent=group.label;
+  const count=document.createElement('span');count.className='adhkar-index-count';count.textContent=digits(group.items.length)+' باب';
+  const arrow=document.createElement('span');arrow.className='adhkar-index-arrow';arrow.textContent='⌄';arrow.setAttribute('aria-hidden','true');
+  heading.append(name,count,arrow);
+  const children=document.createElement('div');children.className='adhkar-index-children';
+  children.append(...group.items.map(ch=>chapterCard(ch,true)));
+  section.append(heading,children);fragment.append(section);
+ });
+ if(!groups.length){const empty=document.createElement('p');empty.className='adhkar-index-empty';empty.textContent='لا توجد أبواب مطابقة للبحث.';fragment.append(empty)}
+ container.replaceChildren(fragment);
+}
 function findChapter(hint){const w=normalize(hint);let found=chapters.find(ch=>normalize(ch.title).includes(w))||chapters.find(ch=>w.includes(normalize(ch.title)));if(!found&&w.includes('المساء'))found=chapters.find(ch=>{const t=normalize(ch.title);return t.includes('الصباح')&&t.includes('المساء')});if(!found&&w.includes('الصباح'))found=chapters.find(ch=>{const t=normalize(ch.title);return t.includes('الصباح')&&t.includes('المساء')});return found}
 function itemState(){return active?.items[itemIndex]||null}
 function paintTasbih(){const it=itemState();if(!it)return;const now=current(active,it),total=target(it);$('tasbih-current').textContent=digits(now);$('tasbih-target').textContent=`من ${digits(total)}`;$('tasbih').classList.toggle('complete',now>=total);$('item-status').textContent=now>=total?'اكتمل':'التكرار '+digits(now)+' / '+digits(total);$('tasbih').setAttribute('aria-label',`عداد الذكر: ${digits(now)} من ${digits(total)}`)}
@@ -64,7 +88,7 @@ function goItem(next,direction=1){if(!active||transitioning)return;cancelAdvance
 function openChapter(ch,start=0){if(!ch)return;lastFocus=document.activeElement;active=ch;itemIndex=Math.min(ch.items.length-1,Math.max(0,start));$('reader').hidden=false;document.body.classList.add('reader-open');renderItem();$('close-reader').focus()}
 function closeReader(){cancelAdvance();active=null;showingReport=false;$('reader').hidden=true;document.body.classList.remove('reader-open');history.replaceState(null,'',location.pathname+location.search);lastFocus?.focus()}
 function firstMissing(){if(!active)return 0;const i=active.items.findIndex(it=>current(active,it)<target(it));return i<0?0:i}
-function openIndex(){indexFocus=document.activeElement;renderIndex();$('index-search').value='';$('index-backdrop').hidden=false;$('index-sheet').classList.add('open');$('index-sheet').setAttribute('aria-hidden','false');document.body.classList.add('modal-open');setTimeout(()=>$('index-search').focus(),40)}
+function openIndex(){indexFocus=document.activeElement;$('index-search').value='';$('index-list').replaceChildren();renderIndex();$('index-backdrop').hidden=false;$('index-sheet').classList.add('open');$('index-sheet').setAttribute('aria-hidden','false');document.body.classList.add('modal-open');setTimeout(()=>$('index-search').focus(),40)}
 function closeIndex(){ $('index-sheet').classList.remove('open');$('index-sheet').setAttribute('aria-hidden','true');$('index-backdrop').hidden=true;document.body.classList.remove('modal-open');indexFocus?.focus() }
 $('chapter-list').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(b)openChapter(chapters.find(ch=>ch.id===Number(b.dataset.id))) });
 $('index-list').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;const ch=chapters.find(x=>x.id===Number(b.dataset.id));closeIndex();openChapter(ch)});
