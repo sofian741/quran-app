@@ -1,0 +1,30 @@
+name: Vectorize Quran reader UI
+on:
+  push:
+    paths:
+      - '.github/workflows/vectorize-quran-ui.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace font-dependent reader controls
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('quran.html'); s=p.read_text()
+          s=s.replace('<div class="loading-mark" aria-hidden="true">۞</div>','<div class="loading-mark" aria-hidden="true"><svg width="46" height="46" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="24" cy="24" r="12"/><path d="M24 4v8m0 24v8M4 24h8m24 0h8M9.9 9.9l5.7 5.7m16.8 16.8 5.7 5.7M38.1 9.9l-5.7 5.7M15.6 32.4l-5.7 5.7"/><circle cx="24" cy="24" r="4"/></svg></div>')
+          close='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>'
+          s=s.replace('>×</button>','>'+close+'</button>')
+          p.write_text(s)
+          PY
+      - name: Commit cleanup and remove workflow
+        run: |
+          git config user.name 'quran-app ui patcher'
+          git config user.email 'actions@users.noreply.github.com'
+          git rm .github/workflows/vectorize-quran-ui.yml
+          git add quran.html
+          git commit -m 'Replace Quran reader UI glyphs with SVG controls'
+          git push
