@@ -5,6 +5,7 @@ on:
     paths:
       - 'index.html'
       - 'home.css'
+      - 'quran.html'
       - 'adhkar.html'
       - 'adhkar.css'
       - 'adhkar.js'
@@ -24,6 +25,7 @@ on:
     paths:
       - 'index.html'
       - 'home.css'
+      - 'quran.html'
       - 'adhkar.html'
       - 'adhkar.css'
       - 'adhkar.js'
