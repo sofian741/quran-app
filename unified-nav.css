@@ -1,1 +1,5 @@
 .bottom-nav{position:fixed;z-index:40;right:0;bottom:0;left:0;display:flex;align-items:stretch;justify-content:center;min-height:66px;padding:7px max(12px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));border-top:1px solid var(--line,var(--border,#e2eae2));background:color-mix(in srgb,var(--paper,var(--surface,#fff)) 96%,transparent);box-shadow:0 -7px 28px rgba(27,64,43,.045);backdrop-filter:blur(10px)}.bottom-nav a,.bottom-nav .nav-item{display:flex;flex:1 1 0;max-width:190px;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:51px;border-radius:14px;color:var(--muted,#78897d);text-decoration:none;font-size:9px;font-weight:700}.bottom-nav a svg,.bottom-nav .nav-item svg{width:21px;height:21px}.bottom-nav a.active,.bottom-nav a.is-active,.bottom-nav .nav-item.is-active{color:var(--green,#176b63);background:var(--pale,var(--surface-soft,#f0f5ef))}
+
+/* Adhkar reader: keep the tasbih button on the darker completed-state green so the white counter stays crisp in both themes. */
+.reader .tasbih,
+.reader .tasbih.complete{background:#287d62}
