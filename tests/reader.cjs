@@ -29,8 +29,8 @@ const root = path.join(__dirname, '..');
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const browser = await chromium.launch({
         headless: true,
-        ...(process.env.QURAN_BROWSER_PATH
-            ? { executablePath: process.env.QURAN_BROWSER_PATH }
+        ...(process.env.QURAN_BROWSER_PATH || fs.existsSync('/usr/bin/chromium')
+            ? { executablePath: process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium' }
             : {})
     });
 
@@ -74,6 +74,7 @@ const root = path.join(__dirname, '..');
                         return {
                             ratio: rect.width / rect.height,
                             width: rect.width,
+                            height: rect.height,
                             centerDeltaX: Math.abs(
                                 (title.left + title.width / 2) - (rect.left + rect.width / 2),
                             ),
@@ -105,7 +106,7 @@ const root = path.join(__dirname, '..');
 
                 assert.ok(result.rows >= 8 && result.rows <= 16);
                 assert.ok(result.words > 0 && result.markers > 0);
-                assert.equal(result.outside, 0);
+                assert.equal(result.outside, 0, `word outside page ${pageNumber} at ${width}x${height}`);
                 assert.equal(result.overflowX, 'hidden');
                 assert.equal(
                     result.outsideRowsVertical,
@@ -117,7 +118,9 @@ const root = path.join(__dirname, '..');
                     assert.ok(Math.abs(heading.ratio - (1000 / 224)) < 0.02);
                     assert.ok(heading.width > 0);
                     assert.ok(heading.centerDeltaX < 0.6);
-                    assert.ok(heading.centerDeltaY < 0.6);
+                    // Quran glyphs sit below their line box, so the title uses
+                    // a small, deliberate optical offset inside the cartouche.
+                    assert.ok(heading.centerDeltaY / heading.height < 0.11);
                     assert.equal(heading.titleFits, true);
                 }
                 checks++;

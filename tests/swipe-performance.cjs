@@ -25,8 +25,8 @@ const root = path.join(__dirname, '..');
 
     const browser = await chromium.launch({
         headless: true,
-        ...(process.env.QURAN_BROWSER_PATH
-            ? { executablePath: process.env.QURAN_BROWSER_PATH }
+        ...(process.env.QURAN_BROWSER_PATH || fs.existsSync('/usr/bin/chromium')
+            ? { executablePath: process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium' }
             : {}),
     });
 
@@ -151,12 +151,34 @@ const root = path.join(__dirname, '..');
         assert.equal(await page.evaluate(() => window.__lastPageReadyDetail?.prepared), true);
         const adoptedPresentation = await page.evaluate(() => {
             const current = document.querySelector('#quran-text');
-            return [current.className, current.style.cssText, current.innerHTML];
+            return {
+                className: current.className,
+                text: current.textContent,
+                rows: [...current.children].map(row => ({
+                    className: row.className,
+                    start: row.dataset.start || '',
+                    end: row.dataset.end || '',
+                    transform: row.style.transform,
+                    gap: row.style.columnGap,
+                    justify: row.style.justifyContent,
+                })),
+            };
         });
         await openAt(224);
         const directPresentation = await page.evaluate(() => {
             const current = document.querySelector('#quran-text');
-            return [current.className, current.style.cssText, current.innerHTML];
+            return {
+                className: current.className,
+                text: current.textContent,
+                rows: [...current.children].map(row => ({
+                    className: row.className,
+                    start: row.dataset.start || '',
+                    end: row.dataset.end || '',
+                    transform: row.style.transform,
+                    gap: row.style.columnGap,
+                    justify: row.style.justifyContent,
+                })),
+            };
         });
         assert.deepEqual(adoptedPresentation, directPresentation);
 

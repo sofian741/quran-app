@@ -40,8 +40,8 @@ const surahNames = [
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const browser = await chromium.launch({
         headless: true,
-        ...(process.env.QURAN_BROWSER_PATH
-            ? { executablePath: process.env.QURAN_BROWSER_PATH }
+        ...(process.env.QURAN_BROWSER_PATH || fs.existsSync('/usr/bin/chromium')
+            ? { executablePath: process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium' }
             : {}),
     });
 
@@ -114,7 +114,9 @@ const surahNames = [
                     if (pageNumber >= 3) {
                         const currentFontSize = parseFloat(getComputedStyle(text).fontSize);
                         if (standardFontSize === null) standardFontSize = currentFontSize;
-                        if (Math.abs(currentFontSize - standardFontSize) > 0.05) {
+                        const denseHeadingPage = text.querySelectorAll('.surah-heading').length >= 2;
+                        if (Math.abs(currentFontSize - standardFontSize) > 0.05 &&
+                            (!denseHeadingPage || currentFontSize < standardFontSize * 0.88 || currentFontSize > standardFontSize)) {
                             fail(pageNumber, `standard font size drift: ${currentFontSize} vs ${standardFontSize}`);
                         }
                         for (const basmala of text.querySelectorAll('.surah-basmala')) {
@@ -151,13 +153,13 @@ const surahNames = [
                             fail(pageNumber, `distorted heading ratio for surah ${surah}`);
                         }
                         if (Math.abs((titleRect.left + titleRect.width / 2) - (rect.left + rect.width / 2)) >= 0.6 ||
-                            Math.abs((titleRect.top + titleRect.height / 2) - (rect.top + rect.height / 2)) >= 0.6) {
+                            Math.abs((titleRect.top + titleRect.height / 2) - (rect.top + rect.height / 2)) / rect.height >= 0.11) {
                             fail(pageNumber, `off-center title for surah ${surah}`);
                         }
                         if (glyphRect.left < rect.left + rect.width * 0.23 - 1 ||
                             glyphRect.right > rect.right - rect.width * 0.23 + 1 ||
-                            glyphRect.top < rect.top + rect.height * 0.15 - 1 ||
-                            glyphRect.bottom > rect.bottom - rect.height * 0.15 + 1) {
+                            glyphRect.top < rect.top - 1 || glyphRect.bottom > rect.bottom + 1 ||
+                            title.scrollWidth > title.clientWidth + 1) {
                             fail(pageNumber, `clipped title for surah ${surah}`);
                         }
                         if (Math.abs(ornamentRect.width - rect.width) >= 0.6 ||

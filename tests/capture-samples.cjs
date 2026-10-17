@@ -30,8 +30,8 @@ const samples = [
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const browser = await chromium.launch({
         headless: true,
-        ...(process.env.QURAN_BROWSER_PATH
-            ? { executablePath: process.env.QURAN_BROWSER_PATH }
+        ...(process.env.QURAN_BROWSER_PATH || fs.existsSync('/usr/bin/chromium')
+            ? { executablePath: process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium' }
             : {}),
     });
 

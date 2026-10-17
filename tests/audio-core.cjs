@@ -45,7 +45,11 @@ assert.deepEqual(sanitized.repeat, { mode: 'range', start: 3, end: 8, count: 99,
 
 (async () => {
   const timing = new core.TimingProvider(async url => {
-    assert.match(url, /recitations\/7\/by_chapter\/1\?segments=true$/);
+    const parsed = new URL(url);
+    assert.match(parsed.pathname, /\/recitations\/7\/by_chapter\/1$/);
+    assert.equal(parsed.searchParams.get('segments'), 'true');
+    assert.equal(parsed.searchParams.get('per_page'), '50');
+    assert.equal(parsed.searchParams.get('page'), '1');
     return response({ audio_files: [{
       verse_key: '1:1', url: 'Alafasy/mp3/001001.mp3', duration: 4500,
       segments: [[1, 0, 900], [2, 900, 1800], ['bad', 3, 2]]

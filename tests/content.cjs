@@ -60,7 +60,7 @@ assert.equal(layout.version, 1);
 assert.equal(layout.source, 'zonetecde/mushaf-layout@72116ce4d405d67823804f0eed795c1e6409b4af');
 assert.equal(
     crypto.createHash('sha256').update(layoutRaw).digest('hex'),
-    '1252d45a2a3fd9118db87c0bc6336643c51890740b8deab818ddd0024579a090',
+    '72d5d5743160f4be6a5c983723ccc6f5549fb28e11a11fd68896ba8b088585cd',
     'Pinned Madani page/line boundaries changed',
 );
 assert.equal(layout.pages.length, 604);

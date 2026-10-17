@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' https: blob:; connect-src 'self' https:; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+    <meta name="referrer" content="no-referrer">
     <meta name="theme-color" content="#176B63">
     <title>المصحف الشريف</title>
     <link rel="stylesheet" href="style.css">
@@ -368,6 +370,7 @@
         </fieldset>
         <button id="audio-apply-repeat" class="audio-apply-repeat" type="button">تطبيق التكرار</button>
     </aside>
+    <script src="service-worker-register.js"></script>
     <script src="app.js"></script>
     <script src="reader-enhancements.js"></script>
     <script src="reader-layout-polish.js"></script>

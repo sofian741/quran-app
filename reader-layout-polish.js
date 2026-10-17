@@ -71,7 +71,10 @@
     const TABLET_FONT_HEIGHT_ROWS = 16;
     const TABLET_FONT_HEIGHT_LINE_RATIO = 1.65;
     const TABLET_FONT_HEIGHT_BUDGET = 0.86;
-    const STANDARD_LINE_MIN_SCALE = 0.75;
+    // Three verse ornaments can make a legitimate fixed-layout row wider than
+    // a 320px phone even at the normal bounded gap. Keep the fallback rare,
+    // but allow enough compression to prevent Quran words being clipped.
+    const STANDARD_LINE_MIN_SCALE = 0.64;
     const STANDARD_GAP_MIN_EM = 0.12;
     const STANDARD_GAP_MAX_EM = 0.30;
     const STANDARD_TARGET_FILL = 0.997;
@@ -86,7 +89,7 @@
 
     // Persistent layout cache. A version bump intentionally invalidates old
     // measurements whenever the line-fitting algorithm changes.
-    const LAYOUT_CACHE_VERSION = 'standard-larger-type-v3-20261016';
+    const LAYOUT_CACHE_VERSION = 'standard-larger-type-v7-20261017';
     const LAYOUT_CACHE_DB = 'quranMushafLayoutCache';
     const LAYOUT_CACHE_STORE = 'layouts';
     const layoutMemoryCache = new Map();
@@ -500,7 +503,7 @@
             ? container.clientHeight * TABLET_FONT_HEIGHT_BUDGET /
                 (TABLET_FONT_HEIGHT_ROWS * TABLET_FONT_HEIGHT_LINE_RATIO)
             : TABLET_FONT_MAX;
-        const fontSize = tabletIncrease > 0
+        let fontSize = tabletIncrease > 0
             ? clamp(
                 Math.min(phoneFontSize + tabletIncrease, heightLimit),
                 STANDARD_FONT_MIN,
@@ -509,9 +512,12 @@
             : phoneFontSize;
         const lineHeight = parseFloat(getComputedStyle(container).lineHeight) /
             Math.max(1, parseFloat(getComputedStyle(container).fontSize)) || 1.42;
-        container.style.fontSize = `${fontSize.toFixed(2)}px`;
-        container.style.setProperty('--mushaf-font-size', `${fontSize.toFixed(2)}px`);
-        container.style.setProperty('--mushaf-min-row-height', `${(fontSize * lineHeight).toFixed(2)}px`);
+        const applyFontSize = () => {
+            container.style.fontSize = `${fontSize.toFixed(2)}px`;
+            container.style.setProperty('--mushaf-font-size', `${fontSize.toFixed(2)}px`);
+            container.style.setProperty('--mushaf-min-row-height', `${(fontSize * lineHeight).toFixed(2)}px`);
+        };
+        applyFontSize();
 
         const lines = Array.from(container.querySelectorAll('.mushaf-line'));
         lines.forEach(line => {
@@ -526,6 +532,31 @@
             const isFull = line.dataset.lineRole !== 'surah-end' && line.children.length >= 3;
             line.classList.add(isFull ? 'is-full-line' : 'is-short-line');
         });
+
+        // Multiple full-width surah ornaments leave less vertical room on a
+        // short phone. Fit only pages that would otherwise scroll past the
+        // printed-page boundary; ordinary pages keep the width-based size.
+        const hasRowOverflow = () => {
+            const bounds = container.getBoundingClientRect();
+            return Array.from(container.children).some(row => {
+                const rect = row.getBoundingClientRect();
+                return rect.top < bounds.top - 1 || rect.bottom > bounds.bottom + 1;
+            });
+        };
+        for (let pass = 0; pass < 2 && hasRowOverflow(); pass++) {
+            const headingHeight = Array.from(container.querySelectorAll('.surah-heading'))
+                .reduce((sum, heading) => sum + heading.getBoundingClientRect().height, 0);
+            const scalableHeight = Math.max(1, container.scrollHeight - headingHeight);
+            const availableScalableHeight = Math.max(1, container.clientHeight - headingHeight);
+            const nextSize = clamp(
+                fontSize * availableScalableHeight / scalableHeight * 0.995,
+                STANDARD_FONT_MIN,
+                fontSize
+            );
+            if (Math.abs(nextSize - fontSize) < 0.02) break;
+            fontSize = nextSize;
+            applyFontSize();
+        }
 
         const availableWidth = Math.max(1, (lines[0]?.clientWidth || usableTextWidth) - 4);
         lines.forEach(line => {

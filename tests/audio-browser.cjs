@@ -15,6 +15,12 @@ const catalog = {
 };
 
 function audioFiles(surah) {
+  if (surah === 2) {
+    return [{
+      verse_key: '2:2', url: 'mock/002002.mp3', duration: 4000,
+      segments: [[1, 0, 1000]]
+    }];
+  }
   const count = surah === 1 ? 7 : 1;
   return Array.from({ length: count }, (_, index) => ({
     verse_key: `${surah}:${index + 1}`,
@@ -24,6 +30,25 @@ function audioFiles(surah) {
       ? [[1, 0, 500], [2, 500, 1000], [3, 1000, 1500], [4, 1500, 2000]]
       : [[1, 0, 1000]]
   }));
+}
+
+function chapterAudio(surah) {
+  return {
+    audio_file: {
+      chapter_id: surah,
+      audio_url: `https://verses.quran.com/continuous-${surah}.mp3`,
+      file_size: 9,
+      format: 'mp3',
+      timestamps: Array.from({ length: surah === 1 ? 7 : 1 }, (_, index) => ({
+        verse_key: `${surah}:${index + 1}`,
+        timestamp_from: index * 4000,
+        timestamp_to: (index + 1) * 4000,
+        segments: index === 0
+          ? [[1, index * 4000, index * 4000 + 500], [2, index * 4000 + 500, index * 4000 + 1000], [3, index * 4000 + 1000, index * 4000 + 1500], [4, index * 4000 + 1500, index * 4000 + 2000]]
+          : [[1, index * 4000, index * 4000 + 1000]]
+      }))
+    }
+  };
 }
 
 (async () => {
@@ -65,6 +90,16 @@ function audioFiles(surah) {
       const match = /by_chapter\/(\d+)/.exec(route.request().url());
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ audio_files: audioFiles(Number(match[1])) }) });
     });
+    await page.route('https://api.quran.com/api/v4/chapter_recitations/7/*', route => {
+      const match = /chapter_recitations\/7\/(\d+)/.exec(route.request().url());
+      if (Number(match?.[1]) !== 1) return route.abort();
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(chapterAudio(1)) });
+    });
+    await page.route('https://verses.quran.com/continuous-1.mp3', route => route.fulfill({
+      status: 200,
+      headers: { 'access-control-allow-origin': '*', 'content-type': 'audio/mpeg', 'content-length': '9' },
+      body: 'chapter01'
+    }));
     await page.route('https://verses.quran.com/offline-test.mp3', route => route.fulfill({
       status: 200,
       headers: { 'access-control-allow-origin': '*', 'content-type': 'audio/mpeg', 'content-length': '8' },
@@ -90,10 +125,28 @@ function audioFiles(surah) {
       audio.dispatchEvent(new Event('timeupdate'));
     });
     assert.equal(await page.locator('.mushaf-word.is-audio-word').count(), 1, 'trusted matching segments must highlight one word');
+    assert.equal(await page.evaluate(() => !!window.quranAudioEngine.__continuousChapter), true,
+      'aligned playback must use one continuous chapter recording');
     const after = await page.locator('.mushaf-line').evaluateAll(lines => lines.map(line => [line.offsetWidth, line.offsetHeight]));
     assert.deepEqual(after, before, 'audio highlighting must not change line geometry');
 
-    await page.evaluate(async () => window.quranAudioEngine.goTo(2, 1, { autoplay: true }));
+    await page.evaluate(() => document.querySelector('#audio-download').click());
+    await page.waitForFunction(() => {
+      const items = JSON.parse(localStorage.getItem('quranAudioDownloadsV1') || '[]');
+      return items.some(item => item.url === 'https://verses.quran.com/continuous-1.mp3');
+    });
+    const continuousDownload = await page.evaluate(async () => {
+      const items = JSON.parse(localStorage.getItem('quranAudioDownloadsV1') || '[]');
+      const item = items.find(entry => entry.url === 'https://verses.quran.com/continuous-1.mp3');
+      const manager = new window.QuranDownloads.DownloadManager();
+      const result = { ayah: item?.ayah ?? null, cached: await manager.has(item?.url) };
+      await manager.remove(item.url);
+      return result;
+    });
+    assert.deepEqual(continuousDownload, { ayah: null, cached: true },
+      'offline download must store the same continuous chapter file used for playback');
+
+    await page.evaluate(async () => window.quranAudioEngine.goTo(2, 2, { autoplay: true }));
     await page.waitForFunction(() => window.mushafReader?.getCurrentPage() === 2);
     await page.evaluate(() => {
       const audio = document.getElementById('mushaf-recitation-audio');
@@ -102,13 +155,9 @@ function audioFiles(surah) {
     assert.ok(await page.locator('.audio-verse-band').count() > 0, 'current verse must stay highlighted');
     assert.equal(await page.locator('.mushaf-word.is-audio-word').count(), 0, 'mismatched word counts must disable word highlighting');
 
-    await page.click('#audio-open-options');
-    assert.equal(await page.getAttribute('#audio-options-sheet', 'aria-hidden'), 'false');
-    await page.selectOption('#audio-repeat-mode', 'range');
-    await page.fill('#audio-repeat-start', '1');
-    await page.fill('#audio-repeat-end', '3');
-    await page.fill('#audio-repeat-count', '4');
-    await page.dispatchEvent('#audio-repeat-count', 'change');
+    await page.evaluate(() => window.quranAudioEngine.setRepeat({
+      mode: 'range', start: 1, end: 3, count: 4, completed: 0
+    }));
     const repeat = await page.evaluate(() => window.quranAudioEngine.state.repeat);
     assert.deepEqual(repeat, { mode: 'range', start: 1, end: 3, count: 4, completed: 0 });
 

@@ -412,9 +412,13 @@
         const firstIndex = segments.length ? Math.min(...segments.map(item => item.word)) : -1;
         const lastIndex = segments.length ? Math.max(...segments.map(item => item.word)) : -1;
         const zeroBased = firstIndex === 0 && lastIndex <= count - 1;
-        const validMapping = segments.length > 0 && (
-            (zeroBased && lastIndex < count) ||
-            (!zeroBased && firstIndex >= 1 && lastIndex <= count)
+        const coveredWords = new Set(segments.map(item => item.word));
+        // A partial segment list must never look like trustworthy word sync.
+        // Require every displayed Quran word in the timing index range;
+        // verse highlighting remains available when the source is incomplete.
+        const validMapping = count > 0 && coveredWords.size === count && (
+            (zeroBased && firstIndex === 0 && lastIndex === count - 1) ||
+            (!zeroBased && firstIndex === 1 && lastIndex === count)
         );
         const milliseconds = state.currentTime * 1000;
         const verseStart = Number(state.timing.timestampFrom);
@@ -733,6 +737,14 @@
 
     async function tracksForSurah(state, surah) {
         if (state.provider === 'quran-foundation') {
+            if (typeof engine.getAlignedChapterAudio === 'function') {
+                const chapter = await engine.getAlignedChapterAudio(surah);
+                const track = currentTrack({ ...state, surah }, {
+                    audioUrl: chapter.audioUrl,
+                    ayah: null
+                });
+                return track ? [track] : [];
+            }
             const chapter = await engine.timing.chapter(state.reciterId, surah);
             return [...chapter.values()].sort((a, b) => a.ayah - b.ayah)
                 .map(timing => currentTrack({ ...state, surah }, timing)).filter(Boolean);
@@ -746,7 +758,7 @@
         const state = engine.snapshot();
         const surahs = all ? [...state.availableSurahs] : [state.surah];
         if (all) {
-            const count = state.provider === 'quran-foundation' ? 'آلاف ملفات الآيات' : `${surahs.length} ملف سورة`;
+            const count = `${surahs.length} ملف سورة`;
             const accepted = window.confirm(
                 `تحميل المصحف الصوتي للقارئ ${state.reciterName}؟\\n` +
                 `سيتم تنزيل ${count}، وقد يستهلك مساحة كبيرة جدًا وباقة الإنترنت.\\n` +
@@ -815,8 +827,9 @@
             const bytes = items.reduce((sum, item) => sum + (Number(item.bytes) || 0), 0);
             const label = document.createElement('span');
             const first = items[0];
-            const count = first.provider === 'quran-foundation'
-                ? ` • ${core.arabicDigits(items.length)}/${core.arabicDigits(core.VERSE_COUNTS[first.surah - 1])} آية`
+            const verseFiles = items.filter(item => Number.isInteger(Number(item.ayah)) && Number(item.ayah) > 0);
+            const count = first.provider === 'quran-foundation' && verseFiles.length
+                ? ` • ${core.arabicDigits(verseFiles.length)}/${core.arabicDigits(core.VERSE_COUNTS[first.surah - 1])} آية`
                 : ' • تسجيل السورة';
             label.textContent = `${first.reciterName} • سورة ${first.surahName}${count} • ${downloadsApi.humanSize(bytes)}`;
             const remove = document.createElement('button');
@@ -962,9 +975,6 @@
         }
     }
 
-    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-        navigator.serviceWorker.register('./sw.js').catch(() => { /* Offline remains optional. */ });
-    }
     applyState(engine.snapshot(), true);
     loadCatalog();
     if (!window.QudAudioRegistry?.reciters?.length) {

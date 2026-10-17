@@ -104,7 +104,12 @@
                     moshafName: track.moshafName || null, ayah: track.ayah || null,
                     bytes, savedAt: Date.now()
                 });
-                if (!writeIndex(items)) throw new Error('تعذّر حفظ فهرس التنزيلات على الجهاز.');
+                if (!writeIndex(items)) {
+                    // Do not leave an orphaned recording that the library can
+                    // neither display nor delete when metadata storage is full.
+                    await cache.delete(track.url, { ignoreVary: true });
+                    throw new Error('تعذّر حفظ فهرس التنزيلات على الجهاز.');
+                }
                 this.emit({ status: 'done', track, bytes, progress: 1 });
                 return true;
             } catch (error) {
@@ -161,6 +166,7 @@
     const originalHandleEnded = proto.handleEnded;
     const originalPreloadUpcomingVerse = proto.preloadUpcomingVerse;
     const originalDestroy = proto.destroy;
+    const METADATA_CACHE = 'quran-recitation-metadata-v1';
     const chapterCache = new Map();
     const boundElements = new WeakSet();
 
@@ -227,8 +233,19 @@
         if (chapterCache.has(key)) return chapterCache.get(key);
         const promise = (async () => {
             const url = `${core.QURAN_API}/chapter_recitations/${Number(reciterId)}/${Number(surah)}?segments=true`;
-            const response = await fetch(url, { cache: 'force-cache' });
-            if (!response.ok) throw new Error(`Quran chapter audio HTTP ${response.status}`);
+            let response = null;
+            try {
+                response = await fetch(url, { cache: 'no-cache' });
+                if (response.ok && typeof caches !== 'undefined') {
+                    const cache = await caches.open(METADATA_CACHE);
+                    await cache.put(url, response.clone());
+                }
+            } catch (_) {
+                if (typeof caches !== 'undefined') {
+                    response = await (await caches.open(METADATA_CACHE)).match(url);
+                }
+            }
+            if (!response?.ok) throw new Error(`Quran chapter audio HTTP ${response?.status || 'offline'}`);
             return parseChapterPayload(await response.json(), reciterId, surah);
         })().catch(error => {
             chapterCache.delete(key);
