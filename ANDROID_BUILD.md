@@ -1,11 +1,14 @@
-# Android APK (debug)
+# Noor Al Quran Android debug APK
 
-The Android build runs on GitHub Actions using Capacitor 8, Java 21 and the Android SDK. It packages local HTML/CSS/JS via `scripts/prepare-android-web.mjs`.
+The canonical workflow is `.github/workflows/build-android-apk.yml`. It uses Capacitor 8, Node 22, Java 21, Android SDK 36, and bundles local HTML/CSS/JS via `scripts/prepare-android-web.mjs`.
 
-1. Open GitHub > Actions > Build Android APK > Run workflow (main).
-2. Wait for a successful build and download the `Noor-Al-Quran-debug-APK` artifact.
-3. Extract ZIP, transfer `app-debug.apk` to Android and install it for testing.
+The **approved icon is already embedded in the repository** as split base64 chunks in `android-assets/icon-b64/`. The workflow reconstructs it, verifies SHA-256, and generates launcher icons and splash assets. Do not replace the icon with a generic default.
 
-**Icon:** place the approved square icon image at `android-assets/icon.png` (PNG, 1024x1024 preferred) and rerun workflow. Without it the first debug build uses a temporary default icon; do not publish that build.
+## Download and install
 
-**Important:** This is a debug APK, not a signed Play Store release. Test Mushaf zoom/pan, word highlighting, offline content, audio playback/downloads, Adhkar, back navigation, and storage behavior on a real Android phone. Browser-only service workers and download mechanisms may require Android-specific fixes. Do not distribute publicly before those tests and licensing checks.
+1. Go to GitHub Actions > **Build Android APK**.
+2. Open the latest successful run on `main`.
+3. Under **Artifacts**, download **Noor-Al-Quran-APK** (ZIP).
+4. Extract **Noor-Al-Quran-debug.apk** and install on Android for testing.
+
+This is a **debug APK**, not a signed Play Store release. Test Mushaf zoom/pan, word highlighting, offline content, audio playback/downloads, Adhkar, back navigation, and storage behavior on a real Android phone. Android WebView behavior may differ from Chrome.
