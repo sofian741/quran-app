@@ -3,6 +3,8 @@ name: Verify app UI
 on:
   push:
     paths:
+      - 'index.html'
+      - 'home.css'
       - 'adhkar.html'
       - 'adhkar.css'
       - 'adhkar.js'
@@ -14,11 +16,14 @@ on:
       - 'library.html'
       - 'library.css'
       - 'library.js'
+      - 'unified-nav.css'
       - 'sw.js'
       - 'tests/ui-pages.cjs'
       - '.github/workflows/verify-app-ui.yml'
   pull_request:
     paths:
+      - 'index.html'
+      - 'home.css'
       - 'adhkar.html'
       - 'adhkar.css'
       - 'adhkar.js'
@@ -30,6 +35,7 @@ on:
       - 'library.html'
       - 'library.css'
       - 'library.js'
+      - 'unified-nav.css'
       - 'sw.js'
       - 'tests/ui-pages.cjs'
 
