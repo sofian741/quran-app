@@ -195,6 +195,14 @@ a { -webkit-tap-highlight-color: transparent; }
     touch-action: pan-x pan-y pinch-zoom;
 }
 
+/* At native zoom, let the visual viewport handle both pan axes.
+   The nested Quran text scroller otherwise captures vertical drags first. */
+.reader-page.is-pinch-panning .quran-text {
+    overflow-y: hidden;
+    overscroll-behavior-y: auto;
+}
+
+
 .mushaf-page {
     position: relative;
     display: grid;
