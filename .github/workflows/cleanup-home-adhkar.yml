@@ -1,0 +1,31 @@
+name: Cleanup home Adhkar style
+on:
+  push:
+    paths:
+      - '.github/workflows/cleanup-home-adhkar.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove stale coming-soon behavior
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('home.css'); s=p.read_text()
+          start=s.find('/* Adhkar is the next feature: visible but deliberately not interactive yet. */')
+          end=s.find('/* Stable vector marks for the home dashboard. */')
+          if start < 0 or end < 0: raise SystemExit('Expected stale Adhkar block not found')
+          replacement='''/* Adhkar is a full feature and spans the quick-access row. */\n.home-feature-adhkar {\n    grid-column: 1 / -1;\n    min-height: 112px;\n}\n.home-feature-adhkar .home-feature-icon {\n    color: #8a6b48;\n    background: #f4eee3;\n}\n\n'''
+          p.write_text(s[:start]+replacement+s[end:])
+          PY
+      - name: Commit cleanup and remove workflow
+        run: |
+          git config user.name 'quran-app ui patcher'
+          git config user.email 'actions@users.noreply.github.com'
+          git rm .github/workflows/cleanup-home-adhkar.yml
+          git add home.css
+          git commit -m 'Remove stale coming-soon behavior from Adhkar home card'
+          git push
