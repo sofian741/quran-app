@@ -675,32 +675,15 @@
 .home-brand-mark svg { width: 26px; height: 26px; display: block; }
 .home-verse-emblem svg { width: 25px; height: 25px; display: block; }
 
-/* Adhkar is the next feature: visible but deliberately not interactive yet. */
+/* Adhkar is a full feature and spans the quick-access row. */
 .home-feature-adhkar {
     grid-column: 1 / -1;
     min-height: 112px;
-    cursor: default;
-}
-.home-feature-adhkar:hover {
-    transform: none;
-    box-shadow: var(--home-shadow);
 }
 .home-feature-adhkar .home-feature-icon {
     color: #8a6b48;
     background: #f4eee3;
 }
-.home-feature-coming {
-    position: absolute;
-    inset-inline-end: 18px;
-    top: 18px;
-    font-size: 11px;
-    color: var(--home-muted);
-}
-.home-nav-item.is-disabled {
-    opacity: .5;
-    cursor: default;
-}
-
 
 /* Stable vector marks for the home dashboard. */
 .home-reading-symbol { display:grid; place-items:center; width:36px; height:36px; }
