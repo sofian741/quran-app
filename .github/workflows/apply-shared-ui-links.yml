@@ -1,0 +1,37 @@
+name: Apply shared UI links
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-shared-ui-links.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add shared stylesheets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          edits={
+            'adhkar.html': ('<link rel="stylesheet" href="adhkar.css">','<link rel="stylesheet" href="adhkar.css">\n    <link rel="stylesheet" href="unified-nav.css">'),
+            'library.html': ('<link rel="stylesheet" href="library.css">','<link rel="stylesheet" href="library.css">\n  <link rel="stylesheet" href="unified-nav.css">'),
+            'recitations.html': ('<link rel="stylesheet" href="recitations.css">','<link rel="stylesheet" href="recitations.css">\n  <link rel="stylesheet" href="recitations-overrides.css">\n  <link rel="stylesheet" href="unified-nav.css">')
+          }
+          for name,(old,new) in edits.items():
+            p=Path(name); s=p.read_text()
+            if 'unified-nav.css' not in s:
+              if old not in s: raise SystemExit(f'marker missing in {name}')
+              s=s.replace(old,new,1)
+              p.write_text(s)
+          PY
+      - name: Commit links
+        run: |
+          git config user.name 'quran-app ui patcher'
+          git config user.email 'actions@users.noreply.github.com'
+          git add adhkar.html library.html recitations.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Link shared feature-page navigation styles'
+          git push
