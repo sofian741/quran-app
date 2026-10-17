@@ -222,7 +222,8 @@ def patch_runtime_sources() -> None:
 
     sw = ROOT / "sw.js"
     text = sw.read_text(encoding="utf-8")
-    text = re.sub(r"quran-reader-shell-v\d+", "quran-reader-shell-v14", text, count=1)
+    # Do not roll the application shell cache back to a historical version.
+    # Release work owns that version and bumps it whenever the shell changes.
     needle = "    './audio-core.js', './audio-downloads.js', './offline-reciter-catalog.js',\n"
     replacement = "    './audio-core.js', './audio-downloads.js', './data/qud/registry.js', './qud-audio.js', './offline-reciter-catalog.js',\n"
     if "'./qud-audio.js'" not in text:

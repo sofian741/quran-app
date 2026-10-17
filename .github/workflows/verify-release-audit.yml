@@ -1,0 +1,31 @@
+name: Verify release-critical data and security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          for file in *.js tests/*.cjs scripts/*.cjs; do node --check "$file"; done
+      - name: Verify Quran, tafsir, adhkar and timing data
+        run: |
+          node tests/content.cjs
+          node tests/reflection.cjs
+          node tests/adhkar-data.cjs
+          node tests/data-integrity.cjs
+      - name: Verify local pages, security headers and offline shell
+        run: |
+          node tests/security-static.cjs
+          node tests/ui-pages.cjs
+          git diff --check

@@ -1,0 +1,16 @@
+# Never commit Android signing material or local secrets.
+*.jks
+*.keystore
+key.properties
+keystore.properties
+.env
+.env.*
+!.env.example
+
+# Android/Gradle files that are local or generated.
+android/local.properties
+.gradle/
+**/build/
+__pycache__/
+*.pyc
+

@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const htmlFiles = ['index.html', 'quran.html', 'adhkar.html', 'recitations.html', 'library.html'];
+const htmlFiles = ['index.html', 'quran.html', 'adhkar.html', 'recitations.html', 'library.html', 'licenses.html'];
 const requiredCsp = ["default-src 'self'", "script-src 'self'", "object-src 'none'", "base-uri 'self'", "form-action 'self'"];
 
 for (const file of htmlFiles) {
@@ -22,6 +22,12 @@ for (const file of htmlFiles) {
     for (const link of html.matchAll(/<a\s+[^>]*target="_blank"[^>]*>/gi)) {
         assert.match(link[0], /rel="[^"]*noopener[^"]*"/i, `${file} external tab lacks noopener`);
     }
+    for (const link of html.matchAll(/<a\s+[^>]*href="([^"]+)"/gi)) {
+        const href = link[1];
+        if (/^(?:https?:|mailto:|#)/i.test(href)) continue;
+        const localPath = href.split(/[?#]/)[0];
+        assert.ok(fs.existsSync(path.join(root, localPath)), `${file} broken local link ${href}`);
+    }
 }
 
 const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
@@ -33,6 +39,7 @@ for (const item of shellPaths) {
     assert.ok(fs.existsSync(path.join(root, resolved)), `offline shell path missing: ${resolved}`);
 }
 assert.ok(shellPaths.includes('mushaf-layout-prewarm-worker.js'), 'layout worker must be available offline');
+assert.ok(shellPaths.includes('licenses.html'), 'license and privacy notices must be available offline');
 
 for (const file of fs.readdirSync(root).filter(name => name.endsWith('.js'))) {
     const code = fs.readFileSync(path.join(root, file), 'utf8');

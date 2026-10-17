@@ -40,15 +40,17 @@ const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
         await page.reload();
         await page.waitForFunction(() => !!navigator.serviceWorker.controller);
         const cached = await page.evaluate(async () => {
-            const cache = await caches.open('quran-reader-shell-v17');
+            const cache = await caches.open('quran-reader-shell-v18');
             return Promise.all([
                 cache.match('./quran.html').then(Boolean),
                 cache.match('./data/quran-uthmani.txt').then(Boolean),
                 cache.match('./data/adhkar.json').then(Boolean),
-                cache.match('./mushaf-layout-prewarm-worker.js').then(Boolean)
+                cache.match('./mushaf-layout-prewarm-worker.js').then(Boolean),
+                cache.match('./licenses.html').then(Boolean),
+                cache.match('./legal.css').then(Boolean)
             ]);
         });
-        assert.deepEqual(cached, [true, true, true, true]);
+        assert.deepEqual(cached, [true, true, true, true, true, true]);
         await page.evaluate(async () => {
             const cache = await caches.open('quran-recitation-audio-v1');
             await cache.put(new URL('./offline-test.mp3', location.href).href,
@@ -78,8 +80,11 @@ const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
         await page.goto(`${origin}/library.html`);
         await page.waitForSelector('#library-content', { state: 'attached' });
         assert.equal(await page.locator('#library-empty').isVisible(), true);
+
+        await page.goto(`${origin}/licenses.html`);
+        assert.match(await page.locator('h1').innerText(), /المصادر والتراخيص/);
         assert.deepEqual(errors, []);
-        console.log('PASS: home, Quran, adhkar, recitations catalog, fonts/data, and library reopen fully offline.');
+        console.log('PASS: home, Quran, adhkar, recitations catalog, fonts/data, library, and legal notices reopen fully offline.');
     } finally {
         await context.setOffline(false).catch(() => {});
         await browser.close();
