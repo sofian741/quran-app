@@ -29,3 +29,23 @@ function merge(list){
 c.CatalogService.prototype.cached=function(){return merge(cached.call(this));};
 c.CatalogService.prototype.load=async function(){return merge(await load.call(this));};
 })();
+
+// Keep the exact 604-page geometry while giving Quran glyphs a darker,
+// clearer printed-Mushaf presence on phone screens. Text stroke affects paint,
+// not measured glyph width, so the carefully fitted line layout stays intact.
+(() => {
+ const style=document.createElement('style');
+ style.id='mushaf-glyph-clarity';
+ style.textContent=`
+  .quran-text .mushaf-word {
+   -webkit-text-stroke: .28px currentColor;
+   paint-order: stroke fill;
+  }
+  @supports not (-webkit-text-stroke: .1px currentColor) {
+   .quran-text .mushaf-word {
+    text-shadow: .16px 0 currentColor,-.16px 0 currentColor,0 .16px currentColor,0 -.16px currentColor;
+   }
+  }
+ `;
+ document.head.appendChild(style);
+})();
