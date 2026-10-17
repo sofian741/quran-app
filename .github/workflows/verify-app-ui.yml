@@ -1,0 +1,50 @@
+name: Verify app UI
+
+on:
+  push:
+    paths:
+      - 'adhkar.html'
+      - 'adhkar.css'
+      - 'adhkar.js'
+      - 'recitations.html'
+      - 'recitations.css'
+      - 'recitations-overrides.css'
+      - 'recitations.js'
+      - 'recitations-library-link.js'
+      - 'library.html'
+      - 'library.css'
+      - 'library.js'
+      - 'sw.js'
+      - 'tests/ui-pages.cjs'
+      - '.github/workflows/verify-app-ui.yml'
+  pull_request:
+    paths:
+      - 'adhkar.html'
+      - 'adhkar.css'
+      - 'adhkar.js'
+      - 'recitations.html'
+      - 'recitations.css'
+      - 'recitations-overrides.css'
+      - 'recitations.js'
+      - 'recitations-library-link.js'
+      - 'library.html'
+      - 'library.css'
+      - 'library.js'
+      - 'sw.js'
+      - 'tests/ui-pages.cjs'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --check adhkar.js
+          node --check recitations.js
+          node --check recitations-library-link.js
+          node --check library.js
+      - name: Verify page contracts and vector UI
+        run: node tests/ui-pages.cjs
+      - name: Verify Adhkar corpus
+        run: node tests/adhkar-data.cjs
