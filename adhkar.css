@@ -43,3 +43,8 @@ body.dark {
     --bg: #131d19;
     background: radial-gradient(circle at 95% 2%, rgba(55,105,78,.24), transparent 310px), radial-gradient(circle at 4% 44%, rgba(76,86,56,.12), transparent 290px), #131d19;
 }
+
+/* Align the Adhkar feature card green with the home reading card. */
+.hero, body.dark .hero {
+    background: linear-gradient(138deg, #1d786b 0%, #125e55 58%, #0d4843 100%);
+}
