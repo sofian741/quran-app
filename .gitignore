@@ -14,3 +14,6 @@ android/local.properties
 __pycache__/
 *.pyc
 
+# Generated web bundle and local dependencies.
+www/
+node_modules/

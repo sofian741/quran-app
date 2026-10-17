@@ -1,0 +1,9 @@
+{
+  "appId": "com.sofian.nooralquran",
+  "appName": "نور القرآن | مصحف وأذكار",
+  "webDir": "www",
+  "backgroundColor": "#131d19",
+  "server": {
+    "androidScheme": "https"
+  }
+}
