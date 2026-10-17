@@ -5,3 +5,20 @@
 /* Adhkar reader: keep the tasbih button on the darker completed-state green so the white counter stays crisp in both themes. */
 .reader .tasbih,
 .reader .tasbih.complete{background:#287d62}
+
+/* Adhkar index: expandable book-style sections, distinct from the flat library search. */
+#index-list{display:flex;flex-direction:column;gap:10px}
+.adhkar-index-group{border:1px solid var(--line);border-radius:17px;background:var(--paper);overflow:hidden;box-shadow:var(--shadow)}
+.adhkar-index-heading{display:flex;align-items:center;gap:12px;padding:17px 16px;cursor:pointer;list-style:none;color:var(--ink)}
+.adhkar-index-heading::-webkit-details-marker{display:none}
+.adhkar-index-heading strong{flex:1;font-size:14px;line-height:1.6}
+.adhkar-index-count{font-size:11px;color:var(--muted);white-space:nowrap}
+.adhkar-index-arrow{font-size:23px;color:var(--green);line-height:1;transition:transform .18s ease}
+.adhkar-index-group[open] .adhkar-index-arrow{transform:rotate(180deg)}
+.adhkar-index-group[open] .adhkar-index-heading{background:var(--pale);border-bottom:1px solid var(--line)}
+.adhkar-index-heading:focus-visible{outline:2px solid var(--green);outline-offset:-3px}
+.adhkar-index-children{display:grid;gap:6px;padding:9px}
+.adhkar-index-children .index-entry{box-shadow:none;min-height:62px;border-radius:12px;text-align:right}
+.adhkar-index-children .chapter-copy strong{font-size:12px}
+.adhkar-index-empty{padding:22px;text-align:center;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){.adhkar-index-arrow{transition:none}}
