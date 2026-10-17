@@ -1,358 +1,71 @@
 (() => {
-    'use strict';
-
-    const $ = id => document.getElementById(id);
-    const FAVORITES_KEY = 'adhkarFavoritesV2';
-    const PROGRESS_KEY = 'adhkarProgressV2';
-    const digits = value => String(value).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[digit]);
-    const normalize = value => String(value || '')
-        .normalize('NFKD')
-        .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
-        .replace(/[إأآٱ]/g, 'ا')
-        .replace(/ى/g, 'ي')
-        .replace(/ة/g, 'ه')
-        .toLowerCase();
-
-    const CATEGORY_META = {
-        daily: { label: 'اليوم والليلة' },
-        prayer: { label: 'الصلاة والعبادة' },
-        wellbeing: { label: 'الهم والمرض' },
-        social: { label: 'الناس والأسرة' },
-        travel: { label: 'السفر والطبيعة' },
-        general: { label: 'أذكار وآداب' }
-    };
-
-    const CATEGORY_RULES = [
-        ['prayer', ['صلاه', 'المسجد', 'اذان', 'الاذان', 'اقامه', 'ركوع', 'سجود', 'تشهد', 'استفتاح', 'قنوت', 'وتر', 'استخاره', 'بعد السلام']],
-        ['wellbeing', ['هم', 'حزن', 'كرب', 'مرض', 'مريض', 'رقي', 'فزع', 'مصيبه', 'الشيطان', 'وسوس', 'حسد', 'حمى', 'الم في الجسد', 'الدين']],
-        ['travel', ['سفر', 'ركوب', 'دابه', 'قريه', 'بلده', 'السوق', 'مطر', 'ريح', 'رعد', 'هلال', 'صعود', 'نزول', 'المسافر', 'منزل السفر']],
-        ['social', ['زواج', 'مولود', 'تعزيه', 'العطاس', 'عطس', 'مجلس', 'الضيف', 'الاهل', 'اهله', 'الاخ', 'غضب', 'السلام علي', 'يرد السلام', 'احبك', 'اخيه']],
-        ['daily', ['استيقاظ', 'النوم', 'الصباح', 'المساء', 'الخلاء', 'الوضوء', 'الثوب', 'المنزل', 'الطعام', 'الشراب', 'اللبن', 'الصائم', 'الافطار', 'الجماع', 'اللباس']]
-    ];
-
-    let chapters = [];
-    let active = null;
-    let filter = 'all';
-    let query = '';
-    let lastFocus = null;
-    let favorites = new Set(readStorage(FAVORITES_KEY, []));
-
-    const todayKey = () => {
-        const now = new Date();
-        return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
-    };
-
-    const savedProgress = readStorage(PROGRESS_KEY, null);
-    let progress = savedProgress?.date === todayKey() && savedProgress?.values
-        ? savedProgress.values
-        : {};
-    saveProgress();
-
-    function readStorage(key, fallback) {
-        try {
-            const raw = localStorage.getItem(key);
-            return raw === null ? fallback : JSON.parse(raw);
-        } catch (_) {
-            return fallback;
-        }
-    }
-
-    function writeStorage(key, value) {
-        try { localStorage.setItem(key, JSON.stringify(value)); }
-        catch (_) { /* Persistence is helpful, not required for reading adhkar. */ }
-    }
-
-    function saveProgress() {
-        writeStorage(PROGRESS_KEY, { date: todayKey(), values: progress });
-    }
-
-    function includesAny(text, words) {
-        return words.some(word => text.includes(normalize(word)));
-    }
-
-    function categoryFor(chapter) {
-        const title = normalize(chapter.title);
-        for (const [category, words] of CATEGORY_RULES) {
-            if (includesAny(title, words)) return category;
-        }
-        return 'general';
-    }
-
-    function categoryLabel(chapter) {
-        return CATEGORY_META[categoryFor(chapter)]?.label || CATEGORY_META.general.label;
-    }
-
-    function chapterProgress(chapter) {
-        let completed = 0;
-        for (const item of chapter.items) {
-            const total = Math.max(1, Number(item.count) || 1);
-            if ((Number(progress[`${chapter.id}:${item.id}`]) || 0) >= total) completed++;
-        }
-        return completed;
-    }
-
-    function saveFavorites() {
-        writeStorage(FAVORITES_KEY, [...favorites]);
-    }
-
-    function chapterCard(chapter) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'chapter';
-        button.dataset.id = String(chapter.id);
-
-        const number = document.createElement('span');
-        number.className = 'chapter-index';
-        number.textContent = digits(chapter.id);
-
-        const copy = document.createElement('span');
-        copy.className = 'chapter-copy';
-        const title = document.createElement('strong');
-        title.textContent = chapter.title;
-        const meta = document.createElement('small');
-        const done = chapterProgress(chapter);
-        const progressText = done ? ` • أُنجز ${digits(done)}/${digits(chapter.items.length)}` : '';
-        meta.textContent = `${categoryLabel(chapter)} • ${digits(chapter.items.length)} ${chapter.items.length === 1 ? 'ذكر' : 'أذكار'}${progressText}${favorites.has(chapter.id) ? ' • ♥' : ''}`;
-        copy.append(title, meta);
-
-        const arrow = document.createElement('span');
-        arrow.className = 'chapter-arrow';
-        arrow.setAttribute('aria-hidden', 'true');
-        arrow.textContent = '‹';
-        button.append(number, copy, arrow);
-        return button;
-    }
-
-    function renderList() {
-        const normalizedQuery = normalize(query);
-        const visible = chapters.filter(chapter => {
-            const categoryMatches = filter === 'all'
-                || (filter === 'saved' ? favorites.has(chapter.id) : categoryFor(chapter) === filter);
-            if (!categoryMatches) return false;
-            if (!normalizedQuery) return true;
-            return normalize(chapter.title).includes(normalizedQuery)
-                || chapter.items.some(item => normalize(item.text).includes(normalizedQuery)
-                    || normalize(item.reference).includes(normalizedQuery));
-        });
-
-        $('chapter-list').replaceChildren(...visible.map(chapterCard));
-        $('visible-count').textContent = `${digits(visible.length)} باب`;
-        $('empty').hidden = visible.length > 0;
-    }
-
-    function repetitionLabel(total) {
-        if (total === 1) return 'مرة واحدة';
-        if (total === 2) return 'مرتان';
-        if (total >= 3 && total <= 10) return `${digits(total)} مرات`;
-        return `${digits(total)} مرة`;
-    }
-
-    function renderReader() {
-        if (!active) return;
-        const chapterIndex = chapters.findIndex(chapter => chapter.id === active.id);
-        $('reader-label').textContent = categoryLabel(active);
-        $('reader-title').textContent = active.title;
-        $('reader-count').textContent = `${digits(active.items.length)} ${active.items.length === 1 ? 'ذكر ودعاء' : 'ذكرًا ودعاءً'}`;
-        $('reader-position').textContent = `${digits(chapterIndex + 1)} / ${digits(chapters.length)}`;
-        $('previous').disabled = chapterIndex === 0;
-        $('next').disabled = chapterIndex === chapters.length - 1;
-        $('reader-favorite').textContent = favorites.has(active.id) ? '♥' : '♡';
-        $('reader-favorite').setAttribute('aria-pressed', String(favorites.has(active.id)));
-
-        const nodes = active.items.map((item, index) => {
-            const card = document.createElement('article');
-            card.className = 'dhikr';
-
-            const top = document.createElement('div');
-            top.className = 'dhikr-top';
-            const position = document.createElement('span');
-            position.textContent = `الذكر ${digits(index + 1)} من ${digits(active.items.length)}`;
-            const total = Math.max(1, Number(item.count) || 1);
-            const countBadge = document.createElement('span');
-            countBadge.className = 'count-badge';
-            countBadge.textContent = repetitionLabel(total);
-            top.append(position, countBadge);
-
-            const text = document.createElement('p');
-            text.className = 'dhikr-text';
-            text.dir = 'rtl';
-            text.textContent = item.text;
-
-            const reference = document.createElement('div');
-            reference.className = 'dhikr-reference';
-            const referenceLabel = document.createElement('span');
-            referenceLabel.textContent = 'المرجع';
-            const referenceText = document.createElement('p');
-            referenceText.textContent = item.reference || 'لم يُذكر مرجع في مصدر البيانات';
-            reference.append(referenceLabel, referenceText);
-
-            const bottom = document.createElement('div');
-            bottom.className = 'dhikr-bottom';
-            const helper = document.createElement('small');
-            helper.textContent = total === 1 ? 'اضغط عند القراءة' : `كرّر الذكر ${repetitionLabel(total)}`;
-            const button = document.createElement('button');
-            button.className = 'repeat';
-            button.type = 'button';
-            const key = `${active.id}:${item.id}`;
-            let current = Math.min(total, Math.max(0, Number(progress[key]) || 0));
-
-            const paintCounter = () => {
-                const done = current >= total;
-                button.textContent = done ? '✓ اكتمل' : `تم ${digits(current)} / ${digits(total)}`;
-                button.classList.toggle('done', done);
-                button.disabled = done;
-                button.setAttribute('aria-label', done
-                    ? `اكتمل الذكر ${digits(index + 1)}`
-                    : `تسجيل قراءة الذكر ${digits(index + 1)}: ${digits(current)} من ${digits(total)}`);
-            };
-            paintCounter();
-
-            button.addEventListener('click', () => {
-                if (current >= total) return;
-                current++;
-                progress[key] = current;
-                saveProgress();
-                paintCounter();
-                renderList();
-            });
-
-            bottom.append(helper, button);
-            card.append(top, text, reference, bottom);
-            return card;
-        });
-
-        $('reader-items').replaceChildren(...nodes);
-        $('reader-items').scrollTop = 0;
-    }
-
-    function openChapter(chapterOrId) {
-        const found = typeof chapterOrId === 'object'
-            ? chapterOrId
-            : chapters.find(chapter => chapter.id === Number(chapterOrId));
-        if (!found) return false;
-        lastFocus = document.activeElement;
-        active = found;
-        renderReader();
-        $('reader').hidden = false;
-        document.body.classList.add('modal-open');
-        $('close-reader').focus();
-        history.replaceState(null, '', `#chapter=${active.id}`);
-        return true;
-    }
-
-    function findChapterByTitleHint(hint) {
-        const wanted = normalize(hint);
-        return chapters.find(chapter => normalize(chapter.title).includes(wanted))
-            || chapters.find(chapter => wanted.includes(normalize(chapter.title)));
-    }
-
-    function closeChapter() {
-        active = null;
-        $('reader').hidden = true;
-        document.body.classList.remove('modal-open');
-        history.replaceState(null, '', location.pathname + location.search);
-        lastFocus?.focus();
-    }
-
-    function moveChapter(direction) {
-        const index = chapters.findIndex(chapter => chapter.id === active?.id);
-        const next = chapters[index + direction];
-        if (!next) return;
-        active = next;
-        renderReader();
-        history.replaceState(null, '', `#chapter=${active.id}`);
-    }
-
-    $('chapter-list').addEventListener('click', event => {
-        const button = event.target.closest('[data-id]');
-        if (button) openChapter(button.dataset.id);
-    });
-
-    document.querySelectorAll('[data-open-title]').forEach(button => button.addEventListener('click', () => {
-        const chapter = findChapterByTitleHint(button.dataset.openTitle);
-        if (chapter) {
-            openChapter(chapter);
-            return;
-        }
-        query = button.dataset.openTitle;
-        $('search').value = query;
-        renderList();
-        $('library').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }));
-
-    $('search').addEventListener('input', event => {
-        query = event.target.value;
-        renderList();
-    });
-
-    $('filters').addEventListener('click', event => {
-        const button = event.target.closest('[data-filter]');
-        if (!button) return;
-        filter = button.dataset.filter;
-        document.querySelectorAll('[data-filter]').forEach(candidate => candidate.classList.toggle('selected', candidate === button));
-        renderList();
-    });
-
-    $('reader-favorite').addEventListener('click', () => {
-        if (!active) return;
-        favorites.has(active.id) ? favorites.delete(active.id) : favorites.add(active.id);
-        saveFavorites();
-        renderReader();
-        renderList();
-    });
-
-    $('close-reader').addEventListener('click', closeChapter);
-    document.querySelector('[data-close]').addEventListener('click', closeChapter);
-    $('previous').addEventListener('click', () => moveChapter(-1));
-    $('next').addEventListener('click', () => moveChapter(1));
-
-    document.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && active) closeChapter();
-        if (event.key !== 'Tab' || !active) return;
-        const focusable = [...$('reader').querySelectorAll('button:not(:disabled)')];
-        if (!focusable.length) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
-            first.focus();
-        }
-    });
-
-    let theme = 'light';
-    try { theme = localStorage.getItem('quranHomeTheme') || 'light'; }
-    catch (_) { /* Use the light theme. */ }
-    if (theme === 'dark') document.body.classList.add('dark');
-    $('theme').textContent = document.body.classList.contains('dark') ? '☀' : '☾';
-    $('theme').addEventListener('click', () => {
-        document.body.classList.toggle('dark');
-        const dark = document.body.classList.contains('dark');
-        $('theme').textContent = dark ? '☀' : '☾';
-        try { localStorage.setItem('quranHomeTheme', dark ? 'dark' : 'light'); }
-        catch (_) { /* Theme persistence is optional. */ }
-    });
-
-    fetch('./data/adhkar.json')
-        .then(response => {
-            if (!response.ok) throw new Error('Failed to load adhkar');
-            return response.json();
-        })
-        .then(data => {
-            chapters = data.filter(chapter => Number.isInteger(chapter.id)
-                && typeof chapter.title === 'string'
-                && Array.isArray(chapter.items));
-            const itemCount = chapters.reduce((sum, chapter) => sum + chapter.items.length, 0);
-            $('stat-chapters').textContent = `${digits(chapters.length)} بابًا`;
-            $('stat-items').textContent = `${digits(itemCount)} ذكرًا ودعاءً`;
-            renderList();
-            const match = location.hash.match(/^#chapter=(\d+)$/);
-            if (match) openChapter(Number(match[1]));
-        })
-        .catch(error => {
-            console.error(error);
-            $('chapter-list').textContent = 'تعذّر تحميل الأذكار من ملفات التطبيق.';
-        });
+'use strict';
+const $=id=>document.getElementById(id);
+const FAVORITES_KEY='adhkarFavoritesV2',PROGRESS_KEY='adhkarProgressV2';
+const digits=v=>String(v).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const normalize=v=>String(v||'').normalize('NFKD').replace(/[\u064B-\u065F\u0670\u0640]/g,'').replace(/[إأآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[ﷺ]/g,'').replace(/[^\u0621-\u063A\u0641-\u064A0-9]+/g,' ').trim().toLowerCase();
+const read=(k,d)=>{try{const r=localStorage.getItem(k);return r===null?d:JSON.parse(r)}catch{return d}};
+const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const today=()=>{const n=new Date();return `${n.getFullYear()}-${n.getMonth()+1}-${n.getDate()}`};
+const CATEGORY_META={daily:'اليوم والليلة',prayer:'الصلاة والعبادة',wellbeing:'الهم والمرض',social:'الناس والأسرة',travel:'السفر والطبيعة',general:'أذكار وآداب'};
+const CATEGORY_RULES=[
+ ['prayer',['صلاه','المسجد','اذان','اقامه','ركوع','سجود','تشهد','استفتاح','قنوت','وتر','استخاره','بعد السلام']],
+ ['wellbeing',['هم','حزن','كرب','مرض','مريض','رقي','فزع','مصيبه','شيطان','وسوس','حسد','حمى','الم في الجسد','الدين']],
+ ['travel',['سفر','ركوب','دابه','قريه','بلده','السوق','مطر','ريح','رعد','هلال','صعود','نزول','المسافر']],
+ ['social',['زواج','مولود','تعزيه','العطاس','عطس','مجلس','ضيف','الاهل','اخيه','غضب','السلام','احبك']],
+ ['daily',['استيقاظ','نوم','صباح','مساء','الخلاء','وضوء','ثوب','منزل','طعام','شراب','لبن','صائم','افطار','جماع','لباس']]
+];
+const BENEFITS=[
+ {match:'لا اله الا الله وحده لا شريك له له الملك وله الحمد وهو علي كل شيء قدير',min:100,title:'فضل مائة تهليلة',text:'ورد أنها تعدل عتق عشر رقاب، وتُكتب بها مائة حسنة، وتُمحى بها مائة سيئة، وتكون حرزًا من الشيطان يومه حتى يمسي.',source:'البخاري 3293، ومسلم 2691'},
+ {match:'سبحان الله وبحمده',min:100,title:'فضل مائة تسبيحة',text:'من قالها مائة مرة حين يصبح وحين يمسي لم يأت أحد يوم القيامة بأفضل مما جاء به إلا من قال مثلها أو زاد.',source:'مسلم 2692'},
+ {match:'حسبي الله لا اله الا هو عليه توكلت وهو رب العرش العظيم',min:7,title:'كفاية ما أهمّك',text:'ورد في حصن المسلم: من قالها سبع مرات صباحًا ومساءً كفاه الله ما أهمه من أمر الدنيا والآخرة.',source:'ابن السني 71 مرفوعًا، وأبو داود 5081 موقوفًا؛ وانظر زاد المعاد 2/376'},
+ {match:'بسم الله الذي لا يضر مع اسمه شيء في الارض ولا في السماء وهو السميع العليم',min:3,title:'سبب للسلامة من الضرر',text:'من قالها ثلاثًا إذا أصبح وثلاثًا إذا أمسى ورد أنه لا يضره شيء.',source:'أبو داود 5088، الترمذي 3388، ابن ماجه 3869'},
+ {match:'رضيت بالله ربا وبالاسلام دينا وبمحمد نبيا',min:3,title:'رضا يوم القيامة',text:'ورد: من قالها ثلاثًا حين يصبح وثلاثًا حين يمسي كان حقًا على الله أن يرضيه يوم القيامة.',source:'أحمد 18967، والنسائي في عمل اليوم والليلة 4'}
+];
+let chapters=[],active=null,itemIndex=0,filter='all',query='',favorites=new Set(read(FAVORITES_KEY,[])),lastFocus=null,indexFocus=null,showingReport=false;
+const stored=read(PROGRESS_KEY,null);let progress=stored?.date===today()&&stored?.values?stored.values:{};saveProgress();
+function saveProgress(){write(PROGRESS_KEY,{date:today(),values:progress})}
+function categoryFor(ch){const t=normalize(ch.title);for(const [cat,words] of CATEGORY_RULES)if(words.some(w=>t.includes(normalize(w))))return cat;return'general'}
+function chapterDone(ch){return ch.items.reduce((n,it)=>n+(current(ch,it)>=target(it)?1:0),0)}
+function target(it){return Math.max(1,Number(it.count)||1)}
+function key(ch,it){return `${ch.id}:${it.id}`}
+function current(ch,it){return Math.min(target(it),Math.max(0,Number(progress[key(ch,it)])||0))}
+function setCurrent(ch,it,value){progress[key(ch,it)]=Math.min(target(it),Math.max(0,value));saveProgress()}
+function chapterCard(ch,compact=false){const b=document.createElement('button');b.type='button';b.className=compact?'index-entry':'chapter';b.dataset.id=ch.id;const num=document.createElement('span');num.className='chapter-index';num.textContent=digits(ch.id);const copy=document.createElement('span');copy.className='chapter-copy';const title=document.createElement('strong');title.textContent=ch.title;const small=document.createElement('small');const done=chapterDone(ch);small.textContent=`${CATEGORY_META[categoryFor(ch)]} • ${digits(ch.items.length)} ${ch.items.length===1?'ذكر':'أذكار'}${done?` • ${digits(done)}/${digits(ch.items.length)}`:''}`;copy.append(title,small);const state=document.createElement('span');state.className='chapter-state'+(done===ch.items.length&&ch.items.length?' done':'');state.setAttribute('aria-hidden','true');b.append(num,copy,state);return b}
+function filtered(q=query,f=filter){const n=normalize(q);return chapters.filter(ch=>(f==='all'||(f==='saved'?favorites.has(ch.id):categoryFor(ch)===f))&&(!n||normalize(ch.title).includes(n)||ch.items.some(it=>normalize(it.text).includes(n)||normalize(it.reference).includes(n))))}
+function renderList(){const list=filtered();$('chapter-list').replaceChildren(...list.map(ch=>chapterCard(ch)));$('visible-count').textContent=`${digits(list.length)} باب`;$('empty').hidden=!!list.length}
+function renderIndex(q=''){const n=normalize(q);const list=chapters.filter(ch=>!n||normalize(ch.title).includes(n)||ch.items.some(it=>normalize(it.text).includes(n)));$('index-list').replaceChildren(...list.map(ch=>chapterCard(ch,true)))}
+function findChapter(hint){const w=normalize(hint);let found=chapters.find(ch=>normalize(ch.title).includes(w))||chapters.find(ch=>w.includes(normalize(ch.title)));if(!found&&w.includes('المساء'))found=chapters.find(ch=>{const t=normalize(ch.title);return t.includes('الصباح')&&t.includes('المساء')});if(!found&&w.includes('الصباح'))found=chapters.find(ch=>{const t=normalize(ch.title);return t.includes('الصباح')&&t.includes('المساء')});return found}
+function createBeads(){const ring=$('tasbih-ring');if(ring.childElementCount)return;for(let i=0;i<16;i++){const bead=document.createElement('span');bead.className='bead';bead.style.setProperty('--a',`${i*22.5}deg`);ring.append(bead)}}
+function itemState(){return active?.items[itemIndex]||null}
+function paintTasbih(){const it=itemState();if(!it)return;const now=current(active,it),total=target(it);$('tasbih-current').textContent=digits(now);$('tasbih-target').textContent=`من ${digits(total)}`;$('tasbih').classList.toggle('complete',now>=total);$('item-status').textContent=now>=total?'اكتمل':'التكرار '+digits(now)+' / '+digits(total);$('tasbih').style.setProperty('--turn',`${now*18}deg`);$('tasbih').setAttribute('aria-label',`عداد الذكر: ${digits(now)} من ${digits(total)}`)}
+function increment(amount=1){const it=itemState();if(!it)return;const before=current(active,it),after=Math.min(target(it),before+amount);if(after===before)return;setCurrent(active,it,after);paintTasbih();renderList();if(after===target(it)){$('tasbih-hint').textContent=itemIndex===active.items.length-1?'اكتمل آخر ذكر. اسحب يمينًا لرؤية التقرير':'اكتمل. اسحب يمينًا للذكر التالي'}else $('tasbih-hint').textContent='اضغط على السبحة أو حرّكها للتكرار'}
+function renderItem(){if(!active)return;showingReport=false;$('dhikr-slide').hidden=false;$('reader-report').hidden=true;$('reader-foot').hidden=false;const it=itemState(),total=active.items.length;$('reader-label').textContent=CATEGORY_META[categoryFor(active)];$('reader-title').textContent=active.title;$('reader-count').textContent=`${digits(total)} ${total===1?'ذكر':'ذكرًا ودعاءً'}`;$('item-position').textContent=`الذكر ${digits(itemIndex+1)} من ${digits(total)}`;$('reader-position').textContent=`${digits(itemIndex+1)} / ${digits(total)}`;$('dhikr-text').textContent=it.text;$('dhikr-reference').textContent=it.reference?`المرجع: ${it.reference}`:'المرجع غير مذكور في البيانات';$('reader-progress-fill').style.width=`${((itemIndex+1)/total)*100}%`;$('previous').disabled=itemIndex===0;$('next').querySelector('span').textContent=itemIndex===total-1?'التقرير':'التالي';$('reader-favorite').setAttribute('aria-pressed',String(favorites.has(active.id)));$('tasbih-hint').textContent=current(active,it)>=target(it)?(itemIndex===total-1?'اكتمل آخر ذكر. اسحب يمينًا لرؤية التقرير':'اكتمل. اسحب يمينًا للذكر التالي'):'اضغط على السبحة أو حرّكها للتكرار';paintTasbih();$('dhikr-slide').scrollTop=0;history.replaceState(null,'',`#chapter=${active.id}&item=${itemIndex+1}`)}
+function benefitCards(){if(!active)return[];const result=[];for(const rule of BENEFITS){const matched=active.items.find(it=>target(it)>=rule.min&&normalize(it.text).includes(normalize(rule.match))&&current(active,it)>=rule.min);if(matched)result.push(rule)}return result}
+function renderReport(){if(!active)return;showingReport=true;$('dhikr-slide').hidden=true;$('reader-report').hidden=false;$('reader-foot').hidden=true;$('reader-progress-fill').style.width='100%';const done=chapterDone(active),total=active.items.length,reps=active.items.reduce((n,it)=>n+current(active,it),0),pct=total?Math.round(done/total*100):0,complete=done===total&&total>0;$('report-title').textContent=complete?'أتممت هذا الباب':'وصلت لنهاية الباب';$('report-subtitle').textContent=complete?'تقبّل الله ذكرك. هذا ملخص جلستك والفضائل التي وردت نصًا فيما أكملته.':`أكملت ${digits(done)} من ${digits(total)}. يمكنك الرجوع لما بقي ثم العودة للتقرير.`;$('report-completed').textContent=digits(done);$('report-repetitions').textContent=digits(reps);$('report-percent').textContent=digits(pct)+'٪';$('report-missing').hidden=complete;const benefits=benefitCards(),box=$('report-benefits');box.replaceChildren();const note=document.createElement('div');note.className='benefit';const strong=document.createElement('strong');strong.textContent=benefits.length?'فضائل موثقة مما أكملت':'ملخص الجلسة';const p=document.createElement('p');p.textContent=benefits.length?'نعرض هنا فقط الفضائل المرتبطة بأذكار أكملت عددها الوارد في المصدر، ولا نضيف ثوابًا من عندنا.':'لا توجد في العناصر المكتملة فضيلة رقمية مضافة في تقريرنا. إنجاز الذكر نفسه ظاهر في الإحصاءات أعلاه.';note.append(strong,p);box.append(note);for(const b of benefits){const card=document.createElement('div');card.className='benefit';const h=document.createElement('strong');h.textContent=b.title;const tx=document.createElement('p');tx.textContent=b.text;const src=document.createElement('small');src.textContent='المصدر: '+b.source;card.append(h,tx,src);box.append(card)}history.replaceState(null,'',`#chapter=${active.id}&report=1`);$('reader-report').scrollTop=0}
+function goItem(next,direction=1){if(!active)return;if(next<0)return;if(next>=active.items.length){renderReport();return}const slide=$('dhikr-slide');slide.classList.add(direction>0?'slide-out-right':'slide-out-left');setTimeout(()=>{itemIndex=next;slide.classList.remove('slide-out-right','slide-out-left');renderItem()},120)}
+function openChapter(ch,start=0){if(!ch)return;lastFocus=document.activeElement;active=ch;itemIndex=Math.min(ch.items.length-1,Math.max(0,start));$('reader').hidden=false;document.body.classList.add('reader-open');renderItem();$('close-reader').focus()}
+function closeReader(){active=null;showingReport=false;$('reader').hidden=true;document.body.classList.remove('reader-open');history.replaceState(null,'',location.pathname+location.search);lastFocus?.focus()}
+function firstMissing(){if(!active)return 0;const i=active.items.findIndex(it=>current(active,it)<target(it));return i<0?0:i}
+function openIndex(){indexFocus=document.activeElement;renderIndex();$('index-search').value='';$('index-backdrop').hidden=false;$('index-sheet').classList.add('open');$('index-sheet').setAttribute('aria-hidden','false');document.body.classList.add('modal-open');setTimeout(()=>$('index-search').focus(),40)}
+function closeIndex(){ $('index-sheet').classList.remove('open');$('index-sheet').setAttribute('aria-hidden','true');$('index-backdrop').hidden=true;document.body.classList.remove('modal-open');indexFocus?.focus() }
+createBeads();
+$('chapter-list').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(b)openChapter(chapters.find(ch=>ch.id===Number(b.dataset.id))) });
+$('index-list').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;const ch=chapters.find(x=>x.id===Number(b.dataset.id));closeIndex();openChapter(ch)});
+document.querySelectorAll('[data-open-title]').forEach(b=>b.addEventListener('click',()=>{const ch=findChapter(b.dataset.openTitle);if(ch)openChapter(ch);else{query=b.dataset.openTitle;$('search').value=query;renderList();$('library').scrollIntoView({behavior:'smooth'})}}));
+$('search').addEventListener('input',e=>{query=e.target.value;renderList()});$('index-search').addEventListener('input',e=>renderIndex(e.target.value));
+$('filters').addEventListener('click',e=>{const b=e.target.closest('[data-filter]');if(!b)return;filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('selected',x===b));renderList()});
+$('open-index').addEventListener('click',openIndex);$('close-index').addEventListener('click',closeIndex);$('index-backdrop').addEventListener('click',closeIndex);
+$('close-reader').addEventListener('click',closeReader);$('previous').addEventListener('click',()=>goItem(itemIndex-1,-1));$('next').addEventListener('click',()=>goItem(itemIndex+1,1));
+$('reader-favorite').addEventListener('click',()=>{if(!active)return;favorites.has(active.id)?favorites.delete(active.id):favorites.add(active.id);write(FAVORITES_KEY,[...favorites]);$('reader-favorite').setAttribute('aria-pressed',String(favorites.has(active.id)));renderList()});
+$('report-missing').addEventListener('click',()=>{itemIndex=firstMissing();renderItem()});$('report-finish').addEventListener('click',closeReader);
+const tasbih=$('tasbih');let beadPointer=null,beadLastX=0,beadLastY=0,beadCarry=0;
+tasbih.addEventListener('pointerdown',e=>{e.stopPropagation();beadPointer=e.pointerId;beadLastX=e.clientX;beadLastY=e.clientY;beadCarry=0;tasbih.classList.add('dragging');tasbih.setPointerCapture?.(e.pointerId)});
+tasbih.addEventListener('pointermove',e=>{if(e.pointerId!==beadPointer)return;e.preventDefault();const dx=e.clientX-beadLastX,dy=e.clientY-beadLastY,dist=Math.hypot(dx,dy);beadCarry+=dist;beadLastX=e.clientX;beadLastY=e.clientY;tasbih.style.setProperty('--drag',`${Math.min(50,beadCarry/3)}deg`);const steps=Math.floor(beadCarry/24);if(steps){increment(steps);beadCarry-=steps*24}});
+function endBead(e){if(e.pointerId!==beadPointer)return;tasbih.classList.remove('dragging');tasbih.style.setProperty('--drag','0deg');if(beadCarry<8)increment(1);beadPointer=null;beadCarry=0}
+tasbih.addEventListener('pointerup',endBead);tasbih.addEventListener('pointercancel',e=>{if(e.pointerId===beadPointer){tasbih.classList.remove('dragging');tasbih.style.setProperty('--drag','0deg');beadPointer=null;beadCarry=0}});tasbih.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();increment(1)}});
+let swipe=null;const viewport=$('reader-viewport');viewport.addEventListener('pointerdown',e=>{if(showingReport||e.target.closest('button,input,.tasbih,a'))return;swipe={id:e.pointerId,x:e.clientX,y:e.clientY}});viewport.addEventListener('pointerup',e=>{if(!swipe||swipe.id!==e.pointerId)return;const dx=e.clientX-swipe.x,dy=e.clientY-swipe.y;swipe=null;if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.15){if(dx>0)goItem(itemIndex+1,1);else goItem(itemIndex-1,-1)}});viewport.addEventListener('pointercancel',()=>swipe=null);
+let theme='light';try{theme=localStorage.getItem('quranHomeTheme')||'light'}catch{}if(theme==='dark')document.body.classList.add('dark');$('theme').addEventListener('click',()=>{document.body.classList.toggle('dark');const dark=document.body.classList.contains('dark');try{localStorage.setItem('quranHomeTheme',dark?'dark':'light')}catch{}document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#14201a':'#f6f7f1')});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('index-backdrop').hidden)closeIndex();else if(active)closeReader()});
+fetch('./data/adhkar.json').then(r=>{if(!r.ok)throw Error('load');return r.json()}).then(data=>{chapters=data.filter(ch=>Number.isInteger(ch.id)&&typeof ch.title==='string'&&Array.isArray(ch.items));$('stat-chapters').textContent=`${digits(chapters.length)} بابًا`;$('stat-items').textContent=`${digits(chapters.reduce((n,ch)=>n+ch.items.length,0))} ذكرًا ودعاءً`;renderList();renderIndex();const p=new URLSearchParams(location.hash.replace(/^#/,'')),id=Number(p.get('chapter'));if(id){const ch=chapters.find(x=>x.id===id);if(ch){openChapter(ch,Math.max(0,Number(p.get('item')||1)-1));if(p.get('report')==='1')renderReport()}}}).catch(()=>{$('chapter-list').textContent='تعذّر تحميل الأذكار من ملفات التطبيق.'});
 })();
