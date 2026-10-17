@@ -45,12 +45,17 @@ IP وUser-Agent والمسار المطلوب وفق عمل HTTPS المعتاد
 default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
 font-src 'self'; img-src 'self' data: blob:; media-src 'self' https: blob:;
 connect-src 'self' https:; worker-src 'self'; object-src 'none';
-base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+base-uri 'self'; form-action 'self'
 ```
 
 Meta CSP لا تدعم كل توجيهات الترويسة مثل `frame-ancestors`. عند التحويل يجب ضبط WebView
 نفسه: عدم السماح بالملاحة العامة داخله، تعطيل الوصول غير اللازم للملفات، فتح الروابط
 الخارجية في متصفح النظام، ومنع mixed content.
+
+لا تستخدم الصفحات `upgrade-insecure-requests` داخل Meta CSP: هذا التوجيه حوّل ملفات CSS
+وJavaScript المحلية إلى HTTPS عند تشغيل خادم التطوير عبر عنوان LAN مثل
+`http://192.168.1.3:3000` وأسقط التصميم لأن الخادم HTTP فقط. في إصدار Android أو استضافة
+HTTPS تكون الروابط النسبية HTTPS تلقائيًا، بينما تمنع بقية السياسة المصادر غير المصرح بها.
 
 ## صلاحيات Android المقترحة
 

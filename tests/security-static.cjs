@@ -13,6 +13,8 @@ for (const file of htmlFiles) {
     const html = fs.readFileSync(path.join(root, file), 'utf8');
     const csp = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"/i)?.[1] || '';
     requiredCsp.forEach(directive => assert.ok(csp.includes(directive), `${file} CSP missing ${directive}`));
+    assert.equal(csp.includes('upgrade-insecure-requests'), false,
+        `${file} must keep LAN HTTP assets on the current origin`);
     assert.match(html, /<meta name="referrer" content="no-referrer">/i, `${file} must suppress referrer leakage`);
     assert.match(html, /<script src="service-worker-register\.js"><\/script>/, `${file} must prepare offline use`);
     for (const script of html.matchAll(/<script\s+[^>]*src="([^"]+)"/gi)) {

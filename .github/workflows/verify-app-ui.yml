@@ -19,6 +19,7 @@ on:
       - 'library.js'
       - 'unified-nav.css'
       - 'sw.js'
+      - 'tests/lan-http-assets.cjs'
       - 'tests/ui-pages.cjs'
       - '.github/workflows/verify-app-ui.yml'
   pull_request:
@@ -39,6 +40,7 @@ on:
       - 'library.js'
       - 'unified-nav.css'
       - 'sw.js'
+      - 'tests/lan-http-assets.cjs'
       - 'tests/ui-pages.cjs'
 
 jobs:
@@ -46,6 +48,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install browser regression dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq chromium
+          npm install --no-save --no-package-lock playwright@1.56.1
       - name: Check JavaScript syntax
         run: |
           node --check adhkar.js
@@ -56,3 +63,7 @@ jobs:
         run: node tests/ui-pages.cjs
       - name: Verify Adhkar corpus
         run: node tests/adhkar-data.cjs
+      - name: Verify LAN HTTP assets and bounded SVG icons
+        env:
+          QURAN_BROWSER_PATH: /usr/bin/chromium
+        run: node tests/lan-http-assets.cjs
