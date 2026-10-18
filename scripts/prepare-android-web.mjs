@@ -1,4 +1,4 @@
-import { cp, mkdir, readdir, rm, stat, readFile } from 'node:fs/promises';
+import { cp, mkdir, readdir, rm, stat, readFile, writeFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 
 const root = process.cwd();
@@ -48,7 +48,7 @@ if (tafsir.api_key !== 'arabic_moyassar' || tafsir.total_verses !== 6236 ||
   throw new Error('The offline tafsir dataset is incomplete');
 }
 await mkdir(join(out, 'data'), { recursive: true });
-await (await import('node:fs/promises')).writeFile(tafsirDest, tafsirRaw);
+await writeFile(tafsirDest, tafsirRaw);
 
 const names = new Set(await readdir(out));
 if (!names.has('index.html')) {
