@@ -109,6 +109,23 @@
     owner.__savedMedia = { originalUrl: url, mediaUrl };
     return mediaUrl;
   };
+  // When offline, the default synchronized Mishary choice must still play.
+  // Switch only when network is clearly unavailable: these MP3Quran audio
+  // files are a different recording, so Foundation word timings are not reused.
+  const oldPrepare = core.AudioEngine.prototype.prepare;
+  core.AudioEngine.prototype.prepare = async function(options = {}) {
+    if (this.state.provider === 'quran-foundation' &&
+        Number(this.state.reciterId) === 7 &&
+        typeof navigator !== 'undefined' && navigator.onLine === false) {
+      await ready;
+      if (bundledReader) {
+        return this.selectMp3(bundledReader, bundledReader.moshaf[0], {
+          surah: this.state.surah, autoplay: options.autoplay
+        });
+      }
+    }
+    return oldPrepare.apply(this, [options]);
+  };
   core.CatalogService.prototype.cached = function() {
     return combineCatalog(oldCached.call(this));
   };
