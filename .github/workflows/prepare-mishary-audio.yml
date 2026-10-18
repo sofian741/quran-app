@@ -70,7 +70,7 @@ jobs:
           cd dist/mishary
           zip -q -0 ../../mishary-synced-v2.zip manifest.json *.mp3 *.json
           cd ../..
-          sha256sum mishary-offline-v1.zip
+          sha256sum mishary-synced-v2.zip
       - name: Publish audio-only asset as prerelease
         env:
           GH_TOKEN: ${{ github.token }}
@@ -79,7 +79,7 @@ jobs:
           if ! gh release view "$tag" >/dev/null 2>&1; then
             gh release create "$tag" --title "Synchronized Mishary audio + word timings (not an APK)" --notes "114 verified EveryAyah Alafasy surahs assembled with matching cpfair/quran-align CC BY 4.0 word-level segments, 6236 verses. Audio source: https://everyayah.com/ . IMPORTANT: verify recording redistribution permission before any public app distribution. This is NOT an Android APK." --prerelease --latest=false
           fi
-          gh release upload "$tag" mishary-offline-v1.zip --clobber
+          gh release upload "$tag" mishary-synced-v2.zip --clobber
       - name: Record verified audio release in the main branch
         run: |
           python3 - <<'PY'
@@ -87,7 +87,7 @@ jobs:
           from pathlib import Path
           from datetime import datetime, timezone
           manifest = json.loads(Path('dist/mishary/manifest.json').read_text(encoding='utf-8'))
-          archive = Path('mishary-offline-v1.zip')
+          archive = Path('mishary-synced-v2.zip')
           lines = [
               '# Mishary offline audio: verified asset receipt',
               '',
