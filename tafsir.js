@@ -2,7 +2,7 @@
     'use strict';
 
     // Bundled QuranEnc data is used locally; no API requests are made while reading.
-    const DATA_URL = './scripts/tafsir_muyassar.json';
+    const DATA_URL = './data/tafsir_muyassar.json';
     const sheet = document.getElementById('tafsir-sheet');
     const backdrop = document.getElementById('tafsir-backdrop');
     const closeButton = document.getElementById('close-tafsir');
