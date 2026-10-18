@@ -1,13 +1,6 @@
 name: Build Android APK
 
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - '**/*.md'
-      - 'tests/**'
-      - 'artifacts/**'
-      - 'RELEASE_AUDIT/**'
   workflow_dispatch:
 
 concurrency:
