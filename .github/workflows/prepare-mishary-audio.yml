@@ -1,0 +1,60 @@
+name: Prepare Mishary offline audio
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/prepare-mishary-audio.yml
+      - scripts/fetch-mishary-audio.py
+      - offline-mishary.js
+  workflow_dispatch:
+
+concurrency:
+  group: prepare-mishary-offline-audio
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  audio-only:
+    name: Prepare 114 surahs without building an APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install media tools
+        run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+      - name: Download and validate full Mishary Quran
+        run: python3 scripts/fetch-mishary-audio.py --output dist/mishary
+      - name: Package 114 offline surahs and metadata
+        run: |
+          python3 - <<'PY'
+          import json, hashlib
+          from pathlib import Path
+          base = Path('dist/mishary')
+          manifest = json.loads((base / 'manifest.json').read_text(encoding='utf-8'))
+          tracks = manifest['tracks']
+          if len(tracks) != 114 or {t['surah'] for t in tracks} != set(range(1,115)):
+              raise SystemExit('Incomplete Mishary set; cannot publish')
+          for entry in tracks:
+              path = base / entry['file']
+              if not path.is_file() or path.stat().st_size != entry['bytes']:
+                  raise SystemExit('Missing/corrupt file: ' + entry['file'])
+              if hashlib.sha256(path.read_bytes()).hexdigest() != entry['sha256']:
+                  raise SystemExit('Hash mismatch: ' + entry['file'])
+          print('Validated all 114 preinstalled recitations')
+          PY
+          cd dist/mishary
+          zip -q -0 ../../mishary-offline-v1.zip manifest.json *.mp3
+          cd ../..
+          sha256sum mishary-offline-v1.zip
+      - name: Publish audio-only asset as prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="assets-mishary-v1"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --title "Mishary offline audio assets (not an APK)" --notes "114 MP3Quran Mishary surahs pre-packaged for Noor Al Quran. Source: https://www.mp3quran.net/eng/afs ; copying policy: https://www.mp3quran.net/privacy-en.html . This asset is NOT an installable Android application." --prerelease --latest=false
+          fi
+          gh release upload "$tag" mishary-offline-v1.zip --clobber
