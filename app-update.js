@@ -27,7 +27,13 @@
     try {
       const response = await fetch(source + (source.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
       if (!response.ok) throw new Error('HTTP ' + response.status);
-      const info = await response.json();
+      const payload = await response.json();
+      const isGithubRelease = source.includes('api.github.com/repos/') && source.endsWith('/releases/latest');
+      const match = isGithubRelease ? /^qa-(\d+)$/.exec(payload.tag_name || '') : null;
+      const info = isGithubRelease ? {
+        versionCode: match ? Number(match[1]) : NaN,
+        apkUrl: payload.assets?.find(asset => asset.name === 'Noor-Al-Quran-debug.apk')?.browser_download_url
+      } : payload;
       const latest = Number(info.versionCode);
       const apk = info.apkUrl;
       if (!Number.isSafeInteger(latest) || latest <= 0 || typeof apk !== 'string') {
@@ -35,6 +41,7 @@
       }
       const download = new URL(apk, source);
       if (download.protocol !== 'https:') throw new Error('HTTPS required');
+      if (isGithubRelease && download.hostname !== 'github.com') throw new Error('Untrusted APK host');
       if (latest <= build) {
         show('تطبيقك مُحدّث بالفعل ✓ (0.1.' + build + ')');
         return;
@@ -46,7 +53,7 @@
       }
     } catch (error) {
       console.warn('Update check failed', error);
-      show('تعذّر التحقق من التحديثات. تأكد من الإنترنت أو مصدر التحديث.');
+      show('تعذّر التحقق من التحديثات. تأكد من الإنترنت وأن المستودع عام وله إصدار منشور.');
     } finally {
       button.disabled = false;
     }
