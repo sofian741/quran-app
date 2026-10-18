@@ -55,6 +55,13 @@ jobs:
           node --check scripts/prepare-android-web.mjs
           node --test tests/offline-audio.test.cjs
 
+      - name: Embed installed build number and update endpoint
+        env:
+          QA_BUILD_NUMBER: ${{ github.run_number }}
+          UPDATE_MANIFEST_URL: ${{ vars.NOOR_UPDATE_MANIFEST_URL }}
+        run: |
+          python3 scripts/write-android-build-info.py
+
       - name: Prepare bundled web app
         run: npm run android:prepare
 
