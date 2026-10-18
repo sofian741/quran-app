@@ -42,7 +42,7 @@ function build() {
     syncedMisharyChapter:async()=>chapter,
     mediaFor:async()=> 'https://localhost/offline/mishary/001.mp3'
   };
-  vm.runInNewContext(source,{window:{QuranAudio:{AudioEngine,VERSE_COUNTS:[7]},QuranDownloads:downloads},navigator,console});
+  vm.runInNewContext(source,{window:{QuranAudio:{AudioEngine,VERSE_COUNTS:[7]},QuranDownloads:downloads},navigator:{onLine:true},console});
   return {AudioEngine,downloads};
 }
 
