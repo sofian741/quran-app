@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: prepare-mishary-offline-audio
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
