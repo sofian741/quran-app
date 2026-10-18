@@ -55,6 +55,46 @@ jobs:
       - name: Sync web app
         run: npx cap sync android
 
+      - name: Restore stable QA signing key
+        run: |
+          base64 -d android-assets/noor-qa-signing.p12.b64 > android-assets/noor-qa-signing.p12
+          keytool -list -keystore android-assets/noor-qa-signing.p12 -storetype PKCS12 -storepass android -alias noor-qa >/dev/null
+
+      - name: Set increasing APK version and QA signature
+        env:
+          QA_BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+
+          path = Path('android/app/build.gradle')
+          source = path.read_text(encoding='utf-8')
+          build_number = int(os.environ['QA_BUILD_NUMBER'])
+          source, count = re.subn(r'\bversionCode\s+\d+', f'versionCode {build_number}', source, count=1)
+          if count != 1:
+              raise SystemExit('Could not set Android versionCode')
+          source, count = re.subn(r'\bversionName\s+["\'][^"\']+["\']',
+              f'versionName "0.1.{build_number}"', source, count=1)
+          if count != 1:
+              raise SystemExit('Could not set Android versionName')
+          signing = """
+              signingConfigs {
+                  debug {
+                      storeFile file('../../android-assets/noor-qa-signing.p12')
+                      storePassword 'android'
+                      keyAlias 'noor-qa'
+                      keyPassword 'android'
+                  }
+              }
+          """
+          if 'android {' not in source:
+              raise SystemExit('Missing Android Gradle block')
+          source = source.replace('android {', 'android {' + signing, 1)
+          path.write_text(source, encoding='utf-8')
+          print('QA build versionCode:', build_number)
+          PY
+
       - name: Reconstruct approved app icon
         run: |
           cat android-assets/icon-b64/*.part | base64 -d > android-assets/icon-source.jpg
