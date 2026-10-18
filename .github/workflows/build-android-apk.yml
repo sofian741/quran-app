@@ -55,7 +55,7 @@ jobs:
           node --check app-update.js
           node --check android-navigation.js
           node --check scripts/prepare-android-web.mjs
-          node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs
+          node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs
 
       - name: Embed installed build number and update endpoint
         env:
