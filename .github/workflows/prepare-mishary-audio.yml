@@ -80,15 +80,15 @@ jobs:
               '- Chapter count: **114/114**',
               f"- Transcoded MP3 size: **{sum(t['bytes'] for t in manifest['tracks']) / 1024**2:.1f} MiB**",
               f"- Release archive size: **{archive.stat().st_size / 1024**2:.1f} MiB**",
-              f"- Release ZIP SHA256: \`{hashlib.sha256(archive.read_bytes()).hexdigest()}\`",
-              '- Release tag: \`assets-mishary-v1\`',
+              f"- Release ZIP SHA256: {hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()}",
+              '- Release tag: assets-mishary-v1',
               '- No Android APK was built by this workflow.',
               f"- Prepared at (UTC): {datetime.now(timezone.utc).isoformat(timespec='seconds')}",
               ''
           ]
           folder = Path('docs')
           folder.mkdir(exist_ok=True)
-          (folder / 'MISHARY_AUDIO_READY.md').write_text('\\n'.join(lines), encoding='utf-8')
+          (folder / 'MISHARY_AUDIO_READY.md').write_text(chr(10).join(lines), encoding='utf-8')
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
