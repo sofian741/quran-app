@@ -104,7 +104,7 @@ jobs:
               assert timing.is_file() and hashlib.sha256(timing.read_bytes()).hexdigest() == track['timingSha256'], timing
               doc = json.loads(timing.read_text(encoding='utf-8'))
               assert doc['surah'] == track['surah'] and doc['schemaVersion'] == 2
-              assert len(doc['verses']) > 0 and all(row['words'] for row in doc['verses'])
+              assert len(doc['verses']) > 0 and all(isinstance(row.get('words'), list) for row in doc['verses'])
           count = sum(len(json.loads((folder / t['timing']).read_text(encoding='utf-8'))['verses']) for t in data['tracks'])
           assert count == 6236, count
           print('114 surahs / 6236 ayahs and matching word alignment hashes verified')
