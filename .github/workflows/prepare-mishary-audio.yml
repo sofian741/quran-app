@@ -27,6 +27,7 @@ jobs:
         run: |
           node --check offline-mishary.js
           node --check library.js
+          node --check mushaf-audio.js
           node --test tests/bundled-mishary.test.cjs
       - name: Install media tools
         run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
