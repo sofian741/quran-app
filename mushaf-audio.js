@@ -869,6 +869,14 @@
     }
 
     let progressStart = 0;
+    // Both the recitations library and mushaf share the same cache and index.
+    window.addEventListener('quran-downloads:change', () => {
+        if (!downloadBatch) renderDownloads();
+    });
+    window.addEventListener('storage', event => {
+        if (event.key === downloadsApi.INDEX_KEY && !downloadBatch) renderDownloads();
+    });
+
     downloads.addEventListener('change', event => {
         const detail = event.detail;
         if (detail.status === 'starting') progressStart = Date.now();
