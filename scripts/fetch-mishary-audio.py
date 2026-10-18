@@ -142,10 +142,14 @@ def main():
     (output / "manifest.json").unlink(missing_ok=True)
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, min(8, args.workers))) as pool:
         list(pool.map(lambda n: fetch_one(n, cache), ALL_SURAHS))
-    # Use bounded encoding concurrency to limit memory/CPU on CI machines.
+    # Encode a few recordings at a time to finish within the audio-only
+    # workflow budget while keeping ffmpeg memory and CPU usage bounded.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+        encoded = list(pool.map(
+            lambda n: transcode_one(n, cache, output, args.bitrate), ALL_SURAHS
+        ))
     tracks = []
-    for surah in ALL_SURAHS:
-        packaged = transcode_one(surah, cache, output, args.bitrate)
+    for surah, packaged in zip(ALL_SURAHS, encoded):
         raw = packaged.read_bytes()
         tracks.append({
             "surah": surah, "file": f"{surah:03}.mp3",
