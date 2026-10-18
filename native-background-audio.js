@@ -9,6 +9,7 @@
   const pending = () => { try { return JSON.parse(localStorage.getItem(pendingKey) || '[]'); } catch { return []; } };
   const save = jobs => localStorage.setItem(pendingKey, JSON.stringify(jobs));
   const original = api.DownloadManager.prototype.downloadTrack;
+  const originalHas = api.DownloadManager.prototype.has;
   const originalRemove = api.DownloadManager.prototype.remove;
   const originalClear = api.DownloadManager.prototype.clear;
   const originalMedia = api.mediaFor;
@@ -71,7 +72,6 @@
     if (this.list().some(item => item.url === url && item.nativePath)) return true;
     return originalHas.call(this, url);
   };
-  const originalHas = api.DownloadManager.prototype.has;
   api.DownloadManager.prototype.remove = async function(url) {
     const item = this.list().find(item => item.url === url);
     if (item?.nativeId) {
