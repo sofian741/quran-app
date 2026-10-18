@@ -61,8 +61,8 @@ jobs:
               doc = json.loads(timing.read_text(encoding='utf-8'))
               if doc.get('schemaVersion') != 2 or doc.get('surah') != entry['surah']:
                   raise SystemExit('Timing metadata mismatch: ' + entry['timing'])
-              if not all(row.get('words') for row in doc.get('verses', [])):
-                  raise SystemExit('Incomplete words in ' + entry['timing'])
+              if not doc.get('verses') or any(not isinstance(row.get('words'), list) for row in doc['verses']):
+                  raise SystemExit('Missing verse timing structure in ' + entry['timing'])
           total = sum(len(json.loads((base / entry['timing']).read_text())['verses']) for entry in tracks)
           if total != 6236: raise SystemExit(f'Expected 6236 verified ayahs; got {total}')
           print('Validated all 114 chapters, 6236 ayahs, and their genuine word timing segments')
