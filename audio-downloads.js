@@ -141,7 +141,37 @@
         }
     }
 
-    const api = { CACHE_NAME, INDEX_KEY, DownloadManager, humanSize };
+    // Play saved recordings directly from Cache Storage. Android WebView may not
+    // route cross-origin HTMLAudioElement range requests through the service worker.
+    // A local blob: URL works without a network request or a controlling SW.
+    async function mediaFor(owner, originalUrl) {
+        if (owner.__savedMedia?.originalUrl === originalUrl) return owner.__savedMedia.mediaUrl;
+        releaseMedia(owner);
+        let mediaUrl = originalUrl;
+        if (typeof caches !== 'undefined' && typeof URL.createObjectURL === 'function') {
+            try {
+                const response = await (await caches.open(CACHE_NAME))
+                    .match(originalUrl, { ignoreVary: true });
+                if (response?.ok && response.type !== 'opaque') {
+                    const blob = await response.blob();
+                    if (blob.size > 0) mediaUrl = URL.createObjectURL(blob);
+                }
+            } catch (error) {
+                console.warn('Could not open saved recording', error);
+            }
+        }
+        owner.__savedMedia = { originalUrl, mediaUrl };
+        return mediaUrl;
+    }
+
+    function releaseMedia(owner) {
+        if (owner?.__savedMedia?.mediaUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(owner.__savedMedia.mediaUrl);
+        }
+        if (owner) owner.__savedMedia = null;
+    }
+
+    const api = { CACHE_NAME, INDEX_KEY, DownloadManager, humanSize, mediaFor, releaseMedia };
     if (typeof window !== 'undefined') window.QuranDownloads = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
@@ -154,6 +184,7 @@
 
     if (typeof window === 'undefined') return;
     const core = window.QuranAudio;
+    const downloadsApi = window.QuranDownloads;
     const AudioEngine = core?.AudioEngine;
     if (!AudioEngine || AudioEngine.prototype.__continuousChapterAudioV1) return;
 
@@ -234,8 +265,11 @@
         const promise = (async () => {
             const url = `${core.QURAN_API}/chapter_recitations/${Number(reciterId)}/${Number(surah)}?segments=true`;
             let response = null;
+            if (navigator.onLine === false && typeof caches !== 'undefined') {
+                response = await (await caches.open(METADATA_CACHE)).match(url);
+            }
             try {
-                response = await fetch(url, { cache: 'no-cache' });
+                if (!response) response = await fetch(url, { cache: 'no-cache' });
                 if (response.ok && typeof caches !== 'undefined') {
                     const cache = await caches.open(METADATA_CACHE);
                     await cache.put(url, response.clone());
@@ -410,9 +444,11 @@
             this.state.position = target;
             this.pendingResume = 0;
 
-            if (!sameTrack || this.audio.src !== chapter.audioUrl) {
+            const mediaUrl = await downloadsApi.mediaFor(this, chapter.audioUrl);
+            if (version !== this.prepareVersion) return false;
+            if (!sameTrack || this.audio.src !== mediaUrl) {
                 this.audio.preload = 'auto';
-                this.audio.src = chapter.audioUrl;
+                this.audio.src = mediaUrl;
                 this.audio.load();
                 if (target > 0) {
                     await waitForMetadata(this.audio);
@@ -540,6 +576,7 @@
     };
 
     proto.destroy = function(...args) {
+        downloadsApi.releaseMedia(this);
         this.__continuousChapter = null;
         this.__continuousAudio = null;
         return originalDestroy.apply(this, args);
