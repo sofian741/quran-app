@@ -34,20 +34,27 @@
   }
 
   function placeAt(engine, seconds) {
-    if (engine.audio.readyState >= 1) {
-      engine.audio.currentTime = Math.min(Math.max(0, seconds), Math.max(0, engine.audio.duration - 0.02));
-    } else {
+    engine.__offlineSeekPending = true;
+    const apply = () => {
+      try {
+        const duration = Number(engine.audio.duration);
+        const max = Number.isFinite(duration) ? Math.max(0, duration - 0.02) : seconds;
+        engine.audio.currentTime = Math.min(Math.max(0, seconds), max);
+      } finally {
+        engine.__offlineSeekPending = false;
+      }
+    };
+    if (engine.audio.readyState >= 1) apply();
+    else {
       const targetVersion = engine.prepareVersion;
       engine.audio.addEventListener('loadedmetadata', () => {
-        if (engine.prepareVersion === targetVersion && isSynced(engine)) {
-          engine.audio.currentTime = Math.min(Math.max(0, seconds), Math.max(0, engine.audio.duration - 0.02));
-        }
+        if (engine.prepareVersion === targetVersion && isSynced(engine)) apply();
       }, { once: true });
     }
   }
 
   proto.__syncContinuousChapter = function() {
-    if (!isSynced(this) || this.__offlineSyncBusy) return;
+    if (!isSynced(this) || this.__offlineSyncBusy || this.__offlineSeekPending) return;
     const chapter = this.__offlineMisharyChapter;
     if (chapter.surah !== this.state.surah) return;
     const milliseconds = (Number(this.audio.currentTime) || 0) * 1000;
