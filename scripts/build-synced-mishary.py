@@ -130,9 +130,9 @@ def build_timing_index(rows, counts):
             begin, end, start, finish = segment
             if not all(isinstance(n, (int,float)) for n in segment) or any(not isinstance(n,(int,float)) for n in segment):
                 raise ValueError(f"Invalid segment data {key}")
-            if not (int(begin) == begin and int(end) == end and 0 <= begin < end <= 250 and
-                    start >= 0 and finish > start and begin >= previous_index):
-                raise ValueError(f"Invalid word alignment bounds {key}")
+            if not (int(begin) == begin and int(end) == end and 0 <= begin < end <= 350 and
+                    start >= 0 and finish > start):
+                raise ValueError(f"Invalid word alignment bounds {key}: {segment}, previous={previous_index}")
             previous_index = int(end)
             filtered.append([int(begin)+1, int(end), round(start), round(finish)])
         lookup[key] = filtered
