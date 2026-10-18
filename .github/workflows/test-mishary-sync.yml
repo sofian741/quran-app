@@ -1,0 +1,22 @@
+name: Test synchronized Mishary playback
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/test-mishary-sync.yml
+      - tests/offline-mishary-sync.test.cjs
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check audio modules and exact offline timing tests
+        run: |
+          node --check offline-mishary.js
+          node --check offline-mishary-sync.js
+          node --check mushaf-audio.js
+          node --test tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs
