@@ -811,32 +811,58 @@
     }
 
     function renderDownloads() {
-        const groups = new Map();
+        const reciters = new Map();
         downloads.list().forEach(item => {
-            const key = `${item.provider}:${item.reciterId}:${item.surah}`;
-            if (!groups.has(key)) groups.set(key, []);
-            groups.get(key).push(item);
+            const key = `${item.provider}:${item.reciterId}`;
+            if (!reciters.has(key)) reciters.set(key, { name: item.reciterName || 'القارئ', surahs: new Map() });
+            const reciter = reciters.get(key);
+            const surahKey = Number(item.surah);
+            if (!reciter.surahs.has(surahKey)) reciter.surahs.set(surahKey, []);
+            reciter.surahs.get(surahKey).push(item);
         });
         const fragment = document.createDocumentFragment();
-        groups.forEach(items => {
-            const row = document.createElement('div');
-            row.className = 'audio-download-item';
-            const bytes = items.reduce((sum, item) => sum + (Number(item.bytes) || 0), 0);
-            const label = document.createElement('span');
-            const first = items[0];
-            const verseFiles = items.filter(item => Number.isInteger(Number(item.ayah)) && Number(item.ayah) > 0);
-            const count = first.provider === 'quran-foundation' && verseFiles.length
-                ? ` • ${core.arabicDigits(verseFiles.length)}/${core.arabicDigits(core.VERSE_COUNTS[first.surah - 1])} آية`
-                : ' • تسجيل السورة';
-            label.textContent = `${first.reciterName} • سورة ${first.surahName}${count} • ${downloadsApi.humanSize(bytes)}`;
-            const remove = document.createElement('button');
-            remove.type = 'button'; remove.textContent = 'حذف';
-            remove.addEventListener('click', async () => {
-                remove.disabled = true;
-                await Promise.all(items.map(item => downloads.remove(item.url)));
-                renderDownloads();
+        reciters.forEach(reciter => {
+            const folder = document.createElement('details');
+            folder.className = 'audio-download-folder';
+            const summary = document.createElement('summary');
+            const title = document.createElement('strong');
+            title.textContent = '📁 ' + reciter.name;
+            const count = document.createElement('small');
+            count.textContent = core.arabicDigits(reciter.surahs.size) + ' سورة محفوظة';
+            summary.append(title, count);
+            folder.appendChild(summary);
+            const grid = document.createElement('div');
+            grid.className = 'audio-download-folder-grid';
+            [...reciter.surahs.entries()].sort((a, b) => a[0] - b[0]).forEach(([surah, items]) => {
+                const chip = document.createElement('div');
+                chip.className = 'audio-download-chip';
+                const label = document.createElement('span');
+                label.textContent = core.SURAH_NAMES[surah - 1] || items[0].surahName || 'سورة';
+                label.title = 'سورة ' + label.textContent;
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.textContent = '×';
+                remove.title = 'حذف تلاوة سورة ' + label.textContent;
+                remove.setAttribute('aria-label', remove.title);
+                remove.addEventListener('click', async () => {
+                    if (!confirm('حذف التلاوة المحفوظة لسورة ' + label.textContent + '؟')) return;
+                    remove.disabled = true;
+                    try {
+                        for (const item of items) await downloads.remove(item.url);
+                        chip.remove();
+                        count.textContent = core.arabicDigits(reciter.surahs.size - 1) + ' سورة محفوظة';
+                        if (!grid.children.length) folder.remove();
+                        refreshStorage();
+                    } catch (error) {
+                        remove.disabled = false;
+                        console.error('Unable to remove saved recitation', error);
+                    }
+                });
+                chip.append(label, remove);
+                grid.appendChild(chip);
             });
-            row.append(label, remove); fragment.appendChild(row);
+            folder.appendChild(grid);
+            fragment.appendChild(folder);
         });
         ui.downloadList.replaceChildren(fragment);
         refreshStorage();
