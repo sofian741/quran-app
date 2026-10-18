@@ -46,6 +46,15 @@ jobs:
       - name: Install Capacitor dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Check JavaScript syntax and offline audio tests
+        run: |
+          node --check audio-core.js
+          node --check audio-downloads.js
+          node --check qud-audio.js
+          node --check library.js
+          node --check scripts/prepare-android-web.mjs
+          node --test tests/offline-audio.test.cjs
+
       - name: Prepare bundled web app
         run: npm run android:prepare
 
