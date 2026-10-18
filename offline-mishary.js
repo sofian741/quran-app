@@ -112,6 +112,7 @@
   // When offline, the default synchronized Mishary choice must still play.
   // Switch only when network is clearly unavailable: these MP3Quran audio
   // files are a different recording, so Foundation word timings are not reused.
+  if (core.AudioEngine?.prototype) {
   const oldPrepare = core.AudioEngine.prototype.prepare;
   core.AudioEngine.prototype.prepare = async function(options = {}) {
     if (this.state.provider === 'quran-foundation' &&
@@ -126,6 +127,7 @@
     }
     return oldPrepare.apply(this, [options]);
   };
+  }
   core.CatalogService.prototype.cached = function() {
     return combineCatalog(oldCached.call(this));
   };
