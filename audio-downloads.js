@@ -263,6 +263,22 @@
         const key = `${Number(reciterId)}:${Number(surah)}`;
         if (chapterCache.has(key)) return chapterCache.get(key);
         const promise = (async () => {
+            // Android packages may contain a complete, properly licensed Mishary
+            // corpus. Never mix these exact timing data with another recording.
+            if (Number(reciterId) === 7 && typeof window.Capacitor?.isNativePlatform === 'function' &&
+                window.Capacitor.isNativePlatform()) {
+                const file = String(Number(surah)).padStart(3, '0');
+                try {
+                    const packaged = await fetch(`./offline/mishary/${file}.json`);
+                    if (packaged.ok) {
+                        const chapter = parseChapterPayload(await packaged.json(), reciterId, surah);
+                        const localUrl = new URL(`./offline/mishary/${file}.mp3`, location.href).href;
+                        chapter.audioUrl = localUrl;
+                        chapter.verses.forEach(verse => { verse.audioUrl = localUrl; });
+                        return chapter;
+                    }
+                } catch (_) { /* Authorized audio pack is optional. */ }
+            }
             const url = `${core.QURAN_API}/chapter_recitations/${Number(reciterId)}/${Number(surah)}?segments=true`;
             let response = null;
             if (navigator.onLine === false && typeof caches !== 'undefined') {
