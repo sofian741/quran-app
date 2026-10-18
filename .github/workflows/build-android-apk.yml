@@ -176,3 +176,13 @@ jobs:
           path: dist/Noor-Al-Quran-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish APK release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: qa-${{ github.run_number }}
+          name: Noor Al Quran QA 0.1.${{ github.run_number }}
+          files: dist/Noor-Al-Quran-debug.apk
+          make_latest: true
+          generate_release_notes: false
+          body: Temporary QA build for install-over updates. Not a Google Play release.
