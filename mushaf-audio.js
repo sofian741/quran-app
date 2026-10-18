@@ -52,6 +52,7 @@
     let renderedWord = null;
     let highlightedWords = [];
     let activeWordElement = null;
+    let activeWordElements = [];
     let highlightFrame = 0;
     let applyingState = false;
     let listenNotice = '';
@@ -328,6 +329,8 @@
 
     function clearHighlights() {
         ui.text.querySelectorAll('.audio-verse-band').forEach(element => element.remove());
+        activeWordElements.forEach(element => element.classList.remove('is-audio-word'));
+        activeWordElements = [];
         if (activeWordElement) activeWordElement.classList.remove('is-audio-word');
         // A page change can detach the previous active word from the reader.
         ui.text.querySelectorAll('.mushaf-word.is-audio-word').forEach(element => element.classList.remove('is-audio-word'));
@@ -396,6 +399,8 @@
         if (renderedVerse !== verseKey) {
             // Remove the previous verse's word cue immediately, even if the
             // next verse is on a page that has not finished rendering.
+            activeWordElements.forEach(element => element.classList.remove('is-audio-word'));
+            activeWordElements = [];
             if (activeWordElement) activeWordElement.classList.remove('is-audio-word');
             activeWordElement = null;
             renderedWord = null;
@@ -421,6 +426,7 @@
         const verseStart = Number(state.timing.timestampFrom);
         const verseEnd = Number(state.timing.timestampTo);
         let nextWord = null;
+        let nextWordEnd = null;
 
         if (validMapping &&
             (!Number.isFinite(verseStart) || milliseconds >= verseStart) &&
@@ -432,21 +438,33 @@
             if (milliseconds < first.start) {
                 // Some recordings omit the first word's segment.
                 nextWord = 1;
+                nextWordEnd = 1;
             } else if (milliseconds <= last.end + 60) {
                 for (let index = segments.length - 1; index >= 0; index--) {
                     if (milliseconds >= segments[index].start) {
                         nextWord = segments[index].word + (zeroBased ? 1 : 0);
+                        // Original alignment may group adjacent words that
+                        // were acoustically inseparable: highlight the group
+                        // together, never invent intermediate word timings.
+                        nextWordEnd = Number(segments[index].endWord) || nextWord;
                         break;
                     }
                 }
             }
         }
 
-        if (nextWord === renderedWord) return;
-        if (activeWordElement) activeWordElement.classList.remove('is-audio-word');
-        activeWordElement = nextWord ? highlightedWords[nextWord - 1] || null : null;
-        if (activeWordElement) activeWordElement.classList.add('is-audio-word');
-        renderedWord = nextWord;
+        const nextRange = nextWord ? `${nextWord}:${nextWordEnd || nextWord}` : null;
+        if (nextRange === renderedWord) return;
+        activeWordElements.forEach(element => element.classList.remove('is-audio-word'));
+        activeWordElements = [];
+        if (nextWord) {
+            for (let i = nextWord; i <= Math.min(count, nextWordEnd || nextWord); i++) {
+                const element = highlightedWords[i - 1];
+                if (element) { element.classList.add('is-audio-word'); activeWordElements.push(element); }
+            }
+        }
+        activeWordElement = activeWordElements[0] || null;
+        renderedWord = nextRange;
     }
 
     // HTMLAudioElement timeupdate fires only a few times per second. That can
