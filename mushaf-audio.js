@@ -801,10 +801,14 @@
     });
 
     async function refreshStorage() {
-        const savedBytes = downloads.list().reduce((sum, item) => sum + (Number(item.bytes) || 0), 0);
+        const tracks = downloads.list();
+        const builtIn = tracks.filter(item => item.bundled);
+        const added = tracks.filter(item => !item.bundled);
+        const addedBytes = added.reduce((sum, item) => sum + (Number(item.bytes) || 0), 0);
         const estimate = await downloads.estimate();
         const free = estimate ? Math.max(0, estimate.quota - estimate.usage) : null;
-        ui.storageInfo.textContent = `التلاوات المحفوظة: ${downloadsApi.humanSize(savedBytes)}` +
+        ui.storageInfo.textContent = (builtIn.length ? `مضمنة مع التطبيق: ${core.arabicDigits(builtIn.length)} سورة • ` : '') +
+            `التنزيلات الإضافية: ${downloadsApi.humanSize(addedBytes)}` +
             (free === null ? ' • المساحة المتاحة غير معروفة' :
                 ` • مساحة تخزين متاحة تقريبًا: ${downloadsApi.humanSize(free)}`) +
             ' • يُفضّل استخدام Wi-Fi لتنزيل المصحف كاملًا.';
@@ -844,21 +848,29 @@
                 remove.textContent = '×';
                 remove.title = 'حذف تلاوة سورة ' + label.textContent;
                 remove.setAttribute('aria-label', remove.title);
-                remove.addEventListener('click', async () => {
-                    if (!confirm('حذف التلاوة المحفوظة لسورة ' + label.textContent + '؟')) return;
-                    remove.disabled = true;
-                    try {
-                        for (const item of items) await downloads.remove(item.url);
-                        chip.remove();
-                        count.textContent = core.arabicDigits(reciter.surahs.size - 1) + ' سورة محفوظة';
-                        if (!grid.children.length) folder.remove();
-                        refreshStorage();
-                    } catch (error) {
-                        remove.disabled = false;
-                        console.error('Unable to remove saved recitation', error);
-                    }
-                });
-                chip.append(label, remove);
+                const packaged = items.every(item => item.bundled);
+                if (packaged) {
+                    const badge = document.createElement('small');
+                    badge.className = 'audio-bundled-mark';
+                    badge.textContent = 'مضمنة';
+                    chip.append(label, badge);
+                } else {
+                    remove.addEventListener('click', async () => {
+                        if (!confirm('حذف التلاوة المحفوظة لسورة ' + label.textContent + '؟')) return;
+                        remove.disabled = true;
+                        try {
+                            for (const item of items.filter(item => !item.bundled)) {
+                                await downloads.remove(item.url);
+                            }
+                            renderDownloads();
+                        } catch (error) {
+                            remove.disabled = false;
+                            console.error('Unable to remove saved recitation', error);
+                        }
+                    });
+                    chip.append(label, remove);
+                }
+
                 grid.appendChild(chip);
             });
             folder.appendChild(grid);
