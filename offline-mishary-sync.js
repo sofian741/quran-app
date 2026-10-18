@@ -128,7 +128,7 @@
       this.currentTiming = timing;
       this.trackUrl = chapter.audioUrl;
       const savedTime = Number(this.state.position) || 0;
-      const targetMs = savedTime >= timing.timestampFrom && savedTime < timing.timestampTo
+      const targetMs = savedTime * 1000 >= timing.timestampFrom && savedTime * 1000 < timing.timestampTo
         ? savedTime * 1000 : timing.timestampFrom;
       const target = targetMs / 1000;
       this.pendingResume = 0;
