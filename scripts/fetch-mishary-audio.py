@@ -81,11 +81,16 @@ def fetch_one(surah, raw_dir, retries=4):
             with http_open(url, timeout=120) as response, temp.open("wb") as output:
                 if response.status != 200:
                     raise OSError(f"Unexpected HTTP {response.status}")
+                expected_bytes = int(response.headers.get("Content-Length") or 0)
+                received_bytes = 0
                 while True:
                     data = response.read(1024 * 1024)
                     if not data:
                         break
                     output.write(data)
+                    received_bytes += len(data)
+                if expected_bytes and received_bytes != expected_bytes:
+                    raise OSError(f"Truncated source MP3: {received_bytes}/{expected_bytes}")
             check_mp3(temp)
             temp.replace(target)
             print(f"downloaded {file_name}: {target.stat().st_size:,} bytes", flush=True)
