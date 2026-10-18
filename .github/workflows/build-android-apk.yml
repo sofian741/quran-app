@@ -17,7 +17,7 @@ env:
 jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
 
     steps:
       - name: Checkout
@@ -64,6 +64,22 @@ jobs:
 
       - name: Prepare bundled web app
         run: npm run android:prepare
+
+      - name: Install audio verification and encoding tools
+        run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+
+      - name: Bundle all Mishary audio before Android packaging
+        run: |
+          python3 scripts/fetch-mishary-audio.py --output www/offline/mishary
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          folder = Path('www/offline/mishary')
+          data = json.loads((folder / 'manifest.json').read_text())
+          assert len(data['tracks']) == 114
+          assert all((folder / f"{n:03}.mp3").is_file() for n in range(1, 115))
+          print('All 114 chapters verified before Android packaging')
+          PY
 
       - name: Create Android project
         run: npx cap add android
