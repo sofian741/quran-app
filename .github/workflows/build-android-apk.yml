@@ -57,6 +57,7 @@ jobs:
           node --check qud-audio.js
           node --check library.js
           node --check app-update.js
+          node --check android-navigation.js
           node --check scripts/prepare-android-web.mjs
           node --test tests/offline-audio.test.cjs
 
@@ -75,6 +76,24 @@ jobs:
 
       - name: Sync web app
         run: npx cap sync android
+
+      - name: Keep Android screen awake while the app is open
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          files = list(Path('android/app/src/main/java').rglob('MainActivity.java'))
+          if len(files) != 1:
+              raise SystemExit('Expected one Capacitor MainActivity')
+          path = files[0]
+          source = path.read_text()
+          source = source.replace('public class MainActivity extends BridgeActivity {',
+              'public class MainActivity extends BridgeActivity {\n'
+              '  @Override public void onCreate(android.os.Bundle state) {\n'
+              '    super.onCreate(state);\n'
+              '    getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);\n'
+              '  }')
+          path.write_text(source)
+          PY
 
       - name: Restore stable QA signing key
         run: |
