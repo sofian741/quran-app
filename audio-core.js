@@ -549,6 +549,9 @@
                     if (!url) throw new Error('Surah is unavailable for this recording');
                 }
                 if (version !== this.prepareVersion) return false;
+                const mediaUrl = window.QuranDownloads?.mediaFor
+                    ? await window.QuranDownloads.mediaFor(this, url) : url;
+                if (version !== this.prepareVersion) return false;
                 const pending = this.nextVerseAudio;
                 const canReuse = this.state.provider === 'quran-foundation' &&
                     pending?.reciterId === this.state.reciterId &&
@@ -568,10 +571,10 @@
                     retired.pause();
                     retired.removeAttribute('src');
                     this.trackUrl = url;
-                } else if (url !== this.trackUrl) {
+                } else if (url !== this.trackUrl || this.audio.src !== mediaUrl) {
                     this.clearUpcomingVerse();
                     this.trackUrl = url;
-                    this.audio.src = url;
+                    this.audio.src = mediaUrl;
                     this.audio.load();
                 }
                 this.updateMediaMetadata();
@@ -807,6 +810,7 @@
         }
 
         destroy() {
+            window.QuranDownloads?.releaseMedia?.(this);
             this.clearUpcomingVerse();
             this.persist();
             this.channel?.close();
