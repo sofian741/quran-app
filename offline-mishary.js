@@ -9,6 +9,7 @@
   const fileList = new Map();
   let packagedTracks = [];
   let bundledReader = null;
+  const chapterCache = new Map();
   const oldList = api.DownloadManager.prototype.list;
   const oldHas = api.DownloadManager.prototype.has;
   const oldDownload = api.DownloadManager.prototype.downloadTrack;
@@ -38,8 +39,10 @@
     .then(async response => {
       if (!response.ok) return false;
       const data = await response.json();
-      if (data.schemaVersion !== 1 || data.reciter?.name !== 'مشاري راشد العفاسي' ||
-          !Array.isArray(data.tracks) || data.tracks.length !== 114) return false;
+      if (data.schemaVersion !== 2 || data.syncLevel !== 'word' ||
+          data.recordingSource !== 'EveryAyah/Alafasy_128kbps' || data.reciter?.name !== 'مشاري راشد العفاسي' ||
+          !Array.isArray(data.tracks) || data.tracks.length !== 114 ||
+          !data.tracks.every(row => row.timing === row.file.replace('.mp3', '.json'))) return false;
       const numbers = new Set();
       const tracks = [];
       for (const item of data.tracks) {
@@ -78,6 +81,61 @@
     })
     .catch(error => { console.warn('Bundled Mushary audio is unavailable', error); return false; });
 
+  // Every synchronized chapter uses the *same* EveryAyah audio clips that
+  // generated its word timings. Never combine timings with MP3Quran's other
+  // Alafasy recording, even though its URL is the offline catalog key.
+  async function syncedChapter(surah) {
+    await ready;
+    surah = Number(surah);
+    if (!bundledReader || !Number.isInteger(surah) || surah < 1 || surah > 114) return null;
+    if (chapterCache.has(surah)) return chapterCache.get(surah);
+    const promise = (async () => {
+      const file = String(surah).padStart(3, '0') + '.json';
+      const response = await fetch(new URL(file, base), { cache: 'force-cache' });
+      if (!response.ok) throw new Error('بيانات تزامن سورة ' + surah + ' غير موجودة.');
+      const doc = await response.json();
+      const expected = core.VERSE_COUNTS[surah - 1];
+      if (doc.schemaVersion !== 2 || doc.surah !== surah ||
+          !Array.isArray(doc.verses) || doc.verses.length !== expected) {
+        throw new Error('بيانات سورة ' + surah + ' غير مكتملة.');
+      }
+      const track = fileList.get(bundledReader.moshaf[0].server + String(surah).padStart(3, '0') + '.mp3');
+      if (!track) throw new Error('صوت السورة غير موجود.');
+      let previousEnd = -1;
+      const verses = doc.verses.map((item, index) => {
+        const start = Number(item.start);
+        const end = Number(item.end);
+        if (Number(item.ayah) !== index + 1 || !Number.isFinite(start) ||
+            !Number.isFinite(end) || start < 0 || end <= start || start < previousEnd - 20 ||
+            !Array.isArray(item.words) || item.words.length === 0) {
+          throw new Error('خطأ توقيت سورة ' + surah + ':' + (index + 1));
+        }
+        previousEnd = end;
+        const segments = item.words.map(span => {
+          if (!Array.isArray(span) || span.length !== 4) throw new Error('بيانات كلمة غير صالحة.');
+          const [first, last, from, to] = span.map(Number);
+          if (!Number.isInteger(first) || !Number.isInteger(last) ||
+              first < 1 || last < first || !Number.isFinite(from) ||
+              !Number.isFinite(to) || from < start - 100 || to > end + 100 ||
+              to <= from) throw new Error('توقيت كلمة غير صالح.');
+          return { word: first, endWord: last, start: from, end: to };
+        });
+        return Object.freeze({
+          surah, ayah: index + 1, audioUrl: track.url,
+          timestampFrom: start, timestampTo: end, duration: end - start,
+          segments, source: 'EveryAyah / cpfair quran-align (CC BY 4.0)'
+        });
+      });
+      return Object.freeze({
+        reciterId: 7, surah, audioUrl: track.url,
+        verses, byAyah: new Map(verses.map(verse => [verse.ayah, verse]))
+      });
+    })().catch(error => { chapterCache.delete(surah); throw error; });
+    chapterCache.set(surah, promise);
+    return promise;
+  }
+  api.syncedMisharyChapter = syncedChapter;
+  api.bundledMisharyReader = () => bundledReader;
   api.bundledReady = ready;
   api.isBundled = url => fileList.has(url);
   api.DownloadManager.prototype.list = function() {
@@ -109,25 +167,6 @@
     owner.__savedMedia = { originalUrl: url, mediaUrl };
     return mediaUrl;
   };
-  // When offline, the default synchronized Mishary choice must still play.
-  // Switch only when network is clearly unavailable: these MP3Quran audio
-  // files are a different recording, so Foundation word timings are not reused.
-  if (core.AudioEngine?.prototype) {
-  const oldPrepare = core.AudioEngine.prototype.prepare;
-  core.AudioEngine.prototype.prepare = async function(options = {}) {
-    if (this.state.provider === 'quran-foundation' &&
-        Number(this.state.reciterId) === 7 &&
-        typeof navigator !== 'undefined' && navigator.onLine === false) {
-      await ready;
-      if (bundledReader) {
-        return this.selectMp3(bundledReader, bundledReader.moshaf[0], {
-          surah: this.state.surah, autoplay: options.autoplay
-        });
-      }
-    }
-    return oldPrepare.apply(this, [options]);
-  };
-  }
   core.CatalogService.prototype.cached = function() {
     return combineCatalog(oldCached.call(this));
   };
