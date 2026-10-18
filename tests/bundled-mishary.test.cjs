@@ -50,7 +50,7 @@ async function createContext(manifest) {
     fetch: async request => {
       const url = String(request);
       if (url.endsWith('/manifest.json')) return {ok:true,json:async()=>manifest};
-      const surah = Number(url.match(/(\\d{3})\\.json$/)?.[1]);
+      const surah = Number(url.split('/').pop().slice(0, 3));
       const verses = Array.from({length: surah===1?7:3},(_,index)=>({
         ayah:index+1,start:index*1000,end:(index+1)*1000,
         words:[[1,1,index*1000+100,(index+1)*1000-100]]
