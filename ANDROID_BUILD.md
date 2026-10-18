@@ -32,3 +32,15 @@ The Android packaging script now accepts an **optional** licensed corpus in `and
 When a complete authorized corpus is supplied, `npm run android:prepare` validates and copies it into `www/offline/mishary/`; native Android automatically uses this package for Mushary's synchronized recitation. Without the corpus, the app keeps normal network/cache playback instead of pretending that the entire recitation is bundled.
 
 **Do not add or distribute third-party recitation audio or timing datasets without reviewing the applicable rights and obtaining permission where required.** Quran.com says its recitations belong to the respective rightsholders and it cannot grant redistribution permission. Official developer terms also restrict re-distributing Quran Foundation API content. Bundling support is implemented; the recordings themselves are not bundled in the current builds.
+
+## In-app update button (QA)
+
+Mushaf Settings now has **التحقق من تحديثات التطبيق**. The Android build embeds its `versionCode` and a configurable HTTPS JSON manifest endpoint via GitHub Actions repository variable `NOOR_UPDATE_MANIFEST_URL`. The manifest is expected to be public and contain:
+
+```json
+{"versionCode": 23, "apkUrl": "https://example.org/downloads/Noor-Al-Quran-23.apk"}
+```
+
+The APK must be signed with the same QA certificate and have the stated versionCode. Never embed a private GitHub access token inside the Android app. Private Actions artifacts require GitHub authentication and are not usable as a public download endpoint. The workflow currently does not publish its APK to a public update feed, so **the button will show that the feed is not configured** until a suitable public distribution location and automated publishing step are set up. This is intentional, not a fake update success.
+
+Once configured, the button compares versions and opens the HTTPS APK download after user confirmation. Android still requires the user to approve installation. Google Play release builds should replace this with Play Core In-App Updates.
