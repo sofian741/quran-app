@@ -319,13 +319,16 @@
             this.state.position = target;
             this.pendingResume = 0;
 
-            if (!sameTrack || this.audio.src !== chapter.audioUrl) {
+            const mediaUrl = window.QuranDownloads?.mediaFor
+                ? await window.QuranDownloads.mediaFor(this, chapter.audioUrl) : chapter.audioUrl;
+            if (version !== this.prepareVersion) return false;
+            if (!sameTrack || this.audio.src !== mediaUrl) {
                 // Do not block the UI waiting for loadedmetadata. On slower hosts
                 // that made the play button look frozen for up to eight seconds.
                 // Arm the exact seek before load; loadedmetadata always fires
                 // before real playback can advance, so the selected ayah remains exact.
                 this.audio.preload = autoplay ? 'auto' : 'metadata';
-                this.audio.src = chapter.audioUrl;
+                this.audio.src = mediaUrl;
                 seekWhenMetadataReady(this, this.audio, target, version);
                 this.audio.load();
             } else if (this.audio.readyState >= 1 &&
