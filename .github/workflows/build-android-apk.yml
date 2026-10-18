@@ -88,6 +88,9 @@ jobs:
           path.write_text(source)
           PY
 
+      - name: Register native audio download support
+        run: python3 scripts/register-background-downloads.py
+
       - name: Restore stable QA signing key
         run: |
           base64 -d android-assets/noor-qa-signing.p12.b64 > android-assets/noor-qa-signing.p12
