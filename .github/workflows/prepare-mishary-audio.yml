@@ -63,3 +63,39 @@ jobs:
             gh release create "$tag" --title "Mishary offline audio assets (not an APK)" --notes "114 MP3Quran Mishary surahs pre-packaged for Noor Al Quran. Source: https://www.mp3quran.net/eng/afs ; copying policy: https://www.mp3quran.net/privacy-en.html . This asset is NOT an installable Android application." --prerelease --latest=false
           fi
           gh release upload "$tag" mishary-offline-v1.zip --clobber
+      - name: Record verified audio release in the main branch
+        run: |
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from datetime import datetime, timezone
+          manifest = json.loads(Path('dist/mishary/manifest.json').read_text(encoding='utf-8'))
+          archive = Path('mishary-offline-v1.zip')
+          lines = [
+              '# Mishary offline audio: verified asset receipt',
+              '',
+              'This receipt is written automatically only after all 114 recordings',
+              'pass validation and the audio-only GitHub Release upload succeeds.',
+              '',
+              '- Chapter count: **114/114**',
+              f"- Transcoded MP3 size: **{sum(t['bytes'] for t in manifest['tracks']) / 1024**2:.1f} MiB**",
+              f"- Release archive size: **{archive.stat().st_size / 1024**2:.1f} MiB**",
+              f"- Release ZIP SHA256: \`{hashlib.sha256(archive.read_bytes()).hexdigest()}\`",
+              '- Release tag: \`assets-mishary-v1\`',
+              '- No Android APK was built by this workflow.',
+              f"- Prepared at (UTC): {datetime.now(timezone.utc).isoformat(timespec='seconds')}",
+              ''
+          ]
+          folder = Path('docs')
+          folder.mkdir(exist_ok=True)
+          (folder / 'MISHARY_AUDIO_READY.md').write_text('\\n'.join(lines), encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/MISHARY_AUDIO_READY.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Record validated 114-surah Mishary offline audio release"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
