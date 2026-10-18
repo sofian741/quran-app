@@ -697,7 +697,69 @@
                 renderCurrentPage();
                 els.body.classList.remove('tools-visible');
             });
-            fragment.appendChild(button);
+            if (indexTab === 'surahs') {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'index-surah-group';
+                const arrow = document.createElement('button');
+                arrow.type = 'button';
+                arrow.className = 'index-ayah-toggle';
+                arrow.textContent = '⌄';
+                arrow.title = 'عرض آيات السورة والانتقال إليها';
+                arrow.setAttribute('aria-label', 'عرض آيات ' + entry.label);
+                arrow.setAttribute('aria-expanded', 'false');
+                const versesPanel = document.createElement('div');
+                versesPanel.className = 'index-ayah-panel';
+                versesPanel.hidden = true;
+                arrow.addEventListener('click', () => {
+                    const open = versesPanel.hidden;
+                    versesPanel.hidden = !open;
+                    arrow.setAttribute('aria-expanded', String(open));
+                    if (!open) return;
+                    if (versesPanel.childElementCount) return;
+                    const search = document.createElement('input');
+                    search.type = 'search';
+                    search.className = 'index-ayah-search';
+                    search.placeholder = 'رقم الآية أو جزء من نصها';
+                    search.setAttribute('aria-label', 'البحث في آيات ' + entry.label);
+                    const results = document.createElement('div');
+                    results.className = 'index-ayah-results';
+                    const surahVerses = verses.filter(verse => verse.surah === entry.number);
+                    const normalize = value => String(value).replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).trim();
+                    function paint() {
+                        const query = normalize(search.value);
+                        const matching = surahVerses.filter(verse => !query || String(verse.ayah) === query || normalize(verse.text).includes(query));
+                        const nodes = document.createDocumentFragment();
+                        matching.slice(0, 120).forEach(verse => {
+                            const target = document.createElement('button');
+                            target.type = 'button';
+                            target.className = 'index-ayah-result';
+                            const number = document.createElement('strong');
+                            number.textContent = toArabicDigits(verse.ayah);
+                            const excerpt = document.createElement('span');
+                            excerpt.textContent = verse.text.slice(0, 85) + (verse.text.length > 85 ? '…' : '');
+                            target.append(number, excerpt);
+                            target.addEventListener('click', () => {
+                                closeIndex();
+                                setTimeout(() => window.mushafReader?.goToVerse?.(entry.number, verse.ayah), 260);
+                            });
+                            nodes.append(target);
+                        });
+                        results.replaceChildren(nodes);
+                        if (matching.length > 120) {
+                            const more = document.createElement('small');
+                            more.textContent = 'اكتب رقم الآية أو جزءًا منها لعرض نتائج أدق';
+                            results.append(more);
+                        }
+                    }
+                    search.addEventListener('input', paint);
+                    versesPanel.append(search, results);
+                    paint();
+                });
+                wrapper.append(button, arrow, versesPanel);
+                fragment.appendChild(wrapper);
+            } else {
+                fragment.appendChild(button);
+            }
         });
         els.indexList.replaceChildren(fragment);
         els.indexTabs.forEach(button => {
