@@ -7,12 +7,15 @@ const vm = require('node:vm');
 const source = fs.readFileSync('offline-mishary.js', 'utf8');
 const server = 'https://server8.mp3quran.net/afs/';
 const mkManifest = () => ({
-  schemaVersion: 1,
+  schemaVersion: 2,
+  syncLevel: 'word',
+  recordingSource: 'EveryAyah/Alafasy_128kbps',
   reciter: { id: 910001, name: 'مشاري راشد العفاسي' },
   moshaf: { id: 910001, name: 'حفص عن عاصم • مضمن داخل التطبيق', server },
   tracks: Array.from({ length: 114 }, (_, i) => ({
     surah: i + 1,
     file: String(i + 1).padStart(3, '0') + '.mp3',
+    timing: String(i + 1).padStart(3, '0') + '.json',
     url: server + String(i + 1).padStart(3, '0') + '.mp3',
     bytes: 123456
   }))
@@ -37,13 +40,23 @@ async function createContext(manifest) {
   const core = {
     CatalogService,
     SURAH_NAMES: Array.from({length:114},(_,i)=>'سورة '+(i+1)),
+    VERSE_COUNTS: Array.from({length:114},(_,i)=>i===0?7:3),
     sortReciters: arr => arr
   };
   const context = {
     window: { QuranAudio: core, QuranDownloads: downloads, dispatchEvent: () => {} },
     URL, Map, Set, Event, console,
     location: { href: 'https://localhost/library.html' },
-    fetch: async () => ({ ok: true, json: async () => manifest })
+    fetch: async request => {
+      const url = String(request);
+      if (url.endsWith('/manifest.json')) return {ok:true,json:async()=>manifest};
+      const surah = Number(url.match(/(\\d{3})\\.json$/)?.[1]);
+      const verses = Array.from({length: surah===1?7:3},(_,index)=>({
+        ayah:index+1,start:index*1000,end:(index+1)*1000,
+        words:[[1,1,index*1000+100,(index+1)*1000-100]]
+      }));
+      return {ok:true,json:async()=>({schemaVersion:2,surah,verses})};
+    }
   };
   vm.runInNewContext(source, context);
   await downloads.bundledReady;
@@ -67,6 +80,12 @@ test('A complete 114-chapter audio bundle is listed and plays locally', async ()
   assert.equal(catalog.length, 1);
   assert.equal(catalog[0].moshaf[0].surahs.length, 114);
   assert.equal(await dm.downloadTrack({url:server+'002.mp3'}), false, 'no double download');
+  const chapter = await downloads.syncedMisharyChapter(1);
+  assert.equal(chapter.verses.length, 7);
+  assert.equal(chapter.byAyah.get(4).timestampFrom, 3000);
+  assert.equal(chapter.byAyah.get(4).segments[0].word, 1);
+  assert.equal(chapter.byAyah.get(4).segments[0].endWord, 1);
+  assert.equal(chapter.byAyah.get(4).audioUrl, server + '001.mp3');
 });
 
 test('Reject missing, mismatched or duplicate chapters; do not fake saved audio', async () => {
