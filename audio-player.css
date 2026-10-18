@@ -719,3 +719,6 @@
 
 .audio-download-progress { position:relative; overflow:hidden; border-radius:10px; padding:9px 12px; background:rgba(102,150,121,.09); }
 .audio-download-progress::before { content:''; position:absolute; inset:0 auto 0 0; width:var(--download-progress,0%); background:rgba(46,155,110,.17); transition:width .25s linear; pointer-events:none; }
+
+.audio-download-chip .audio-bundled-mark { border-radius:6px; padding:2px 5px; font-size:9px; color:#16654a; background:rgba(40,140,97,.12); }
+.reader-page[data-theme='dark'] .audio-download-chip .audio-bundled-mark { color:#b8edc9; background:rgba(90,186,124,.16); }
