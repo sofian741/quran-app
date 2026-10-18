@@ -130,11 +130,18 @@ def build_timing_index(rows, counts):
             begin, end, start, finish = segment
             if not all(isinstance(n, (int,float)) for n in segment) or any(not isinstance(n,(int,float)) for n in segment):
                 raise ValueError(f"Invalid segment data {key}")
+            # cpfair includes occasional zero-duration/unrecognized word
+            # spans (e.g. 6:58), which are not actual audible timings.
+            # Omit those spans instead of inventing word positions.
+            if start == finish and start >= 0:
+                continue
             if not (int(begin) == begin and int(end) == end and 0 <= begin < end <= 350 and
                     start >= 0 and finish > start):
                 raise ValueError(f"Invalid word alignment bounds {key}: {segment}, previous={previous_index}")
             previous_index = int(end)
             filtered.append([int(begin)+1, int(end), round(start), round(finish)])
+        if not filtered:
+            raise ValueError(f'No audible word alignment in ayah {key}')
         lookup[key] = filtered
     expected = sum(counts)
     if len(lookup) != expected or any((s,a) not in lookup for s in range(1,115) for a in range(1,counts[s-1]+1)):
