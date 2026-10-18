@@ -38,6 +38,18 @@ for (const entry of await readdir(root, { withFileTypes: true })) {
   await cp(src, dest);
 }
 
+// Tafsir is essential offline Quran content; scripts/ is excluded from the app bundle.
+const tafsirSource = join(root, 'scripts', 'tafsir_muyassar.json');
+const tafsirDest = join(out, 'data', 'tafsir_muyassar.json');
+const tafsirRaw = await readFile(tafsirSource, 'utf8');
+const tafsir = JSON.parse(tafsirRaw);
+if (tafsir.api_key !== 'arabic_moyassar' || tafsir.total_verses !== 6236 ||
+    !tafsir.verses || Object.keys(tafsir.verses).length !== 6236) {
+  throw new Error('The offline tafsir dataset is incomplete');
+}
+await mkdir(join(out, 'data'), { recursive: true });
+await (await import('node:fs/promises')).writeFile(tafsirDest, tafsirRaw);
+
 const names = new Set(await readdir(out));
 if (!names.has('index.html')) {
   throw new Error('Android web bundle is missing index.html');
