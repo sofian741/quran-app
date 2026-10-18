@@ -701,3 +701,18 @@
 .reader-page[data-theme='dark'] .audio-picker-group-mp3 { background: #55452d; color: #fce7c0; }
 .reader-page[data-theme='dark'] .audio-picker-group-caption { color: #b9ccbe; }
 .reader-page[data-theme='dark'] .audio-switch-notice { background: #322c24; color: #ffedcf; border-color: #b88b4d; }
+
+/* Compact downloaded-reciter folders inside the mushaf audio sheet. */
+.audio-download-folder { border: 1px solid rgba(82,120,100,.22); border-radius: 12px; overflow: hidden; background: rgba(108,145,119,.07); }
+.audio-download-folder > summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 12px; cursor: pointer; list-style: none; }
+.audio-download-folder > summary::-webkit-details-marker { display: none; }
+.audio-download-folder > summary::before { content: '▸'; color: #678776; font-size: 12px; transition: transform .2s; }
+.audio-download-folder[open] > summary::before { transform: rotate(90deg); }
+.audio-download-folder > summary strong { flex: 1; font-size: 12px; font-weight: 700; }
+.audio-download-folder > summary small { font-size: 10px; opacity: .75; white-space: nowrap; }
+.audio-download-folder-grid { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 10px 12px; max-height: 210px; overflow-y: auto; }
+.audio-download-chip { display: inline-flex; align-items: center; gap: 5px; border-radius: 9px; border: 1px solid rgba(90,126,105,.2); padding: 4px 6px 4px 9px; font-size: 11px; background: rgba(255,255,255,.55); }
+.audio-download-chip > span { white-space: nowrap; }
+.audio-download-chip button { border: 0; background: transparent; color: #99554c; font-size: 17px; line-height: 1; cursor: pointer; padding: 0 3px; }
+.reader-page[data-theme='dark'] .audio-download-folder { background: #293a33; border-color: #40564c; }
+.reader-page[data-theme='dark'] .audio-download-chip { background: #34473d; border-color: #536b5b; color: #e5f2eb; }
