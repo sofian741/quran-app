@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const source = fs.readFileSync('offline-mishary-sync.js', 'utf8');
 const url = 'https://server8.mp3quran.net/afs/001.mp3';
 
-function build() {
+function build(localExtension = 'mp3') {
   const verses = Array.from({length:7},(_,i)=>({
     surah:1,ayah:i+1, audioUrl:url,
     timestampFrom:i*1000,timestampTo:(i+1)*1000,
@@ -40,7 +40,7 @@ function build() {
   const downloads={
     bundledReady:Promise.resolve(true),
     syncedMisharyChapter:async()=>chapter,
-    mediaFor:async()=> 'https://localhost/offline/mishary/001.mp3'
+    mediaFor:async()=> 'https://localhost/offline/mishary/001.' + localExtension
   };
   vm.runInNewContext(source,{window:{QuranAudio:{AudioEngine,VERSE_COUNTS:[7]},QuranDownloads:downloads},navigator:{onLine:true},console});
   return {AudioEngine,downloads};
@@ -74,5 +74,23 @@ test('Word synchronized continuous MP3 repeats an exact verse interval',async()=
   player.__syncContinuousChapter();
   assert.equal(player.audio.currentTime,4);
   assert.equal(player.state.ayah,5);
+  assert.equal(player.state.repeat.completed,1);
+});
+
+test('Opus WebM retains exact ayah seeking, word cues and verse repetition',async()=>{
+  const {AudioEngine}=build('webm');
+  const player=new AudioEngine();
+  assert.equal(await player.prepare({autoplay:false}),true);
+  assert.equal(player.audio.src,'https://localhost/offline/mishary/001.webm');
+  assert.equal(player.audio.currentTime,4);
+  assert.equal(player.currentTiming.segments[0].start,4100);
+  assert.equal(await player.goTo(1,3,{autoplay:true}),true);
+  assert.equal(player.audio.currentTime,2);
+  assert.equal(player.currentTiming.segments[0].start,2100);
+  player.state.repeat={mode:'verse',count:2,completed:0};
+  player.audio.currentTime=3.005;
+  player.__syncContinuousChapter();
+  assert.equal(player.audio.currentTime,2);
+  assert.equal(player.state.ayah,3);
   assert.equal(player.state.repeat.completed,1);
 });
