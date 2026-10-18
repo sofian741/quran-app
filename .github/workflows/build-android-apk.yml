@@ -10,8 +10,12 @@ on:
       - 'RELEASE_AUDIT/**'
   workflow_dispatch:
 
+concurrency:
+  group: qa-apk-main
+  cancel-in-progress: true
+
 permissions:
-  contents: read
+  contents: write
 
 env:
   ANDROID_HOME: /usr/local/lib/android/sdk
@@ -52,6 +56,7 @@ jobs:
           node --check audio-downloads.js
           node --check qud-audio.js
           node --check library.js
+          node --check app-update.js
           node --check scripts/prepare-android-web.mjs
           node --test tests/offline-audio.test.cjs
 
