@@ -107,7 +107,7 @@
         const end = Number(item.end);
         if (Number(item.ayah) !== index + 1 || !Number.isFinite(start) ||
             !Number.isFinite(end) || start < 0 || end <= start || start < previousEnd - 20 ||
-            !Array.isArray(item.words) || item.words.length === 0) {
+            !Array.isArray(item.words)) {
           throw new Error('خطأ توقيت سورة ' + surah + ':' + (index + 1));
         }
         previousEnd = end;
