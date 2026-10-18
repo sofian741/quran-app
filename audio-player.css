@@ -716,3 +716,6 @@
 .audio-download-chip button { border: 0; background: transparent; color: #99554c; font-size: 17px; line-height: 1; cursor: pointer; padding: 0 3px; }
 .reader-page[data-theme='dark'] .audio-download-folder { background: #293a33; border-color: #40564c; }
 .reader-page[data-theme='dark'] .audio-download-chip { background: #34473d; border-color: #536b5b; color: #e5f2eb; }
+
+.audio-download-progress { position:relative; overflow:hidden; border-radius:10px; padding:9px 12px; background:rgba(102,150,121,.09); }
+.audio-download-progress::before { content:''; position:absolute; inset:0 auto 0 0; width:var(--download-progress,0%); background:rgba(46,155,110,.17); transition:width .25s linear; pointer-events:none; }
