@@ -718,3 +718,16 @@ input[type='color'] { width: 42px; height: 34px; padding: 2px; background: #fff;
     align-self: center;
     gap: .14em;
 }
+
+/* Compact ayah navigation inside the existing surah index, without changing mushaf typography. */
+.index-surah-group { display:grid; grid-template-columns:minmax(0,1fr) 44px; align-items:stretch; gap:5px; margin-bottom:5px; }
+.index-surah-group > .index-entry { min-width:0; margin:0; }
+.index-ayah-toggle { border:1px solid rgba(95,133,112,.24); border-radius:10px; background:rgba(95,133,112,.09); color:inherit; font-size:22px; cursor:pointer; }
+.index-ayah-toggle[aria-expanded="true"] { transform:rotate(180deg); }
+.index-ayah-panel { grid-column:1/-1; padding:9px; border:1px solid rgba(95,133,112,.2); border-radius:12px; }
+.index-ayah-panel[hidden] { display:none; }
+.index-ayah-search { box-sizing:border-box; width:100%; border:1px solid rgba(95,133,112,.35); border-radius:10px; padding:10px; font:inherit; color:inherit; background:transparent; }
+.index-ayah-results { display:grid; gap:4px; max-height:260px; overflow-y:auto; margin-top:8px; }
+.index-ayah-result { display:flex; align-items:center; gap:12px; width:100%; text-align:right; direction:rtl; border:0; border-radius:9px; background:rgba(95,133,112,.08); padding:9px; color:inherit; cursor:pointer; }
+.index-ayah-result strong { min-width:24px; color:#288267; }
+.index-ayah-result span { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:12px; }
