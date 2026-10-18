@@ -221,16 +221,27 @@ def create_chapter(surah, count, lookup, cache, output, bitrate):
             seconds = sample_count * 1000 / SAMPLE_RATE
             words = []
             for begin, last, raw_start, raw_end in lookup[surah, ayah]:
-                if raw_start > seconds + 400 or raw_end > seconds + 850:
-                    raise ValueError(f"Timings exceed source audio {surah}:{ayah}, "
-                                     f"word {begin}, end={raw_end}, ayah_ms={seconds:.0f}")
+                # Some upstream alignments contain impossible timestamps.
+                # Do not clamp them: that would invent word synchronization.
+                # Preserve the correctly measured verse boundary and omit
+                # only the invalid word cue, with an explicit audit entry.
+                if (raw_start < 0 or raw_end <= raw_start or
+                    raw_start > seconds + 400 or raw_end > seconds + 850):
+                    print(f"WORD_ALIGNMENT_UNVERIFIED {surah}:{ayah} "
+                          f"word={begin}-{last} cue={raw_start}-{raw_end} "
+                          f"audio_ms={seconds:.0f}", flush=True)
+                    continue
                 aligned_start = start + max(0, min(round(seconds), raw_start))
                 aligned_end = start + max(0, min(round(seconds), raw_end))
                 if aligned_end <= aligned_start:
-                    raise ValueError(f"Nonpositive aligned duration {surah}:{ayah} word {begin}")
+                    print(f"WORD_ALIGNMENT_UNVERIFIED {surah}:{ayah} "
+                          f"word={begin}-{last} zero-duration", flush=True)
+                    continue
                 words.append([begin, last, aligned_start, aligned_end])
             if not words:
-                raise ValueError(f"No word timings for {surah}:{ayah}")
+                print(f"VERSE_WORD_ALIGNMENT_UNVERIFIED {surah}:{ayah}: "
+                      "verse highlighting remains exact; word highlighting disabled",
+                      flush=True)
             verses.append({"ayah": ayah, "start": start, "end": end, "words": words})
             pcm.write(data)
             sample_total += sample_count
