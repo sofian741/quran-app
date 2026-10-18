@@ -41,15 +41,31 @@
       const data = await response.json();
       if (data.schemaVersion !== 2 || data.syncLevel !== 'word' ||
           data.recordingSource !== 'EveryAyah/Alafasy_128kbps' || data.reciter?.name !== 'مشاري راشد العفاسي' ||
-          !Array.isArray(data.tracks) || data.tracks.length !== 114 ||
-          !data.tracks.every(row => row.timing === row.file.replace('.mp3', '.json'))) return false;
+          !Array.isArray(data.tracks) || data.tracks.length !== 114) return false;
+      // Older verified MP3 packs remain readable. New packs can use compact
+      // WebM/Opus locally without changing the catalog URLs or word timings.
+      const isOpus = data.audioCodec === 'opus' && data.audioContainer === 'webm';
+      const isMp3 = (data.audioCodec == null || data.audioCodec === 'mp3') &&
+                    (data.audioContainer == null || data.audioContainer === 'mp3');
+      if (!isOpus && !isMp3) return false;
+      const extension = isOpus ? '.webm' : '.mp3';
+      if (isOpus && typeof document !== 'undefined' && typeof document.createElement === 'function') {
+        const probe = document.createElement('audio');
+        if (typeof probe.canPlayType === 'function' &&
+            !probe.canPlayType('audio/webm; codecs="opus"')) {
+          console.error('This WebView does not support bundled WebM/Opus playback.');
+          return false;
+        }
+      }
+      if (!data.tracks.every(row => typeof row.file === 'string' &&
+          row.timing === row.file.replace(/\.(mp3|webm)$/, '.json'))) return false;
       const numbers = new Set();
       const tracks = [];
       for (const item of data.tracks) {
         const number = Number(item.surah);
         if (!Number.isInteger(number) || number < 1 || number > 114 ||
-            numbers.has(number) || !/^\d{3}\.mp3$/.test(item.file) ||
-            item.file !== String(number).padStart(3, '0') + '.mp3' ||
+            numbers.has(number) ||
+            item.file !== String(number).padStart(3, '0') + extension ||
             !/^https:\/\/[^?#]+\.mp3$/.test(item.url) ||
             !Number.isSafeInteger(item.bytes) || item.bytes < 1024) return false;
         numbers.add(number);

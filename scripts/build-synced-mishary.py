@@ -204,9 +204,9 @@ def sha256(path):
             digest.update(chunk)
     return digest.hexdigest()
 
-def create_chapter(surah, count, lookup, cache, output, bitrate):
+def create_chapter(surah, count, lookup, cache, output, bitrate, codec="mp3"):
     filename = f"{surah:03}"
-    audio = output / (filename + ".mp3")
+    audio = output / (filename + (".webm" if codec == "opus-webm" else ".mp3"))
     timing = output / (filename + ".json")
     pcm_path = cache / (filename + ".pcm")
     verses = []
@@ -246,15 +246,27 @@ def create_chapter(surah, count, lookup, cache, output, bitrate):
             pcm.write(data)
             sample_total += sample_count
     try:
+        encoder = (["-c:a", "libopus", "-application", "audio", "-vbr", "on",
+                    "-compression_level", "10", "-b:a", bitrate]
+                   if codec == "opus-webm" else
+                   ["-c:a", "libmp3lame", "-b:a", bitrate])
         subprocess.run([
             "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
             "-f", "s16le", "-ar", str(SAMPLE_RATE), "-ac", "1", "-i", str(pcm_path),
-            "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", bitrate, str(audio)
+            "-map_metadata", "-1", *encoder, str(audio)
         ], check=True, timeout=900)
     finally:
         pcm_path.unlink(missing_ok=True)
-    if not audio_valid(audio):
+    if codec == "mp3" and not audio_valid(audio):
         raise ValueError(f"Corrupted encoded audio for surah {surah}")
+    if codec == "opus-webm":
+        decoded_codec = subprocess.check_output([
+            "ffprobe", "-v", "error", "-select_streams", "a:0",
+            "-show_entries", "stream=codec_name",
+            "-of", "default=noprint_wrappers=1:nokey=1", str(audio)
+        ], text=True, timeout=25).strip()
+        if decoded_codec != "opus":
+            raise ValueError(f"Invalid WebM Opus audio for surah {surah}: {decoded_codec}")
     duration = float(subprocess.check_output([
         "ffprobe", "-v", "error", "-show_entries", "format=duration",
         "-of", "default=noprint_wrappers=1:nokey=1", str(audio)
@@ -267,7 +279,7 @@ def create_chapter(surah, count, lookup, cache, output, bitrate):
         "durationMs": round(original_duration*1000), "verses": verses
     }, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     return {
-        "surah": surah, "file": filename+".mp3", "timing": filename+".json",
+        "surah": surah, "file": audio.name, "timing": filename+".json",
         "url": "https://server8.mp3quran.net/afs/" + filename+".mp3",
         "bytes": audio.stat().st_size, "sha256": sha256(audio),
         "timingSha256": sha256(timing)
@@ -277,7 +289,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", default="www/offline/mishary")
     parser.add_argument("--cache", default=".build-cache/mishary-everyayah")
-    parser.add_argument("--bitrate", choices=("48k","64k"), default="48k")
+    parser.add_argument("--bitrate", choices=("24k","28k","32k","40k","48k","64k"), default="48k")
+    parser.add_argument("--codec", choices=("mp3","opus-webm"), default="mp3",
+                        help="WebM/Opus saves APK space without changing verse or word offsets")
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--timings-file")
     parser.add_argument("--counts-file")
@@ -307,7 +321,7 @@ def main():
                 print(f"Downloaded {i}/{len(jobs)} clips", flush=True)
     recordings = []
     for i,s in enumerate(surahs,1):
-        recordings.append(create_chapter(s, counts[s-1], index, cache, output, args.bitrate))
+        recordings.append(create_chapter(s, counts[s-1], index, cache, output, args.bitrate, args.codec))
         print(f"Encoded, synchronized, verified surah {s}: {i}/{len(surahs)}", flush=True)
     if args.surah:  # A sample MUST NOT claim it is a complete Mushaf.
         print("Sample finished without manifest. To ship, run all 114 surahs.", flush=True)
@@ -316,6 +330,8 @@ def main():
         sys.exit("Incomplete synchronized Quran recordings")
     manifest = {
         "schemaVersion": 2, "syncLevel": "word", "recordingSource": "EveryAyah/Alafasy_128kbps",
+        "audioCodec": "opus" if args.codec == "opus-webm" else "mp3",
+        "audioContainer": "webm" if args.codec == "opus-webm" else "mp3",
         "timingSource": "cpfair/quran-align:release-2016-11-24",
         "timingLicense": "CC BY 4.0",
         "reciter": {"id": 910001, "name": "مشاري راشد العفاسي"},

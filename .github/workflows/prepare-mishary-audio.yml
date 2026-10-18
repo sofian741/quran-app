@@ -43,7 +43,7 @@ jobs:
           restore-keys: |
             everyayah-alafasy-128-v1-
       - name: Download and validate full Mishary Quran
-        run: python3 scripts/build-synced-mishary.py --output dist/mishary
+        run: python3 scripts/build-synced-mishary.py --codec opus-webm --bitrate 32k --output dist/mishary
       - name: Package 114 offline surahs and metadata
         run: |
           python3 - <<'PY'
@@ -52,12 +52,14 @@ jobs:
           base = Path('dist/mishary')
           manifest = json.loads((base / 'manifest.json').read_text(encoding='utf-8'))
           tracks = manifest['tracks']
-          if manifest['schemaVersion'] != 2 or manifest['syncLevel'] != 'word':
+          if manifest['schemaVersion'] != 2 or manifest['syncLevel'] != 'word' or manifest.get('audioCodec') != 'opus' or manifest.get('audioContainer') != 'webm':
               raise SystemExit('Missing fully synchronized Mishary word timings')
           if len(tracks) != 114 or {t['surah'] for t in tracks} != set(range(1,115)):
               raise SystemExit('Incomplete Mishary set; cannot publish')
           for entry in tracks:
               path = base / entry['file']
+              if entry['file'] != f"{entry['surah']:03}.webm":
+                  raise SystemExit('Unexpected recording extension: ' + entry['file'])
               if not path.is_file() or path.stat().st_size != entry['bytes']:
                   raise SystemExit('Missing/corrupt file: ' + entry['file'])
               if hashlib.sha256(path.read_bytes()).hexdigest() != entry['sha256']:
@@ -75,18 +77,18 @@ jobs:
           print('Validated all 114 chapters, 6236 ayahs, and their genuine word timing segments')
           PY
           cd dist/mishary
-          zip -q -0 ../../mishary-synced-v2.zip manifest.json *.mp3 *.json
+          zip -q -0 ../../mishary-synced-v3-opus.zip manifest.json *.webm *.json
           cd ../..
-          sha256sum mishary-synced-v2.zip
+          sha256sum mishary-synced-v3-opus.zip
       - name: Publish audio-only asset as prerelease
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="assets-mishary-synced-v2"
+          tag="assets-mishary-synced-v3-opus"
           if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --title "Synchronized Mishary audio + word timings (not an APK)" --notes "114 verified EveryAyah Alafasy surahs assembled with matching cpfair/quran-align CC BY 4.0 word-level segments, 6236 verses. Audio source: https://everyayah.com/ . IMPORTANT: verify recording redistribution permission before any public app distribution. This is NOT an Android APK." --prerelease --latest=false
+            gh release create "$tag" --title "Compact Opus Mishary audio + verified word timings (not an APK)" --notes "114 verified EveryAyah Alafasy surahs assembled with matching cpfair/quran-align CC BY 4.0 word-level segments, 6236 verses. Audio source: https://everyayah.com/ . IMPORTANT: verify recording redistribution permission before any public app distribution. This is NOT an Android APK." --prerelease --latest=false
           fi
-          gh release upload "$tag" mishary-synced-v2.zip --clobber
+          gh release upload "$tag" mishary-synced-v3-opus.zip --clobber
       - name: Record verified audio release in the main branch
         run: |
           python3 - <<'PY'
@@ -94,7 +96,7 @@ jobs:
           from pathlib import Path
           from datetime import datetime, timezone
           manifest = json.loads(Path('dist/mishary/manifest.json').read_text(encoding='utf-8'))
-          archive = Path('mishary-synced-v2.zip')
+          archive = Path('mishary-synced-v3-opus.zip')
           lines = [
               '# Mishary offline audio: verified asset receipt',
               '',
@@ -105,10 +107,10 @@ jobs:
               '- Synchronized ayah count: **6236/6236**',
               '- Timing source: cpfair/quran-align (CC BY 4.0)',
               '- Original audio: EveryAyah Alafasy_128kbps',
-              f"- Transcoded MP3 size: **{sum(t['bytes'] for t in manifest['tracks']) / 1024**2:.1f} MiB**",
+              f"- Opus/WebM 32kbps size: **{sum(t['bytes'] for t in manifest['tracks']) / 1024**2:.1f} MiB**",
               f"- Release archive size: **{archive.stat().st_size / 1024**2:.1f} MiB**",
               f"- Release ZIP SHA256: {hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()}",
-              '- Release tag: assets-mishary-synced-v2',
+              '- Release tag: assets-mishary-synced-v3-opus',
               '- No Android APK was built by this workflow.',
               f"- Prepared at (UTC): {datetime.now(timezone.utc).isoformat(timespec='seconds')}",
               ''

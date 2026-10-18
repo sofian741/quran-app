@@ -6,7 +6,9 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync('offline-mishary.js', 'utf8');
 const server = 'https://server8.mp3quran.net/afs/';
-const mkManifest = () => ({
+const mkManifest = (codec = 'mp3') => ({
+  audioCodec: codec === 'opus' ? 'opus' : 'mp3',
+  audioContainer: codec === 'opus' ? 'webm' : 'mp3',
   schemaVersion: 2,
   syncLevel: 'word',
   recordingSource: 'EveryAyah/Alafasy_128kbps',
@@ -14,14 +16,14 @@ const mkManifest = () => ({
   moshaf: { id: 910001, name: 'حفص عن عاصم • مضمن داخل التطبيق', server },
   tracks: Array.from({ length: 114 }, (_, i) => ({
     surah: i + 1,
-    file: String(i + 1).padStart(3, '0') + '.mp3',
+    file: String(i + 1).padStart(3, '0') + (codec === 'opus' ? '.webm' : '.mp3'),
     timing: String(i + 1).padStart(3, '0') + '.json',
     url: server + String(i + 1).padStart(3, '0') + '.mp3',
     bytes: 123456
   }))
 });
 
-async function createContext(manifest) {
+async function createContext(manifest, playable = true) {
   const existing = [{ url: 'https://example.com/other.mp3', bytes: 10, savedAt: 9 }];
   class DownloadManager {
     list() { return [...existing]; }
@@ -47,6 +49,7 @@ async function createContext(manifest) {
     window: { QuranAudio: core, QuranDownloads: downloads, dispatchEvent: () => {} },
     URL, Map, Set, Event, console,
     location: { href: 'https://localhost/library.html' },
+    document: { createElement: () => ({ canPlayType: () => playable ? 'probably' : '' }) },
     fetch: async request => {
       const url = String(request);
       if (url.endsWith('/manifest.json')) return {ok:true,json:async()=>manifest};
@@ -88,11 +91,35 @@ test('A complete 114-chapter audio bundle is listed and plays locally', async ()
   assert.equal(chapter.byAyah.get(4).audioUrl, server + '001.mp3');
 });
 
+test('Compact Opus package retains all word timings and original catalog keys', async () => {
+  const {downloads} = await createContext(mkManifest('opus'));
+  const dm = new downloads.DownloadManager();
+  assert.equal(await downloads.bundledReady, true);
+  assert.equal(dm.list().filter(track => track.bundled).length, 114);
+  assert.equal(await dm.has(server + '114.mp3'), true);
+  assert.equal(await downloads.mediaFor({}, server + '002.mp3'),
+               'https://localhost/offline/mishary/002.webm');
+  const chapter = await downloads.syncedMisharyChapter(1);
+  assert.equal(chapter.verses.length, 7);
+  assert.equal(chapter.byAyah.get(4).timestampFrom, 3000);
+  assert.equal(chapter.byAyah.get(4).segments[0].start, 3100);
+  assert.equal(chapter.byAyah.get(4).audioUrl, server + '001.mp3');
+});
+
+test('Compact Opus package is not claimed offline on unsupported WebView', async () => {
+  const {downloads} = await createContext(mkManifest('opus'), false);
+  assert.equal(await downloads.bundledReady, false);
+  assert.equal(new downloads.DownloadManager().list().length, 1);
+});
+
 test('Reject missing, mismatched or duplicate chapters; do not fake saved audio', async () => {
   for (const malformed of [
     {...mkManifest(), tracks: mkManifest().tracks.slice(1)},
     {...mkManifest(), tracks: [mkManifest().tracks[0], ...mkManifest().tracks.slice(0, 113)]},
-    {...mkManifest(), tracks: mkManifest().tracks.map((t,i) => i===3 ? {...t, file:'oops.mp3'} : t)}
+    {...mkManifest(), tracks: mkManifest().tracks.map((t,i) => i===3 ? {...t, file:'oops.mp3'} : t)},
+    {...mkManifest('opus'), tracks: mkManifest('opus').tracks.map((t,i) => i===3 ? {...t, file:'004.mp3'} : t)},
+    {...mkManifest('opus'), audioCodec: 'aac'},
+    {...mkManifest('opus'), audioContainer: 'ogg'}
   ]) {
     const {downloads} = await createContext(malformed);
     assert.equal(await downloads.bundledReady, false);
