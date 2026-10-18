@@ -35,6 +35,13 @@ jobs:
           python3 -m py_compile scripts/build-synced-mishary.py
       - name: Install media tools
         run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+      - name: Cache source recitations for retries
+        uses: actions/cache@v4
+        with:
+          path: .build-cache/mishary-everyayah
+          key: everyayah-alafasy-128-v1-${{ github.run_id }}
+          restore-keys: |
+            everyayah-alafasy-128-v1-
       - name: Download and validate full Mishary Quran
         run: python3 scripts/build-synced-mishary.py --output dist/mishary
       - name: Package 114 offline surahs and metadata
