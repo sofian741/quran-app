@@ -868,10 +868,19 @@
         refreshStorage();
     }
 
+    let progressStart = 0;
     downloads.addEventListener('change', event => {
         const detail = event.detail;
-        if (detail.status === 'downloading' && detail.total) {
-            ui.downloadProgress.textContent = `تم تنزيل ${Math.round(detail.progress * 100)}٪ من الملف الحالي`;
+        if (detail.status === 'starting') progressStart = Date.now();
+        if (detail.status === 'downloading') {
+            const seconds = Math.max(1, (Date.now() - progressStart) / 1000);
+            const speed = detail.received / seconds;
+            const remaining = detail.total && speed > 0 ? Math.ceil((detail.total - detail.received) / speed) : null;
+            const eta = remaining === null ? 'جارٍ حساب الوقت المتبقي' :
+                remaining >= 60 ? `متبقي حوالي ${Math.ceil(remaining / 60)} دقيقة` : `متبقي حوالي ${remaining} ثانية`;
+            const percent = detail.total ? `${Math.round(detail.progress * 100)}٪` : downloadsApi.humanSize(detail.received);
+            ui.downloadProgress.textContent = `⬇ ${percent} • ${eta} • ${downloadsApi.humanSize(speed)}/ث`;
+            ui.downloadProgress.style.setProperty('--download-progress', detail.total ? `${Math.round(detail.progress * 100)}%` : '0%');
         }
     });
 
