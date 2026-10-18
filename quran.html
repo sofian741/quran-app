@@ -145,6 +145,11 @@
             <span><strong>البحث في القرآن الكريم</strong><small>ابحث بكلمة أو جزء من آية، وانتقل للمصحف أو التفسير</small></span>
         </button>
 
+        <button type="button" id="check-app-update" class="settings-saved-button" aria-describedby="app-update-status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.7 9A7 7 0 0 1 18 7l2 5M4 12l2 5a7 7 0 0 0 12.3-2"/></svg>
+            <span><strong>التحقق من تحديثات التطبيق</strong><small>تثبيت آخر إصدار تجريبي دون حذف بياناتك</small></span>
+        </button>
+        <p id="app-update-status" class="settings-note" role="status" aria-live="polite">تحديثات النسخة التجريبية</p>
         <button type="button" class="reset-settings" id="reset-settings">إعادة الإعدادات الافتراضية</button>
         <p class="settings-note">صفحات المصحف وأسطرها ثابتة (٦٠٤ صفحة)، ويُضبط حجم الخط تلقائيًا لعرض السطر كاملًا. نص القرآن من <a href="https://tanzil.net" target="_blank" rel="noopener noreferrer">Tanzil Project</a>. <a href="licenses.html">المصادر والتراخيص والخصوصية</a>.</p>
     </aside>
@@ -371,6 +376,7 @@
         <button id="audio-apply-repeat" class="audio-apply-repeat" type="button">تطبيق التكرار</button>
     </aside>
     <script src="service-worker-register.js"></script>
+    <script src="app-update.js"></script>
     <script src="app.js"></script>
     <script src="reader-enhancements.js"></script>
     <script src="reader-layout-polish.js"></script>
