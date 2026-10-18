@@ -5,8 +5,9 @@ on:
     branches: [main]
     paths:
       - .github/workflows/prepare-mishary-audio.yml
-      - scripts/fetch-mishary-audio.py
+      - scripts/build-synced-mishary.py
       - offline-mishary.js
+      - offline-mishary-sync.js
   workflow_dispatch:
 
 concurrency:
@@ -26,13 +27,14 @@ jobs:
       - name: Validate offline library and audio integration
         run: |
           node --check offline-mishary.js
+          node --check offline-mishary-sync.js
           node --check library.js
           node --check mushaf-audio.js
           node --test tests/bundled-mishary.test.cjs
       - name: Install media tools
         run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
       - name: Download and validate full Mishary Quran
-        run: python3 scripts/fetch-mishary-audio.py --output dist/mishary
+        run: python3 scripts/build-synced-mishary.py --output dist/mishary
       - name: Package 114 offline surahs and metadata
         run: |
           python3 - <<'PY'
@@ -41,6 +43,8 @@ jobs:
           base = Path('dist/mishary')
           manifest = json.loads((base / 'manifest.json').read_text(encoding='utf-8'))
           tracks = manifest['tracks']
+          if manifest['schemaVersion'] != 2 or manifest['syncLevel'] != 'word':
+              raise SystemExit('Missing fully synchronized Mishary word timings')
           if len(tracks) != 114 or {t['surah'] for t in tracks} != set(range(1,115)):
               raise SystemExit('Incomplete Mishary set; cannot publish')
           for entry in tracks:
@@ -49,19 +53,29 @@ jobs:
                   raise SystemExit('Missing/corrupt file: ' + entry['file'])
               if hashlib.sha256(path.read_bytes()).hexdigest() != entry['sha256']:
                   raise SystemExit('Hash mismatch: ' + entry['file'])
-          print('Validated all 114 preinstalled recitations')
+              timing = base / entry['timing']
+              if not timing.is_file() or hashlib.sha256(timing.read_bytes()).hexdigest() != entry['timingSha256']:
+                  raise SystemExit('Missing/corrupt word alignment file: ' + entry['timing'])
+              doc = json.loads(timing.read_text(encoding='utf-8'))
+              if doc.get('schemaVersion') != 2 or doc.get('surah') != entry['surah']:
+                  raise SystemExit('Timing metadata mismatch: ' + entry['timing'])
+              if not all(row.get('words') for row in doc.get('verses', [])):
+                  raise SystemExit('Incomplete words in ' + entry['timing'])
+          total = sum(len(json.loads((base / entry['timing']).read_text())['verses']) for entry in tracks)
+          if total != 6236: raise SystemExit(f'Expected 6236 verified ayahs; got {total}')
+          print('Validated all 114 chapters, 6236 ayahs, and their genuine word timing segments')
           PY
           cd dist/mishary
-          zip -q -0 ../../mishary-offline-v1.zip manifest.json *.mp3
+          zip -q -0 ../../mishary-synced-v2.zip manifest.json *.mp3 *.json
           cd ../..
           sha256sum mishary-offline-v1.zip
       - name: Publish audio-only asset as prerelease
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="assets-mishary-v1"
+          tag="assets-mishary-synced-v2"
           if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --title "Mishary offline audio assets (not an APK)" --notes "114 MP3Quran Mishary surahs pre-packaged for Noor Al Quran. Source: https://www.mp3quran.net/eng/afs ; copying policy: https://www.mp3quran.net/privacy-en.html . This asset is NOT an installable Android application." --prerelease --latest=false
+            gh release create "$tag" --title "Synchronized Mishary audio + word timings (not an APK)" --notes "114 verified EveryAyah Alafasy surahs assembled with matching cpfair/quran-align CC BY 4.0 word-level segments, 6236 verses. Audio source: https://everyayah.com/ . IMPORTANT: verify recording redistribution permission before any public app distribution. This is NOT an Android APK." --prerelease --latest=false
           fi
           gh release upload "$tag" mishary-offline-v1.zip --clobber
       - name: Record verified audio release in the main branch
@@ -79,10 +93,13 @@ jobs:
               'pass validation and the audio-only GitHub Release upload succeeds.',
               '',
               '- Chapter count: **114/114**',
+              '- Synchronized ayah count: **6236/6236**',
+              '- Timing source: cpfair/quran-align (CC BY 4.0)',
+              '- Original audio: EveryAyah Alafasy_128kbps',
               f"- Transcoded MP3 size: **{sum(t['bytes'] for t in manifest['tracks']) / 1024**2:.1f} MiB**",
               f"- Release archive size: **{archive.stat().st_size / 1024**2:.1f} MiB**",
               f"- Release ZIP SHA256: {hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()}",
-              '- Release tag: assets-mishary-v1',
+              '- Release tag: assets-mishary-synced-v2',
               '- No Android APK was built by this workflow.',
               f"- Prepared at (UTC): {datetime.now(timezone.utc).isoformat(timespec='seconds')}",
               ''
