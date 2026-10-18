@@ -133,7 +133,7 @@ def build_timing_index(rows, counts):
             # cpfair includes occasional zero-duration/unrecognized word
             # spans (e.g. 6:58), which are not actual audible timings.
             # Omit those spans instead of inventing word positions.
-            if start == finish and start >= 0:
+            if finish <= start and start >= 0 and finish >= 0:
                 continue
             if not (int(begin) == begin and int(end) == end and 0 <= begin < end <= 350 and
                     start >= 0 and finish > start):
