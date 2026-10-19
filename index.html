@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="home.css">
     <link rel="stylesheet" href="welcome.css">
+    <link rel="stylesheet" href="onboarding.css">
 </head>
 <body class="home-page" data-home-theme="light">
     <div id="ayat-welcome" class="ayat-welcome" hidden role="dialog" aria-modal="true" aria-label="شعار افتتاح تطبيق آيات">
@@ -23,6 +24,33 @@
         <span class="ayat-welcome-subtitle">رفيقك مع القرآن الكريم</span>
       </div>
     </div>
+    <section id="ayat-guide" class="ayat-guide" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ayat-guide-title">
+      <div class="ayat-guide-head">
+        <span class="ayat-guide-kicker">خطوة صغيرة قبل البداية</span>
+        <h1 class="ayat-guide-title" id="ayat-guide-title">تلميحة سريعة</h1>
+        <p class="ayat-guide-description">اضغط مطولًا على أي آية في المصحف لتظهر لك خياراتها.</p>
+      </div>
+      <div class="ayat-guide-stage" aria-label="عرض توضيحي للضغط المطول على آية">
+        <div class="ayat-guide-card">
+          <span class="ayat-guide-card-label">جرّبها أثناء القراءة</span>
+          <span class="ayat-guide-verse">إِنَّ مَعَ الْعُسْرِ يُسْرًا</span>
+        </div>
+        <span class="ayat-guide-ring" aria-hidden="true"></span>
+        <span class="ayat-guide-finger" aria-hidden="true">
+          <svg viewBox="0 0 72 96" xmlns="http://www.w3.org/2000/svg" fill="none">
+            <path d="M27 87 13 65c-5-8-4-14 1-17 4-3 8-1 12 3V17c0-6 3-9 8-9s8 3 8 9v28c2-5 11-5 14 1 7-2 13 3 13 11v10c0 9-3 15-8 20H27Z" fill="#F3D5AE" stroke="#9B6B4B" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M42 46v10m14-10v12M26 52v10" stroke="#C28D68" stroke-width="2.3" stroke-linecap="round"/>
+            <path d="M26 17c0-6 3-9 8-9s8 3 8 9" stroke="#FFF0D5" stroke-width="2" stroke-linecap="round"/>
+            <path d="M27 87h34" stroke="#9B6B4B" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <div class="ayat-guide-action" aria-hidden="true">التفسير · الاستماع · المزيد</div>
+      </div>
+      <div class="ayat-guide-footer">
+        <p class="ayat-guide-hint">لمسة مطوّلة تفتح لك المزيد من الخيارات</p>
+        <button class="ayat-guide-continue" type="button">ابدأ رحلتك مع آيات <span aria-hidden="true">←</span></button>
+      </div>
+    </section>
     <div class="home-app">
         <header class="home-topbar">
             <a class="home-brand" href="index.html" aria-label="الرئيسية">
@@ -86,6 +114,7 @@
     <script src="service-worker-register.js"></script>
     <script src="android-navigation.js"></script>
     <script src="home.js"></script>
+    <script src="onboarding.js"></script>
     <script src="welcome.js"></script>
 </body>
 </html>
