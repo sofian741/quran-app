@@ -61,10 +61,12 @@
     guide.hidden = true;
     guide.setAttribute('aria-hidden','true');
     document.body.style.overflow = '';
+    document.documentElement.classList.remove('ayat-guide-pending');
     for (const el of [finger,ring]) el.getAnimations().forEach(a => a.cancel());
   }
   button.addEventListener('click', close);
   // The brand logo must finish first. The guide is shown once per installation/browser data.
+  document.addEventListener('ayat:splash-leaving', show);
   document.addEventListener('ayat:splash-finished', show);
   if (splash?.hidden && !document.documentElement.classList.contains('ayat-splash-startup')) show();
 })();
