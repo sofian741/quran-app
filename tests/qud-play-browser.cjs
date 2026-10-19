@@ -56,7 +56,8 @@ const executablePath = process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium';
             null, { timeout: 30000 });
 
         // Different recordings/providers: quranicaudio, tarteel, TVQuran, archive.org.
-        for (const id of [9000, 9001, 9016, 9017]) {
+        const reciterIds = process.env.QUD_RECITER_ID ? [Number(process.env.QUD_RECITER_ID)] : [9000, 9001, 9016, 9017];
+        for (const id of reciterIds) {
             await page.evaluate(id => {
                 window.quranAudioEngine.pause();
                 const picker = document.getElementById('audio-reciter');
