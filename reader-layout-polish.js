@@ -771,6 +771,32 @@
             queueSync();
         }));
     });
+    // The visible reader can change dimensions without a window resize
+    // (settings panels, browser chrome, safe-area and Android viewport).
+    // Observe the actual page box and invalidate its fit only when its
+    // measured dimensions change, not when audio highlight DOM changes.
+    if (typeof ResizeObserver !== 'undefined') {
+        let observedSize = '';
+        const readerResizeObserver = new ResizeObserver(entries => {
+            const entry = entries[0];
+            if (!entry) return;
+            const width = Math.round(entry.contentRect.width);
+            const height = Math.round(entry.contentRect.height);
+            const nextSize = width + 'x' + height;
+            if (!width || !height || nextSize === observedSize) return;
+            observedSize = nextSize;
+            const pageNumber = fromArabicDigits(displayPageNumber.textContent);
+            if (pageNumber > 2) {
+                text.dataset.standardLayoutPage = '';
+                text.dataset.standardLayoutWidth = '';
+                text.dataset.layoutState = '';
+            } else {
+                window.mushafReader?.clearFitCache?.();
+            }
+            queueSync();
+        });
+        readerResizeObserver.observe(text);
+    }
     window.addEventListener('resize', queueSync, { passive: true });
 
     // Late webfont loading invalidates ALL earlier measurements, including
