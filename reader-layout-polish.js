@@ -745,27 +745,22 @@
     window.addEventListener('mushaf:page-ready', stabilizeVisiblePage);
     window.addEventListener('resize', queueSync, { passive: true });
 
-    // A cached fit measured with fallback glyphs is invalid once the Quran
-    // webfont finishes loading. Refit the visible page in place instead of
-    // requiring the reader to turn away and back to repair stretched lines.
+    // Late webfont loading invalidates ALL earlier measurements, including
+    // the special first two pages. Refit in place without a manual page flip.
+    function refitAfterFonts() {
+        const pageNumber = fromArabicDigits(displayPageNumber.textContent);
+        window.mushafReader?.clearFitCache?.();
+        if (pageNumber > 2) {
+            text.dataset.standardLayoutPage = '';
+            layoutMemoryCache.delete(layoutCacheKey(pageNumber, text.clientWidth, text.clientHeight));
+        } else {
+            window.mushafReader?.fitElement?.(text, pageNumber);
+        }
+        queueSync();
+    }
     if (document.fonts?.ready) {
-        document.fonts.ready.then(() => {
-            const page = fromArabicDigits(displayPageNumber.textContent);
-            if (page > 2 && text.dataset.layoutState === 'ready') {
-                text.dataset.standardLayoutPage = '';
-                const key = layoutCacheKey(page, text.clientWidth, text.clientHeight);
-                layoutMemoryCache.delete(key);
-            }
-            queueSync();
-        }).catch(() => {});
-        document.fonts.addEventListener?.('loadingdone', () => {
-            const page = fromArabicDigits(displayPageNumber.textContent);
-            if (page > 2) {
-                text.dataset.standardLayoutPage = '';
-                layoutMemoryCache.delete(layoutCacheKey(page, text.clientWidth, text.clientHeight));
-            }
-            queueSync();
-        });
+        document.fonts.ready.then(refitAfterFonts).catch(() => {});
+        document.fonts.addEventListener?.('loadingdone', refitAfterFonts);
     }
 
     // Load the idle pre-warmer after the cache API exists. It prepares nearby
