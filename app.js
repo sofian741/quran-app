@@ -835,7 +835,7 @@
     // Native pinch zoom must never trigger a one-finger page turn.
     const activeTouchPointers = new Set();
     // Small accidental magnification should not disable page turns.
-    const PAGE_TURN_ZOOM_LIMIT = 1.15;
+    const PAGE_TURN_ZOOM_LIMIT = 1.01;
     const isPinchZoomed = () => (window.visualViewport?.scale || 1) >= PAGE_TURN_ZOOM_LIMIT;
     const syncZoomPanning = () => {
         els.body.classList.toggle('is-pinch-panning', isPinchZoomed());
