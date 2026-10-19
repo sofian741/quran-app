@@ -277,7 +277,7 @@
   root.addEventListener('keydown',event=>{
     if(event.key!=='Tab')return;
     const panel=!modal.hidden?modal:card;
-    const focusable=[...panel.querySelectorAll('button:not([disabled]):not([hidden])')].filter(el=>el.getClientRects().length);
+    const focusable=[...(active && TOURS[active.kind]?.[active.step]?.tap && !hit.hidden?[hit]:[]),...panel.querySelectorAll('button:not([disabled]):not([hidden])')].filter(el=>el.getClientRects().length);
     if(!focusable.length)return;
     const first=focusable[0],last=focusable[focusable.length-1];
     if(event.shiftKey && (document.activeElement===first || document.activeElement===panel.querySelector('[role="dialog"]') || document.activeElement===card)){
