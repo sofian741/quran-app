@@ -50,21 +50,22 @@
   root.className='ayat-tour-root';
   root.hidden = true;
   root.setAttribute('aria-label','دليل استخدام آيات');
-  root.innerHTML = '<div class="ayat-tour-shade" hidden></div><div class="ayat-tour-spot" hidden></div><div class="ayat-tour-gesture" hidden aria-hidden="true"><svg viewBox="0 0 48 64"><path d="M17 59c-6-9-14-19-12-24 2-5 8-3 13 4V12c0-9 10-9 10 0v20c2-5 9-6 11-1 5 0 7 5 6 10l-3 17Z"/></svg></div><section class="ayat-tour-dialog" hidden></section><section class="ayat-tour-card" hidden role="dialog" aria-modal="true" aria-label="خطوة من شرح استخدام آيات" tabindex="-1"></section>';
+  root.innerHTML = '<div class="ayat-tour-shade" hidden></div><div class="ayat-tour-spot" hidden></div><button type="button" class="ayat-tour-hit" hidden aria-label="اضغط هنا للانتقال"></button><div class="ayat-tour-gesture" hidden aria-hidden="true"><svg viewBox="0 0 48 64"><path d="M17 59c-6-9-14-19-12-24 2-5 8-3 13 4V12c0-9 10-9 10 0v20c2-5 9-6 11-1 5 0 7 5 6 10l-3 17Z"/></svg></div><section class="ayat-tour-dialog" hidden></section><section class="ayat-tour-card" hidden role="dialog" aria-modal="true" aria-label="خطوة من شرح استخدام آيات" tabindex="-1"></section>';
   document.body.appendChild(root);
   const shade = root.querySelector('.ayat-tour-shade');
   const spot = root.querySelector('.ayat-tour-spot');
   const hand = root.querySelector('.ayat-tour-gesture');
+  const hit = root.querySelector('.ayat-tour-hit');
   const modal = root.querySelector('.ayat-tour-dialog');
   const card = root.querySelector(':scope > .ayat-tour-card');
   const escapeHtml = v => String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const total = kind => TOURS[kind].length;
   const progress = kind => Math.max(0,Math.min(total(kind)-1,parseInt(read(SAVED(kind),'0'),10)||0));
   function openRoot(){root.hidden=false;root.classList.toggle('under-splash',!!document.getElementById('ayat-welcome')&&!document.getElementById('ayat-welcome').hidden);document.body.classList.add('ayat-tour-on');document.documentElement.classList.remove('ayat-tour-boot');}
-  function closeRoot(){root.hidden=true;modal.hidden=card.hidden=shade.hidden=spot.hidden=hand.hidden=true;document.body.classList.remove('ayat-tour-on','ayat-tour-audio');document.documentElement.classList.remove('ayat-tour-boot');}
+  function closeRoot(){root.hidden=true;modal.hidden=card.hidden=shade.hidden=spot.hidden=hand.hidden=hit.hidden=true;document.body.classList.remove('ayat-tour-on','ayat-tour-audio');document.documentElement.classList.remove('ayat-tour-boot');}
   function dialogView(kicker,title,description,actions) {
     openRoot();dialog='modal';spotlight=false;
-    shade.hidden=true;spot.hidden=true;hand.hidden=true;card.hidden=true;modal.hidden=false;
+    shade.hidden=true;spot.hidden=true;hand.hidden=hit.hidden=true;card.hidden=true;modal.hidden=false;
     modal.innerHTML='<div class="ayat-tour-card" role="dialog" aria-modal="true" aria-label="'+escapeHtml(title)+'" tabindex="-1"><div class="ayat-tour-top"><span>'+escapeHtml(kicker)+'</span><span>آيات | Ayat</span></div><h2 class="ayat-tour-title">'+escapeHtml(title)+'</h2><p class="ayat-tour-body">'+escapeHtml(description)+'</p><div class="ayat-tour-choices">'+actions.map(a=>'<button type="button" class="'+(a.primary?'ayat-tour-main':'ayat-tour-secondary')+'" data-tour-action="'+a.action+'">'+escapeHtml(a.label)+(a.note?'<span class="ayat-tour-choice-note">'+escapeHtml(a.note)+'</span>':'')+'</button>').join('')+'</div></div>';
     modal.querySelector('[role="dialog"]')?.focus({preventScroll:true});
   }
@@ -137,9 +138,15 @@
   function position(){
     if(!active || !spotlight || card.hidden)return;
     const s=TOURS[active.kind][active.step];const t=findTarget(s);
-    if(!t){spot.hidden=true;hand.hidden=true;card.style.left='15px';card.style.top=Math.max(12,(innerHeight-card.offsetHeight)/2)+'px';return;}
+    if(!t){spot.hidden=true;hand.hidden=hit.hidden=true;card.style.left='15px';card.style.top=Math.max(12,(innerHeight-card.offsetHeight)/2)+'px';return;}
     const r=getRect(t);
     spot.hidden=false;spot.style.left=r.left+'px';spot.style.top=r.top+'px';spot.style.width=Math.max(12,r.width)+'px';spot.style.height=Math.max(12,r.height)+'px';
+    hit.hidden=!s.tap;
+    if(s.tap){
+      hit.style.left=r.left+'px';hit.style.top=r.top+'px';
+      hit.style.width=Math.max(12,r.width)+'px';hit.style.height=Math.max(12,r.height)+'px';
+      hit.setAttribute('aria-label','اضغط هنا: '+s.title);
+    }
     const width=Math.min(380,innerWidth-30);
     card.style.width=width+'px';
     const height=card.offsetHeight || 220;
@@ -174,7 +181,7 @@
     if(!active)return;
     const kind=active.kind,s=TOURS[kind][active.step];
     if(s.page!==PAGE){location.href=s.page;return;}
-    openRoot();dialog=null;spotlight=true;modal.hidden=true;shade.hidden=true;spot.hidden=true;hand.hidden=true;
+    openRoot();dialog=null;spotlight=true;modal.hidden=true;shade.hidden=true;spot.hidden=true;hand.hidden=hit.hidden=true;
     document.body.classList.toggle('ayat-tour-audio',kind==='quran'&&(s.selector==='#mushaf-audio-player'||s.selector==='#audio-quick-repeat'));
     shade.hidden=false;shade.style.background='transparent';
     card.hidden=false;card.style.visibility='hidden';
