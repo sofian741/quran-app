@@ -39,3 +39,14 @@
 .reader-page.ayat-tour-on .reader-overlay{opacity:1!important;visibility:visible!important;transform:translateY(0)!important}
 .reader-page.ayat-tour-on .mushaf-audio-player{opacity:1!important;visibility:visible!important;transform:translateY(0)!important}
 @media(min-width:700px){.reader-page.ayat-tour-on .mushaf-audio-player{transform:translateX(50%)!important}}
+
+/* A horizontal finger sweep that shows the actual page-turn gesture. */
+.ayat-tour-gesture.is-swipe{animation:ayat-tour-swipe 3.1s ease-in-out infinite}
+.ayat-tour-gesture.is-swipe:after{display:none}
+@keyframes ayat-tour-swipe{
+  0%,10%,100%{opacity:0;transform:translateX(67px) rotate(-9deg)}
+  25%{opacity:1;transform:translateX(67px) rotate(-9deg)}
+  72%{opacity:1;transform:translateX(-67px) rotate(-9deg)}
+  84%{opacity:0;transform:translateX(-67px) rotate(-9deg)}
+}
+@media(prefers-reduced-motion:reduce){.ayat-tour-gesture.is-swipe{animation:none}}
