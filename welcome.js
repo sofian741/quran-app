@@ -37,6 +37,7 @@
       ]);
       await animate(subtitle, [{ opacity: 0 }, { opacity: 1 }], { duration: 650 });
       await wait(800);
+    document.dispatchEvent(new Event('ayat:splash-leaving'));
     document.documentElement.classList.remove('ayat-splash-startup');
     splash.classList.add('is-leaving');
     await wait(700);
