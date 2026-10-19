@@ -571,7 +571,7 @@
                 surah: Number(ui.surah.value) || 1, ayah: 1, autoplay: wasPlaying
             });
             if (ready) lastAlignedId = id;
-            else ui.status.textContent = 'تعذّر تجهيز تلاوة القارئ المتزامنة لهذه السورة. جرّب قارئًا آخر.';
+            else ui.status.textContent = engine.error || 'تعذّر تجهيز تلاوة القارئ المتزامنة لهذه السورة. جرّب قارئًا آخر.';
             return;
         }
         const reciter = catalog.find(item => item.id === Number(value.replace('mp3:', '')));
