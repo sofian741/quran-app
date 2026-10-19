@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="reader-enhancements.css">
     <link rel="stylesheet" href="audio-player.css">
+    <link rel="stylesheet" href="tour.css">
 </head>
 <body class="reader-page" data-theme="paper">
     <div class="loading-screen" id="loading-screen" role="status" aria-live="polite">
@@ -144,6 +145,11 @@
         <button type="button" id="open-quran-search" class="settings-saved-button settings-search-button" aria-haspopup="dialog" aria-controls="quran-search-sheet">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
             <span><strong>البحث في القرآن الكريم</strong><small>ابحث بكلمة أو جزء من آية، وانتقل للمصحف أو التفسير</small></span>
+        </button>
+
+        <button type="button" id="ayat-tour-settings-button" class="settings-saved-button" aria-haspopup="dialog" aria-controls="ayat-tour-root">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.7 9.1a2.6 2.6 0 0 1 5 .9c0 1.7-2.7 2.2-2.7 4.1M12 17.4h.01"/></svg>
+            <span><strong>شرح استخدام التطبيق</strong><small>إعادة شرح التطبيق أو المصحف خطوة بخطوة</small></span>
         </button>
 
         <button type="button" id="check-app-update" class="settings-saved-button" aria-describedby="app-update-status">
@@ -396,5 +402,6 @@
     <script src="offline-mishary-sync.js"></script>
   <script src="offline-reciter-catalog.js"></script>
     <script src="mushaf-audio.js"></script>
+    <script src="tour.js"></script>
 </body>
 </html>
