@@ -132,6 +132,11 @@ jobs:
               '  @Override public void onCreate(android.os.Bundle state) {\n'
               '    super.onCreate(state);\n'
               '    getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);\n'
+              '    android.webkit.WebSettings ws = getBridge().getWebView().getSettings();\n'
+              '    ws.setSupportZoom(true);\n'
+              '    ws.setBuiltInZoomControls(true);\n'
+              '    ws.setDisplayZoomControls(false);\n'
+              '    ws.setUseWideViewPort(true);\n'
               '  }')
           path.write_text(source)
           PY
