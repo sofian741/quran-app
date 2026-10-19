@@ -743,6 +743,29 @@
     window.addEventListener('mushaf:page-ready', stabilizeVisiblePage);
     window.addEventListener('resize', queueSync, { passive: true });
 
+    // A cached fit measured with fallback glyphs is invalid once the Quran
+    // webfont finishes loading. Refit the visible page in place instead of
+    // requiring the reader to turn away and back to repair stretched lines.
+    if (document.fonts?.ready) {
+        document.fonts.ready.then(() => {
+            const page = fromArabicDigits(displayPageNumber.textContent);
+            if (page > 2 && text.dataset.layoutState === 'ready') {
+                text.dataset.standardLayoutPage = '';
+                const key = layoutCacheKey(page, text.clientWidth, text.clientHeight);
+                layoutMemoryCache.delete(key);
+            }
+            queueSync();
+        }).catch(() => {});
+        document.fonts.addEventListener?.('loadingdone', () => {
+            const page = fromArabicDigits(displayPageNumber.textContent);
+            if (page > 2) {
+                text.dataset.standardLayoutPage = '';
+                layoutMemoryCache.delete(layoutCacheKey(page, text.clientWidth, text.clientHeight));
+            }
+            queueSync();
+        });
+    }
+
     // Load the idle pre-warmer after the cache API exists. It prepares nearby
     // pages first, then slowly fills the rest of the 604-page mushaf.
     if (!document.querySelector('script[data-mushaf-layout-prewarm]')) {
