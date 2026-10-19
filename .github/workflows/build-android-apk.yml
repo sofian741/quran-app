@@ -240,8 +240,8 @@ jobs:
 
           strings = Path('android/app/src/main/res/values/strings.xml')
           text = strings.read_text(encoding='utf-8')
-          text = re.sub(r'<string name="app_name">.*?</string>', '<string name="app_name">نور القرآن</string>', text)
-          text = re.sub(r'<string name="title_activity_main">.*?</string>', '<string name="title_activity_main">نور القرآن</string>', text)
+          text = re.sub(r'<string name="app_name">.*?</string>', '<string name="app_name">آيات | Ayat</string>', text)
+          text = re.sub(r'<string name="title_activity_main">.*?</string>', '<string name="title_activity_main">آيات | Ayat</string>', text)
           strings.write_text(text, encoding='utf-8')
           PY
 
@@ -260,7 +260,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Noor-Al-Quran-APK
+          name: Ayat-APK
           path: dist/Noor-Al-Quran-debug.apk
           if-no-files-found: error
           retention-days: 14
@@ -269,7 +269,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: qa-${{ github.run_number }}
-          name: Noor Al Quran QA 0.1.${{ github.run_number }}
+          name: Ayat QA 0.1.${{ github.run_number }}
           files: dist/Noor-Al-Quran-debug.apk
           make_latest: true
           generate_release_notes: false
