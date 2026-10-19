@@ -7,7 +7,7 @@
 .ayat-welcome-ar{font-family:'Amiri Quran',Tahoma,serif;font-size:clamp(42px,12vw,68px);font-weight:700;transform:translateX(48px)}
 .ayat-welcome-en{font-family:Georgia,serif;font-size:clamp(29px,8vw,43px);letter-spacing:.02em;transform:translateX(-48px)}
 .ayat-welcome-line{width:3px;height:55px;margin:0 17px;background:linear-gradient(180deg,#f8e7b9,#c49a4f,#f8e7b9);border-radius:3px;box-shadow:0 0 20px #f5cf7960;transform:scaleY(.3) rotate(0);transform-origin:center;flex:none;will-change:transform}
-.ayat-welcome.is-playing .ayat-welcome-line{animation:ayat-spin 1.55s cubic-bezier(.6,.05,.25,1) both,ayat-grow .75s 1.65s cubic-bezier(.2,.8,.2,1) forwards}
+.ayat-welcome.is-playing .ayat-welcome-line{animation:ayat-line-sequence 2.4s ease-in-out both}
 .ayat-welcome.is-playing .ayat-welcome-ar{animation:ayat-reveal-ar .85s 2.35s cubic-bezier(.2,.8,.2,1) forwards}
 .ayat-welcome.is-playing .ayat-welcome-en{animation:ayat-reveal-en .85s 2.35s cubic-bezier(.2,.8,.2,1) forwards}
 .ayat-welcome-subtitle{position:absolute;top:calc(50% + 77px);left:0;right:0;text-align:center;color:#e5d8b8;font-size:13px;letter-spacing:.04em;opacity:0}
@@ -20,3 +20,12 @@
 @keyframes ayat-reveal-en{to{opacity:1;filter:blur(0);transform:translateX(0)}}
 @keyframes ayat-fade{to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.ayat-welcome.is-playing .ayat-welcome-line,.ayat-welcome.is-playing .ayat-welcome-word,.ayat-welcome.is-playing .ayat-welcome-subtitle{animation:none;filter:none;opacity:1;transform:none}.ayat-welcome{transition:none}}
+
+/* One transform timeline avoids competing animations masking the rotation. */
+@keyframes ayat-line-sequence {
+  0% { transform:scaleY(.3) rotate(0deg); }
+  15% { transform:scaleY(.7) rotate(0deg); }
+  45% { transform:scaleY(.7) rotate(360deg); }
+  75% { transform:scaleY(.7) rotate(720deg); }
+  100% { transform:scaleY(1) rotate(720deg); }
+}
