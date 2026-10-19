@@ -11,8 +11,18 @@
     <title>الرئيسية | آيات | Ayat</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="home.css">
+    <link rel="stylesheet" href="welcome.css">
 </head>
 <body class="home-page" data-home-theme="light">
+    <div id="ayat-welcome" class="ayat-welcome" role="dialog" aria-modal="true" aria-label="ترحيب بتطبيق آيات" hidden>
+      <div class="ayat-welcome-center" aria-label="آيات | Ayat">
+        <span class="ayat-welcome-word ayat-welcome-ar" lang="ar" dir="rtl">آيات</span>
+        <span class="ayat-welcome-line" aria-hidden="true"></span>
+        <span class="ayat-welcome-word ayat-welcome-en" lang="en">Ayat</span>
+        <span class="ayat-welcome-subtitle">رفيقك مع القرآن الكريم</span>
+      </div>
+      <button type="button" class="ayat-welcome-skip">تخطي</button>
+    </div>
     <div class="home-app">
         <header class="home-topbar">
             <a class="home-brand" href="index.html" aria-label="الرئيسية">
@@ -76,5 +86,6 @@
     <script src="service-worker-register.js"></script>
     <script src="android-navigation.js"></script>
     <script src="home.js"></script>
+    <script src="welcome.js"></script>
 </body>
 </html>
