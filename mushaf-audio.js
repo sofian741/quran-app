@@ -910,6 +910,11 @@
     downloads.addEventListener('change', event => {
         const detail = event.detail;
         if (detail.status === 'starting') progressStart = Date.now();
+        if (detail.status === 'paused') {
+            ui.downloadProgress.textContent = navigator.onLine === false
+                ? '⏸ الإنترنت مقطوع. التنزيل محفوظ وسيتابع تلقائيًا عند رجوع الاتصال.'
+                : '⏸ تنزيل التلاوة متوقف مؤقتًا، في انتظار الشبكة. سيتم استكماله تلقائيًا.';
+        }
         if (detail.status === 'downloading') {
             const seconds = Math.max(1, (Date.now() - progressStart) / 1000);
             const speed = detail.received / seconds;
