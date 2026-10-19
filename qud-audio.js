@@ -57,16 +57,39 @@
         }
     }
 
+    async function fetchWithDeadline(url, options = {}) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25000);
+        try {
+            const response = await fetch(absoluteUrl(url), {
+                cache: 'force-cache', ...options, signal: controller.signal
+            });
+            // Keep aborting a stalled body download, not just stalled headers.
+            return { response, done: () => clearTimeout(timeout) };
+        } catch (error) {
+            clearTimeout(timeout);
+            if (controller.signal.aborted) {
+                throw new Error('انتهت مهلة جلب بيانات القارئ. تحقق من الاتصال وأعد المحاولة.');
+            }
+            throw error;
+        }
+    }
+
     async function fetchJson(url) {
-        const response = await fetch(absoluteUrl(url), { cache: 'force-cache' });
-        if (!response.ok) throw new Error(`QUD metadata HTTP ${response.status}`);
-        return response.json();
+        const { response, done } = await fetchWithDeadline(url);
+        try {
+            if (!response.ok) throw new Error(`QUD metadata HTTP ${response.status}`);
+            return await response.json();
+        } finally { done(); }
     }
 
     async function fetchMaybeGzipJson(url) {
-        const response = await fetch(absoluteUrl(url), { cache: 'force-cache' });
-        if (!response.ok) throw new Error(`QUD timings HTTP ${response.status}`);
-        const bytes = new Uint8Array(await response.arrayBuffer());
+        const { response, done } = await fetchWithDeadline(url);
+        let bytes;
+        try {
+            if (!response.ok) throw new Error(`QUD timings HTTP ${response.status}`);
+            bytes = new Uint8Array(await response.arrayBuffer());
+        } finally { done(); }
         let text;
         if (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
             if (typeof DecompressionStream !== 'function') {
@@ -117,9 +140,12 @@
 
     async function loadFoundationChapter(reciter, surah) {
         const endpoint = `https://api.quran.com/api/v4/chapter_recitations/${reciter.foundationId}/${surah}?segments=true`;
-        const response = await fetch(endpoint, { cache: 'force-cache' });
-        if (!response.ok) throw new Error(`تعذّر تحميل توقيت القارئ (HTTP ${response.status}).`);
-        const payload = await response.json();
+        const { response, done } = await fetchWithDeadline(endpoint);
+        let payload;
+        try {
+            if (!response.ok) throw new Error(`تعذّر تحميل توقيت القارئ (HTTP ${response.status}).`);
+            payload = await response.json();
+        } finally { done(); }
         const file = payload?.audio_file;
         const expected = core.VERSE_COUNTS[surah - 1];
         const audioUrl = String(file?.audio_url || '');
@@ -388,7 +414,7 @@
             const mediaUrl = window.QuranDownloads?.mediaFor
                 ? await window.QuranDownloads.mediaFor(this, chapter.audioUrl) : chapter.audioUrl;
             if (version !== this.prepareVersion) return false;
-            if (!sameTrack || this.audio.src !== mediaUrl) {
+            if (!sameTrack || this.audio.src !== mediaUrl || this.audio.error) {
                 // Do not block the UI waiting for loadedmetadata. On slower hosts
                 // that made the play button look frozen for up to eight seconds.
                 // Arm the exact seek before load; loadedmetadata always fires
