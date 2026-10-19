@@ -21,7 +21,7 @@ const base=process.env.QURAN_BASE_URL||'http://127.0.0.1:4173';
    const before=await page.evaluate(()=>{const e=window.quranAudioEngine;return {name:e.state.reciterName,url:e.trackUrl,status:e.status,error:e.error,readyState:e.audio.readyState,networkState:e.audio.networkState}});
    console.log('REAL BEFORE '+id+' '+JSON.stringify(before));
    if(before.status==='error')continue;
-   await page.locator('#audio-play').click();
+   await page.evaluate(()=>document.getElementById('audio-play').click());
    await page.waitForTimeout(9000);
    const after=await page.evaluate(()=>{const e=window.quranAudioEngine;return {status:e.status,error:e.error,time:e.audio.currentTime,paused:e.audio.paused,readyState:e.audio.readyState,networkState:e.audio.networkState,mediaError:e.audio.error?.code||null,src:e.audio.currentSrc}});
    console.log('REAL AFTER '+id+' '+JSON.stringify(after));
