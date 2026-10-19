@@ -7,6 +7,8 @@ on:
       - app.js
       - style.css
       - tests/mushaf-larger-font.cjs
+      - tests/zoom-guard.cjs
+      - reader-enhancements.js
       - .github/workflows/verify-mushaf-font.yml
   workflow_dispatch:
 permissions:
@@ -34,3 +36,4 @@ jobs:
           node --check reader-layout-polish.js
           node --check tests/mushaf-larger-font.cjs
           node tests/mushaf-larger-font.cjs
+          node tests/zoom-guard.cjs
