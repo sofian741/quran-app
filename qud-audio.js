@@ -349,6 +349,13 @@
             return this.prepare({ autoplay: true });
         }
         this.__qudPreloadingOnly = false;
+        // The user may tap Play before async QUD timing/catalog preparation
+        // finishes. Calling core.play() in that window launches a second
+        // prepare(), invalidates the first request and can leave the button
+        // looking unresponsive on slow Android WebViews.
+        if (!this.trackUrl) {
+            return this.prepare({ autoplay: true });
+        }
         const selectedAudio = this.audio;
         const selectedReciter = this.state.reciterId;
         const selectedVersion = this.prepareVersion;
