@@ -582,7 +582,9 @@
         container.dataset.layoutState = 'ready';
         container.dataset.standardLayoutPage = String(pageNumber);
         container.dataset.standardLayoutWidth = layoutWidth;
-        persistLayoutRecord(snapshotStandardLayout(container, pageNumber, layoutWidth));
+        if (!document.fonts?.check || document.fonts.check('24px "Amiri Quran"')) {
+            persistLayoutRecord(snapshotStandardLayout(container, pageNumber, layoutWidth));
+        }
     }
 
     let originalFitElement = null;
