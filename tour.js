@@ -32,9 +32,6 @@
   ];
   const TOURS = {general: GENERAL, quran: QURAN};
   const PAGE = location.pathname.split('/').pop() || 'index.html';
-  const tourParams = new URLSearchParams(location.search);
-  const forcedTour = tourParams.get('ayatTour');
-  const forcedStep = Number(tourParams.get('ayatStep'));
 
   const HANDOFF = '#ayat-tour=';
   // Use query parameters, not a fragment: some mobile WebViews/navigation
@@ -223,52 +220,56 @@
     position();card.focus({preventScroll:true});
   }
   function restoreActive(){
-    // Explicit URL handoff survives full document reloads and WebView page
-    // changes even if the browser discards sessionStorage between pages.
+    // A URL handoff is authoritative. Keep it intact until the next page has
+    // actually mounted the explanation; no automatic redirects or silent
+    // deletion of an in-progress cross-page tour.
     const params=new URLSearchParams(location.search);
+    const rawKind=params.get('ayatTour');
+    const rawStep=params.get('ayatStep');
     const hash=location.hash || '';
-    const legacy=hash.startsWith(HANDOFF) ? /^(general|quran):(\d+)$/.exec(decodeURIComponent(hash.slice(HANDOFF.length))) : null;
-    const passedKind=params.get('ayatTour') || (legacy && legacy[1]);
-    const passedStep=params.get('ayatStep') ?? (legacy && legacy[2]);
-    if(passedKind && passedStep!==null){
-      const kind=passedKind,step=Number(passedStep);
-      {
-        if(step>=0 && step<total(kind) && TOURS[kind][step].page===PAGE){
+    const legacy=hash.startsWith(HANDOFF)
+      ? /^(general|quran):(\\d+)$/.exec(decodeURIComponent(hash.slice(HANDOFF.length))) : null;
+    const kind=rawKind || legacy?.[1];
+    const stepText=rawStep ?? legacy?.[2];
+    const explicit=kind && stepText!==null && stepText!==undefined;
+    if(explicit && TOURS[kind]){
+      const step=Number(stepText);
+      if(Number.isInteger(step) && step>=0 && step<total(kind)){
+        if(TOURS[kind][step].page===PAGE){
           active={kind,step};
-          write(SAVED(kind),step);
-          saveActive();
-          try{history.replaceState(history.state,'',location.pathname);}catch(_){}
-          renderStep();
+          write(SAVED(kind),step);saveActive();
+          renderStep().then(()=>{
+            // Only clear the handoff after successful mounting.
+            try{history.replaceState(history.state,'',location.pathname);}catch(_){}
+          }).catch(error=>{
+            console.error('[Ayat Tour] Failed to render destination step',error);
+            // Keep the URL so a refresh can retry.
+          });
           return true;
         }
+        console.warn('[Ayat Tour] Destination mismatch', {expected:TOURS[kind][step].page,actual:PAGE});
       }
-    }
-    // Query parameters are also understood by this reader, so the step
-    // survives a WebView page reload regardless of storage behavior.
-    if((forcedTour==='general'||forcedTour==='quran') &&
-       Number.isInteger(forcedStep) && forcedStep>=0 &&
-       forcedStep<total(forcedTour) && TOURS[forcedTour][forcedStep].page===PAGE){
-      active={kind:forcedTour,step:forcedStep};
-      write(SAVED(forcedTour),forcedStep);saveActive();
-      try{history.replaceState(history.state,'',location.pathname);}catch(_){}
-      renderStep();return true;
     }
     const raw=read(ACTIVE);
     if(!raw)return false;
     try {
       const state=JSON.parse(raw);
-      if(!TOURS[state.kind]||!Number.isInteger(state.step)||state.step<0||state.step>=total(state.kind)){erase(ACTIVE);return false;}
-      active=state;
+      if(!TOURS[state.kind] || !Number.isInteger(state.step) ||
+         state.step<0 || state.step>=total(state.kind)){
+        erase(ACTIVE);return false;
+      }
       if(TOURS[state.kind][state.step].page!==PAGE){
-        // An external/back navigation must never trap the user in a redirect loop.
-        write(SAVED(state.kind),state.step);
-        write(LATER(state.kind),Date.now()+24*60*60*1000);
-        erase(ACTIVE);active=null;
+        // Do not cancel a pending tour merely because navigation is still in
+        // progress or the user used Back. It can be resumed from settings.
         return false;
       }
-      renderStep();
+      active=state;
+      renderStep().catch(error=>console.error('[Ayat Tour] Resume failed',error));
       return true;
-    }catch(_){erase(ACTIVE);return false;}
+    }catch(error){
+      console.warn('[Ayat Tour] Could not read saved tour state',error);
+      return false;
+    }
   }
   // Only a deliberate tap on the illuminated real control advances a
   // navigation step. Save the NEXT step before navigation destroys this page.
