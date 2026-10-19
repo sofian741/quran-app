@@ -50,7 +50,7 @@
   const escapeHtml = v => String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const total = kind => TOURS[kind].length;
   const progress = kind => Math.max(0,Math.min(total(kind)-1,parseInt(read(SAVED(kind),'0'),10)||0));
-  function openRoot(){root.hidden=false;document.body.classList.add('ayat-tour-on');document.documentElement.classList.remove('ayat-tour-boot');}
+  function openRoot(){root.hidden=false;root.classList.toggle('under-splash',!!document.getElementById('ayat-welcome')&&!document.getElementById('ayat-welcome').hidden);document.body.classList.add('ayat-tour-on');document.documentElement.classList.remove('ayat-tour-boot');}
   function closeRoot(){root.hidden=true;modal.hidden=card.hidden=shade.hidden=spot.hidden=hand.hidden=true;document.body.classList.remove('ayat-tour-on','ayat-tour-audio');document.documentElement.classList.remove('ayat-tour-boot');}
   function dialogView(kicker,title,description,actions) {
     openRoot();dialog='modal';spotlight=false;
@@ -236,6 +236,7 @@
   window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(position,65)});
   window.addEventListener('scroll',()=>{if(spotlight)requestAnimationFrame(position)},true);
   document.addEventListener('keydown',e=>{if(root.hidden)return;if(e.key==='Escape'&&active){e.preventDefault();postpone(active.kind);}else if(e.key==='Escape'&&dialog){e.preventDefault();closeRoot();}});
+  document.addEventListener('ayat:splash-finished',()=>root.classList.remove('under-splash'));
   const settingsTrigger=document.getElementById('ayat-tour-settings-button');
   settingsTrigger?.addEventListener('click',chooser);
   // Keep the initial logo intact and prepare the tour underneath its fade-out.
