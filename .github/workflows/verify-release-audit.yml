@@ -18,6 +18,8 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           for file in *.js tests/*.cjs scripts/*.cjs; do node --check "$file"; done
+      - name: Test continuous reciter verse synchronization
+        run: node tests/continuous-sync-regression.cjs
       - name: Verify Quran, tafsir, adhkar and timing data
         run: |
           node tests/content.cjs
