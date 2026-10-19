@@ -55,19 +55,17 @@
 
   // On Android, returning from the background counts as opening the app again.
   const app = window.Capacitor?.Plugins?.App;
+  let wasBackgrounded = false;
   if (app?.addListener) {
     app.addListener('appStateChange', state => {
       if (!state.isActive) {
+        wasBackgrounded = true;
         try { sessionStorage.removeItem(key); } catch (_) {}
-      } else if (!playing) {
+      } else if (wasBackgrounded && !playing) {
+        wasBackgrounded = false;
         try { sessionStorage.setItem(key, '1'); } catch (_) {}
         start();
       }
     });
   }
-  /* play().catch(() => {
-    // Never trap the user behind the splash if animations are unsupported.
-    splash.classList.add('is-leaving');
-    setTimeout(() => { splash.hidden = true; }, 700);
-  }); */
 })();
