@@ -751,6 +751,26 @@
         consumeVerseDeepLink();
     });
     window.addEventListener('mushaf:page-ready', stabilizeVisiblePage);
+
+    // Switching reciters can change audio overlays and the visible reader
+    // geometry without replacing the Quran page DOM. A page turn naturally
+    // recalculates the fit, so do that same recalculation in place.
+    window.addEventListener('mushaf:reciter-changed', () => {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            const pageNumber = fromArabicDigits(displayPageNumber.textContent);
+            if (pageNumber > 2) {
+                layoutMemoryCache.delete(layoutCacheKey(
+                    pageNumber, text.clientWidth, text.clientHeight));
+                text.dataset.standardLayoutPage = '';
+                text.dataset.standardLayoutWidth = '';
+                text.dataset.layoutState = '';
+            } else {
+                window.mushafReader?.clearFitCache?.();
+                window.mushafReader?.fitElement?.(text, pageNumber);
+            }
+            queueSync();
+        }));
+    });
     window.addEventListener('resize', queueSync, { passive: true });
 
     // Late webfont loading invalidates ALL earlier measurements, including
