@@ -1,10 +1,10 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v41';
+const APP_CACHE = 'quran-reader-shell-v42';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',
-    './style.css', './home.css', './home.js', './welcome.css', './welcome-boot.js', './welcome.js', './tour.css', './tour.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
+    './style.css', './home.css', './home.js', './welcome.css', './welcome-boot.js', './welcome.js', './tour.css', './tour.js', './onboarding.css', './onboarding.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
     './recitations-overrides.css', './unified-nav.css', './global-theme.js', './library.css', './adhkar.css', './legal.css',
     './service-worker-register.js', './app.js', './reader-enhancements.js', './reader-layout-polish.js',
     './mushaf-layout-prewarm-worker.js',
