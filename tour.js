@@ -52,8 +52,8 @@
   const escapeHtml = v => String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const total = kind => TOURS[kind].length;
   const progress = kind => Math.max(0,Math.min(total(kind)-1,parseInt(read(SAVED(kind),'0'),10)||0));
-  function openRoot(){root.hidden=false;document.documentElement.classList.remove('ayat-tour-boot');}
-  function closeRoot(){root.hidden=true;modal.hidden=card.hidden=shade.hidden=spot.hidden=hand.hidden=true;document.documentElement.classList.remove('ayat-tour-boot');}
+  function openRoot(){root.hidden=false;document.body.classList.add('ayat-tour-on');document.documentElement.classList.remove('ayat-tour-boot');}
+  function closeRoot(){root.hidden=true;modal.hidden=card.hidden=shade.hidden=spot.hidden=hand.hidden=true;document.body.classList.remove('ayat-tour-on');document.documentElement.classList.remove('ayat-tour-boot');}
   function dialogView(kicker,title,description,actions) {
     openRoot();dialog='modal';spotlight=false;
     shade.hidden=true;spot.hidden=true;hand.hidden=true;card.hidden=true;modal.hidden=false;
