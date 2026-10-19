@@ -9,28 +9,25 @@
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   const animate = (element, frames, options) => element.animate(frames, { fill: 'forwards', ...options }).finished;
   async function play() {
-      // Stage 1: the gold line visibly turns twice, one continuous motion.
-      await animate(line, [
-        { transform: 'scaleY(.55) rotate(0deg)', offset: 0 },
-        { transform: 'scaleY(.55) rotate(360deg)', offset: .5 },
-        { transform: 'scaleY(.55) rotate(720deg)', offset: 1 }
-      ], { duration: 2000, easing: 'linear' });
+      // A single quick turn, then a deliberate pause before the reveal.
+      await animate(line, [{ transform: 'scaleY(.55) rotate(0deg)' }, { transform: 'scaleY(.55) rotate(360deg)' }], { duration: 900, easing: 'cubic-bezier(.45,.08,.55,.95)' });
       // Stage 2: line extends before either word is revealed.
       await animate(line, [
-        { transform: 'scaleY(.55) rotate(720deg)' },
-        { transform: 'scaleY(1) rotate(720deg)' }
-      ], { duration: 700, easing: 'cubic-bezier(.2,.8,.2,1)' });
-      await wait(180);
-      // Stage 3: both words emerge smoothly from the center.
+        { transform: 'scaleY(.55) rotate(360deg)' },
+        { transform: 'scaleY(1) rotate(360deg)' }
+      ], { duration: 580, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      await wait(120);
+      // Reveal each word from the central divider using a moving clip edge.
+      // No blur or sudden opacity jump.
       await Promise.all([
         animate(arabic, [
-          { opacity: 0, transform: 'translateX(48px)', filter: 'blur(5px)' },
-          { opacity: 1, transform: 'translateX(0)', filter: 'blur(0)' }
-        ], { duration: 1100, easing: 'cubic-bezier(.2,.8,.2,1)' }),
+          { opacity: 1, clipPath: 'inset(0 0 0 100%)', transform: 'translateX(13px)' },
+          { opacity: 1, clipPath: 'inset(0 0 0 0%)', transform: 'translateX(0)' }
+        ], { duration: 1250, easing: 'cubic-bezier(.22,1,.36,1)' }),
         animate(english, [
-          { opacity: 0, transform: 'translateX(-48px)', filter: 'blur(5px)' },
-          { opacity: 1, transform: 'translateX(0)', filter: 'blur(0)' }
-        ], { duration: 1100, easing: 'cubic-bezier(.2,.8,.2,1)' })
+          { opacity: 1, clipPath: 'inset(0 100% 0 0)', transform: 'translateX(-13px)' },
+          { opacity: 1, clipPath: 'inset(0 0% 0 0)', transform: 'translateX(0)' }
+        ], { duration: 1250, easing: 'cubic-bezier(.22,1,.36,1)' })
       ]);
       await animate(subtitle, [{ opacity: 0 }, { opacity: 1 }], { duration: 650 });
       await wait(800);
