@@ -9,7 +9,7 @@
   const GENERAL = [
     {page:'index.html',selector:'.home-reading',title:'كمّل القراءة من مكانك',body:'هنا هتلاقي آخر موضع وصلت له في المصحف. اضغط «متابعة القراءة» عشان ترجع له مباشرة.'},
     {page:'index.html',selector:'.home-verse-actions',title:'آية للتدبّر كل يوم',body:'تقدر تروح للآية في المصحف أو تفتح تفسيرها مباشرة. دي وقفتك اليومية مع معنى ينفعك.'},
-    {page:'index.html',selector:'.home-feature-audio',tap:true,to:'recitations.html',title:'افتح مكتبة التلاوات بنفسك',body:'شايف زر «مكتبة التلاوات» المنوّر؟ اضغط عليه دلوقتي بإيدك، وهنكمّل الشرح داخل الصفحة اللي هتفتح.'},
+    {page:'index.html',selector:'.home-bottom-nav a[href="recitations.html"]',tap:true,to:'recitations.html',title:'فين تلاقي التلاوات؟',body:'بص تحت في شريط التنقل: زر «التلاوات» موجود هنا في كل وقت. اضغط عليه بإيدك عشان ندخل للمكتبة ونكمل الشرح.'},
     {page:'recitations.html',selector:'.catalog-heading',title:'اختار صوت القارئ اللي تحبه',body:'دي مكتبة القرّاء. اختر قارئًا منها، وبعدها تقدر تحدد الرواية والسورة اللي تحب تسمعها.'},
     {page:'recitations.html',selector:'.controls-fields',title:'القارئ والسورة',body:'من القائمتين دول اختار التسجيل والسورة، وبعدين استخدم زر التشغيل. تغيير القارئ لا يحتاج تنزيلًا.'},
     {page:'recitations.html',selector:'#download-current',title:'اسمع من غير إنترنت',body:'اضغط «تنزيل السورة» عشان تفضل محفوظة على الجهاز. ولو حابب تقدر تنزّل مصحف القارئ من الزر المجاور.'},
