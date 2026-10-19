@@ -9,9 +9,27 @@
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   const animate = (element, frames, options) => element.animate(frames, { fill: 'forwards', ...options }).finished;
   let playing = false;
+  let leaving = false;
+  const skip = splash.querySelector('.ayat-welcome-skip');
+  async function leave() {
+    if (leaving) return;
+    leaving = true;
+    document.dispatchEvent(new Event('ayat:splash-leaving'));
+    document.documentElement.classList.remove('ayat-splash-startup');
+    splash.classList.add('is-leaving');
+    await wait(700);
+    splash.hidden = true;
+    document.dispatchEvent(new Event('ayat:splash-finished'));
+    playing = false;
+  }
+  skip?.addEventListener('click', () => {
+    if (!playing || leaving) return;
+    leave();
+  });
   async function play() {
     if (playing) return;
     playing = true;
+    leaving = false;
     splash.hidden = false;
     splash.classList.remove('is-leaving');
     for (const node of [line, arabic, english, subtitle]) node.getAnimations().forEach(a => a.cancel());
@@ -37,19 +55,9 @@
       ]);
       await animate(subtitle, [{ opacity: 0 }, { opacity: 1 }], { duration: 650 });
       await wait(800);
-    document.dispatchEvent(new Event('ayat:splash-leaving'));
-    document.documentElement.classList.remove('ayat-splash-startup');
-    splash.classList.add('is-leaving');
-    await wait(700);
-    splash.hidden = true;
-    document.dispatchEvent(new Event('ayat:splash-finished'));
-    playing = false;
+    await leave();
   }
-  function start() { play().catch(() => {
-    document.documentElement.classList.remove('ayat-splash-startup');
-    splash.classList.add('is-leaving');
-    setTimeout(() => { splash.hidden = true; playing = false; document.dispatchEvent(new Event('ayat:splash-finished')); }, 700);
-  }); }
+  function start() { play().catch(() => { leave(); }); }
   // Internal page navigation must not replay the logo.
   const key = 'ayat-brand-splash-shown';
   let seen = false;
