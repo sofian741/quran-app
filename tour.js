@@ -228,7 +228,7 @@
     const rawStep=params.get('ayatStep');
     const hash=location.hash || '';
     const legacy=hash.startsWith(HANDOFF)
-      ? /^(general|quran):(\\d+)$/.exec(decodeURIComponent(hash.slice(HANDOFF.length))) : null;
+      ? /^(general|quran):(\d+)$/.exec(decodeURIComponent(hash.slice(HANDOFF.length))) : null;
     const kind=rawKind || legacy?.[1];
     const stepText=rawStep ?? legacy?.[2];
     const explicit=kind && stepText!==null && stepText!==undefined;
