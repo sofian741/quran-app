@@ -11,7 +11,7 @@
   try {
     const unfinished = localStorage.getItem('ayat-tour-done-general-v3') !== '1' && localStorage.getItem('ayat-tour-done-general-v2') !== '1';
     const deferred = Number(localStorage.getItem('ayat-tour-remind-at-general-v3') || 0) > Date.now();
-    const active = localStorage.getItem('ayat-tour-active-v3');
+    const active = sessionStorage.getItem('ayat-tour-active-v3') || localStorage.getItem('ayat-tour-active-v3');
     if ((unfinished && !deferred) || (active && active.includes('"general"'))) {
       document.documentElement.classList.add('ayat-tour-boot');
     }
