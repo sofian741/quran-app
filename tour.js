@@ -105,7 +105,7 @@
     const kind=active.kind;
     write(DONE(kind),'1');erase(SAVED(kind));erase(LATER(kind));erase(ACTIVE);active=null;
     closeRoot();
-    if(kind==='general' && PAGE!=='index.html')location.href='index.html';
+    // Leave the reader on the page they reached; navigation is their choice.
   }
   function postpone(kind){
     if(active&&active.kind===kind){write(SAVED(kind),active.step);erase(ACTIVE);active=null;}
