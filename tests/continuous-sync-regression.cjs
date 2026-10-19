@@ -70,7 +70,7 @@ audio.currentTime = 0.4;
 engine.__syncContinuousChapter();
 assert.equal(engine.state.ayah, 1, 'Seeking backwards must update the verse highlight');
 assert.equal(engine.unnecessaryPreloads, undefined);
-assert.ok(engine.preloadUpcomingVerse() instanceof Promise, 'continuous recordings must not preload a duplicate chapter');
+assert.equal(typeof engine.preloadUpcomingVerse()?.then, 'function', 'continuous recordings must not preload a duplicate chapter');
 assert.equal(engine.unnecessaryPreloads, undefined, 'no separate audio request for the next ayah');
 
 // The Mishary implementation must still own its own bundled chapter cursor.
