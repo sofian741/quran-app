@@ -57,6 +57,39 @@ const executablePath = process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium';
                     `Quran glyphs overflow at ${width}px page ${number}: ${JSON.stringify(metrics)}`);
                 console.log('PASS', width + 'x' + height, 'page', number, JSON.stringify(metrics));
             }
+            // Regression: the synchronized reciter's verse band cannot change
+            // Quran glyph spacing or kashidas when the font is refitted.
+            if (width === 390) {
+                await page.evaluate(async () => {
+                    window.mushafReader.goToPage(3);
+                    await document.fonts.ready;
+                    document.fonts.dispatchEvent(new Event('loadingdone'));
+                });
+                await page.waitForFunction(() => document.querySelector('#quran-text')?.dataset.standardLayoutPage === '3');
+                const baseline = await page.evaluate(() =>
+                    [...document.querySelectorAll('#quran-text .mushaf-line')].map(line => ({
+                        gap: line.style.columnGap,
+                        transform: line.style.transform,
+                        text: [...line.querySelectorAll('.mushaf-word')].map(word => word.textContent).join('|')
+                    })));
+                await page.evaluate(() => {
+                    const line = document.querySelector('#quran-text .mushaf-line');
+                    const band = document.createElement('span');
+                    band.className = 'audio-verse-band';
+                    band.style.cssText = 'left:0;top:0;width:900px;height:20px';
+                    line.appendChild(band);
+                    document.fonts.dispatchEvent(new Event('loadingdone'));
+                });
+                await page.waitForFunction(() => document.querySelector('#quran-text')?.dataset.standardLayoutPage === '3');
+                const withBand = await page.evaluate(() =>
+                    [...document.querySelectorAll('#quran-text .mushaf-line')].map(line => ({
+                        gap: line.style.columnGap,
+                        transform: line.style.transform,
+                        text: [...line.querySelectorAll('.mushaf-word')].map(word => word.textContent).join('|')
+                    })));
+                assert.deepEqual(withBand, baseline,
+                    'reciter highlight band must never alter text, kashida or line geometry');
+            }
             assert.deepEqual(errors, [], 'browser JavaScript errors');
             await page.close();
         }
