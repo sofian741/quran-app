@@ -361,7 +361,6 @@
   if(PAGE==='index.html'){
     const splash=document.getElementById('ayat-welcome');
     if(splash && (!splash.hidden || document.documentElement.classList.contains('ayat-splash-startup'))) {
-      document.addEventListener('ayat:splash-leaving',initialize,{once:true});
       document.addEventListener('ayat:splash-finished',initialize,{once:true});
     } else initialize();
   } else setTimeout(initialize,PAGE==='quran.html'?240:0);
