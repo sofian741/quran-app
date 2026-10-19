@@ -283,6 +283,38 @@
     }
 
     const proto = core.AudioEngine.prototype;
+    const originalBindAudio = proto.bindAudio;
+    proto.bindAudio = function() {
+        originalBindAudio.call(this);
+        const element = this.audio;
+        let stalledTimer = null;
+        const clearStall = () => {
+            if (stalledTimer !== null) clearTimeout(stalledTimer);
+            stalledTimer = null;
+        };
+        const watchStall = () => {
+            clearStall();
+            if (element !== this.audio || element.paused ||
+                this.state.provider !== 'quran-foundation' ||
+                !byId.has(Number(this.state.reciterId))) return;
+            stalledTimer = setTimeout(() => {
+                if (element !== this.audio || element.paused ||
+                    this.status !== 'loading') return;
+                this.status = 'error';
+                this.error = navigator.onLine === false
+                    ? 'انقطع الاتصال أثناء التلاوة. ستستمر عند رجوع الإنترنت.'
+                    : 'خادم التلاوة توقف عن إرسال الصوت. تحقق من الاتصال وأعد التشغيل.';
+                this.emit();
+            }, 22000);
+        };
+        element.addEventListener('waiting', watchStall);
+        element.addEventListener('stalled', watchStall);
+        element.addEventListener('playing', clearStall);
+        element.addEventListener('canplay', clearStall);
+        element.addEventListener('pause', clearStall);
+        element.addEventListener('error', clearStall);
+    };
+
     const originalPlay = proto.play;
     // Some third-party recitation hosts can leave HTMLMediaElement.play()
     // pending forever, producing an endless loading spinner in Android.
