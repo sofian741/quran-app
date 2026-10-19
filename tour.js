@@ -9,7 +9,7 @@
   const GENERAL = [
     {page:'index.html',selector:'.home-reading',title:'كمّل القراءة من مكانك',body:'هنا هتلاقي آخر موضع وصلت له في المصحف. اضغط «متابعة القراءة» عشان ترجع له مباشرة.'},
     {page:'index.html',selector:'.home-verse-actions',title:'آية للتدبّر كل يوم',body:'تقدر تروح للآية في المصحف أو تفتح تفسيرها مباشرة. دي وقفتك اليومية مع معنى ينفعك.'},
-    {page:'recitations.html',selector:'#reciter-list',fallback:'.catalog',title:'اختار صوت القارئ اللي تحبه',body:'دي مكتبة القرّاء. اختر قارئًا منها، وبعدها تقدر تحدد الرواية والسورة اللي تحب تسمعها.'},
+    {page:'recitations.html',selector:'.catalog-heading',title:'اختار صوت القارئ اللي تحبه',body:'دي مكتبة القرّاء. اختر قارئًا منها، وبعدها تقدر تحدد الرواية والسورة اللي تحب تسمعها.'},
     {page:'recitations.html',selector:'.controls-fields',title:'القارئ والسورة',body:'من القائمتين دول اختار التسجيل والسورة، وبعدين استخدم زر التشغيل. تغيير القارئ لا يحتاج تنزيلًا.'},
     {page:'recitations.html',selector:'#download-current',title:'اسمع من غير إنترنت',body:'اضغط «تنزيل السورة» عشان تفضل محفوظة على الجهاز. ولو حابب تقدر تنزّل مصحف القارئ من الزر المجاور.'},
     {page:'recitations.html',selector:'.my-library-card',title:'فين التلاوات اللي نزلتها؟',body:'كل التنزيلات هتلاقيها في «مكتبتي»، مرتبة حسب القارئ والسورة. تقدر تسمعها حتى لو مفيش إنترنت.'},
