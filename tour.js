@@ -220,6 +220,19 @@
     else if(action.startsWith('stop-later-'))postpone(action.slice(11));
     else if(action.startsWith('stop-forever-')){const k=action.slice(13);write(DONE(k),'1');erase(ACTIVE);erase(SAVED(k));active=null;closeRoot();}
   });
+  // Keyboard and screen-reader users remain inside the open explanation.
+  root.addEventListener('keydown',event=>{
+    if(event.key!=='Tab')return;
+    const panel=!modal.hidden?modal:card;
+    const focusable=[...panel.querySelectorAll('button:not([disabled]):not([hidden])')].filter(el=>el.getClientRects().length);
+    if(!focusable.length)return;
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if(event.shiftKey && (document.activeElement===first || document.activeElement===panel.querySelector('[role="dialog"]') || document.activeElement===card)){
+      event.preventDefault();last.focus();
+    }else if(!event.shiftKey && (document.activeElement===last || document.activeElement===panel.querySelector('[role="dialog"]') || document.activeElement===card)){
+      event.preventDefault();first.focus();
+    }
+  });
   window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(position,65)});
   window.addEventListener('scroll',()=>{if(spotlight)requestAnimationFrame(position)},true);
   document.addEventListener('keydown',e=>{if(root.hidden)return;if(e.key==='Escape'&&active){e.preventDefault();postpone(active.kind);}else if(e.key==='Escape'&&dialog){e.preventDefault();closeRoot();}});
