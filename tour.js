@@ -32,9 +32,24 @@
   ];
   const TOURS = {general: GENERAL, quran: QURAN};
   const PAGE = location.pathname.split('/').pop() || 'index.html';
-  const read = (key, fallback = null) => {try {const value=localStorage.getItem(key);return value === null ? fallback : value;} catch (_) {return fallback;}};
-  const write = (key,value) => {try {localStorage.setItem(key,String(value));} catch (_) {}};
-  const erase = key => {try {localStorage.removeItem(key);} catch (_) {}};
+  // Mirror the in-progress tour in session storage. Navigating between
+  // standalone HTML pages must never make a lesson vanish when local storage
+  // is unavailable or near quota. Durable completion still prefers local.
+  const read = (key, fallback = null) => {
+    let local = null, session = null;
+    try {local=localStorage.getItem(key);} catch (_) {}
+    try {session=sessionStorage.getItem(key);} catch (_) {}
+    const value=key===ACTIVE?(session??local):(local??session);
+    return value === null ? fallback : value;
+  };
+  const write = (key,value) => {
+    try {localStorage.setItem(key,String(value));} catch (_) {}
+    try {sessionStorage.setItem(key,String(value));} catch (_) {}
+  };
+  const erase = key => {
+    try {localStorage.removeItem(key);} catch (_) {}
+    try {sessionStorage.removeItem(key);} catch (_) {}
+  };
   // Version 3 inserts explicit click-to-navigate steps. Preserve prior
   // completion decisions so existing users never receive surprise popups.
   for (const kind of ['general','quran']) {
