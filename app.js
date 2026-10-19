@@ -1084,6 +1084,8 @@
     // Shared interface for the interactive swipe layer.
     window.mushafReader = {
         fitElement,
+        createSurahHeading,
+        createAyahMarker,
         getPageLayout(page) {
             if (!Number.isInteger(page) || page < 1 || page > TOTAL_PAGES) return null;
             return resolvePageLayout(page).map(row => [...row]);
