@@ -257,6 +257,34 @@
     }
 
     const proto = core.AudioEngine.prototype;
+    const originalPlay = proto.play;
+    // Some third-party recitation hosts can leave HTMLMediaElement.play()
+    // pending forever, producing an endless loading spinner in Android.
+    // Bound that wait only for online QUD/Foundation voices, never Mishary.
+    proto.play = async function() {
+        if (this.state.provider !== 'quran-foundation' ||
+            !byId.has(Number(this.state.reciterId))) {
+            return originalPlay.call(this);
+        }
+        let timeout;
+        const deadline = new Promise(resolve => {
+            timeout = setTimeout(() => resolve('timeout'), 22000);
+        });
+        try {
+            const outcome = await Promise.race([originalPlay.call(this), deadline]);
+            if (outcome !== 'timeout') return outcome;
+            this.audio.pause();
+            this.status = 'error';
+            this.error = navigator.onLine === false
+                ? 'انقطع الإنترنت أثناء تجهيز التلاوة. حاول مجددًا بعد رجوعه.'
+                : 'خادم تسجيل هذا القارئ لم يستجب خلال ٢٢ ثانية. حاول مرة أخرى أو اختر قارئًا آخر.';
+            this.emit();
+            return false;
+        } finally {
+            clearTimeout(timeout);
+        }
+    };
+
     const originalSelectAligned = proto.selectAligned;
     const originalPrepare = proto.prepare;
     const originalGoTo = proto.goTo;
