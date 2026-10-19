@@ -8,6 +8,7 @@ on:
       - audio-player.css
       - tests/mushaf-reciter-switch.cjs
       - tests/qud-play-browser.cjs
+      - tests/qud-real-media-browser.cjs
       - qud-audio.js
       - .github/workflows/verify-mushaf-reciter-switch.yml
   workflow_dispatch:
@@ -75,3 +76,7 @@ jobs:
             echo "===== ${name} actual audio host ====="
             curl -IL --max-time 18 --connect-timeout 7 -H 'Range: bytes=0-1023' -sS -o /dev/null -w 'http=%{http_code} final=%{url_effective} type=%{content_type} bytes=%{size_download} error=%{errormsg}\n' "$url"
           done
+      - name: Verify real Maher audio plays and advances
+        env:
+          QURAN_BASE_URL: http://127.0.0.1:4173
+        run: node tests/qud-real-media-browser.cjs
