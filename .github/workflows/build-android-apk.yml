@@ -204,16 +204,20 @@ jobs:
           print('QA build versionCode:', build_number)
           PY
 
-      - name: Reconstruct approved app icon
+      - name: Prepare approved Ayat app icon
         run: |
-          cat android-assets/icon-b64/*.part | base64 -d > android-assets/icon-source.jpg
-          echo "ac53289fe8888727ec5e26700ed89e497ff0e80224b6489ac4c293f5354adcb7  android-assets/icon-source.jpg" | sha256sum -c -
           python3 -m pip install --quiet pillow
           python3 - <<'PY'
           from PIL import Image
-          p = Image.open('android-assets/icon-source.jpg').convert('RGB')
-          p = p.resize((1024, 1024), Image.Resampling.LANCZOS)
-          p.save('android-assets/icon.png', optimize=True)
+          from pathlib import Path
+          source = Path('android-assets/ayat-icon.jpg')
+          if not source.is_file():
+              raise SystemExit('Approved Ayat icon is missing')
+          with Image.open(source) as image:
+              image.convert('RGB').resize((1024, 1024), Image.Resampling.LANCZOS).save(
+                  'android-assets/icon.png', optimize=True
+              )
+          print('Using approved Ayat icon:', source)
           PY
 
       - name: Generate Android icon and splash
