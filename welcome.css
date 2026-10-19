@@ -41,3 +41,8 @@ html.ayat-splash-startup #ayat-welcome{display:grid !important}
 
 /* Keep home invisible through both startup screens, including their handoff. */
 html.ayat-guide-pending .home-app{visibility:hidden}
+
+/* A quiet escape hatch, deliberately less prominent than the logo. */
+.ayat-welcome .ayat-welcome-skip{position:absolute;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:2;min-width:76px;min-height:40px;padding:10px 15px;border:0;border-radius:12px;background:transparent;box-shadow:none;color:#85b5a1;font-family:Tahoma,Arial,sans-serif;font-size:12px;font-weight:400;opacity:.62;cursor:pointer}
+.ayat-welcome .ayat-welcome-skip:active,.ayat-welcome .ayat-welcome-skip:hover{opacity:1;color:#c1dfd0}
+.ayat-welcome .ayat-welcome-skip:focus-visible{outline:2px solid #b8d5c5;outline-offset:2px}
