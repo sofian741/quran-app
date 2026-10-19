@@ -7,7 +7,7 @@ if(Object.values(ui).some(v=>!v))return;
 const engine=new core.AudioEngine(ui.audio),catalogService=new core.CatalogService(),downloads=new downloadsApi.DownloadManager();window.quranAudioEngine=engine;
 let catalog=[],selectedReciter=null,selectedMoshaf=null,applying=false,miniEnabled=false,downloadCheck=0;
 const THEME_KEY='quranHomeTheme';
-function readTheme(){try{const v=localStorage.getItem(THEME_KEY);if(v==='dark'||v==='light')return v;const r=JSON.parse(localStorage.getItem('quranReaderSettings')||'null');if(r?.theme==='dark')return'dark'}catch{}return window.matchMedia?.('(prefers-color-scheme: dark)').matches?'dark':'light'}
+function readTheme(){try{const v=localStorage.getItem(THEME_KEY);if(v==='dark'||v==='light')return v;}catch{}return window.matchMedia?.('(prefers-color-scheme: dark)').matches?'dark':'light'}
 function applyTheme(theme){document.body.dataset.theme=theme;ui.theme.setAttribute('aria-label',theme==='dark'?'تفعيل الوضع النهاري':'تفعيل الوضع الليلي');document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#141e1a':'#f7f8f3')}
 applyTheme(readTheme());ui.theme.addEventListener('click',()=>{const t=document.body.dataset.theme==='dark'?'light':'dark';applyTheme(t);try{localStorage.setItem(THEME_KEY,t)}catch{}});
 function updateMiniVisibility(){const rect=ui.mainPlayer.getBoundingClientRect();ui.mini.hidden=!(miniEnabled&&rect.bottom<0)}
