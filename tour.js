@@ -32,6 +32,8 @@
   ];
   const TOURS = {general: GENERAL, quran: QURAN};
   const PAGE = location.pathname.split('/').pop() || 'index.html';
+  const HANDOFF = '#ayat-tour=';
+  const handoffUrl = (page,kind,step) => page + HANDOFF + encodeURIComponent(kind + ':' + step);
   // Mirror the in-progress tour in session storage. Navigating between
   // standalone HTML pages must never make a lesson vanish when local storage
   // is unavailable or near quota. Durable completion still prefers local.
@@ -110,7 +112,7 @@
     active={kind,step:from};
     write(SAVED(kind),from);saveActive();
     const s=TOURS[kind][from];
-    if(s.page!==PAGE){location.href=s.page;return;}
+    if(s.page!==PAGE){location.href=handoffUrl(s.page,kind,from);return;}
     // Close reader settings if the tour was launched from its menu.
     document.getElementById('close-settings')?.click();
     renderStep();
@@ -135,7 +137,7 @@
     if(nextIndex>=steps.length){changing=false;finish();return;}
     if(nextIndex<0){changing=false;return;}
     active.step=nextIndex;write(SAVED(active.kind),nextIndex);saveActive();
-    if(steps[nextIndex].page!==PAGE){location.href=steps[nextIndex].page;return;}
+    if(steps[nextIndex].page!==PAGE){location.href=handoffUrl(steps[nextIndex].page,active.kind,nextIndex);return;}
     changing=false;renderStep();
   }
   function findTarget(step) {
@@ -174,7 +176,7 @@
     top=Math.max(9,Math.min(innerHeight-height-9,top));
     card.style.left=Math.max(15,(innerWidth-width)/2)+'px';
     card.style.top=top+'px';
-    if(s.gesture||s.tap){
+    if(s.gesture && !s.tap){
       hand.hidden=false;
       hand.classList.toggle('is-hold',s.gesture==='press'||!!s.tap);
       hand.classList.toggle('is-swipe',s.gesture==='swipe');
@@ -195,7 +197,7 @@
   async function renderStep(){
     if(!active)return;
     const kind=active.kind,s=TOURS[kind][active.step];
-    if(s.page!==PAGE){location.href=s.page;return;}
+    if(s.page!==PAGE){location.href=handoffUrl(s.page,kind,active.step);return;}
     openRoot();dialog=null;spotlight=true;modal.hidden=true;shade.hidden=true;spot.hidden=true;hand.hidden=hit.hidden=true;
     document.body.classList.toggle('ayat-tour-audio',kind==='quran'&&(s.selector==='#mushaf-audio-player'||s.selector==='#audio-quick-repeat'));
     shade.hidden=false;shade.style.background='transparent';
@@ -215,6 +217,23 @@
     position();card.focus({preventScroll:true});
   }
   function restoreActive(){
+    // Explicit URL handoff survives full document reloads and WebView page
+    // changes even if the browser discards sessionStorage between pages.
+    const hash=location.hash || '';
+    if(hash.startsWith(HANDOFF)){
+      const match=/^(general|quran):(\\d+)$/.exec(decodeURIComponent(hash.slice(HANDOFF.length)));
+      if(match){
+        const kind=match[1],step=Number(match[2]);
+        if(step>=0 && step<total(kind) && TOURS[kind][step].page===PAGE){
+          active={kind,step};
+          write(SAVED(kind),step);
+          saveActive();
+          try{history.replaceState(history.state,'',location.pathname+location.search);}catch(_){}
+          renderStep();
+          return true;
+        }
+      }
+    }
     const raw=read(ACTIVE);
     if(!raw)return false;
     try {
@@ -250,10 +269,9 @@
       // The target is the app's own visible navigation link, not a fabricated
       // link or a timed redirect. A fallback handles intercepted anchor clicks.
       if(target.matches('a[href]') && target.getAttribute('href')===s.to){
-        target.click();
-        setTimeout(()=>{
-          if(PAGE!==s.to && document.visibilityState!=='hidden')location.assign(s.to);
-        },450);
+        // Navigate using the real link destination, with the tour step
+        // attached to the URL. Never depend on the previous page's JS state.
+        location.assign(handoffUrl(s.to,active.kind,next));
       } else {
         // Avoid running a tour on the wrong screen if markup changes.
         active.step=next-1;
