@@ -10,11 +10,11 @@
   const animate = (element, frames, options) => element.animate(frames, { fill: 'forwards', ...options }).finished;
   async function play() {
       // A single quick turn, then a deliberate pause before the reveal.
-      await animate(line, [{ transform: 'scaleY(.55) rotate(0deg)' }, { transform: 'scaleY(.55) rotate(360deg)' }], { duration: 900, easing: 'cubic-bezier(.45,.08,.55,.95)' });
+      await animate(line, [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 850, easing: 'linear' });
       // Stage 2: line extends before either word is revealed.
       await animate(line, [
-        { transform: 'scaleY(.55) rotate(360deg)' },
-        { transform: 'scaleY(1) rotate(360deg)' }
+        { transform: 'rotate(360deg) scaleY(.55)' },
+        { transform: 'rotate(360deg) scaleY(1)' }
       ], { duration: 580, easing: 'cubic-bezier(.2,.8,.2,1)' });
       await wait(120);
       // Reveal each word from the central divider using a moving clip edge.
