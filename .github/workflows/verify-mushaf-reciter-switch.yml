@@ -62,3 +62,16 @@ jobs:
           QURAN_BASE_URL: http://127.0.0.1:4173
           QUD_RECITER_ID: '9017'
         run: node tests/qud-play-browser.cjs
+      - name: Compare real Maher and Hani audio hosts
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          for entry in \
+            'Maher|https://download.quranicaudio.com/quran/maher_almu3aiqly/year1440/001.mp3' \
+            'Hani|https://verses.quran.com/Hani_Ar_Rifai/mp3/001.mp3'; do
+            name="${entry%%|*}"
+            url="${entry#*|}"
+            echo "===== ${name} actual audio host ====="
+            curl -IL --max-time 18 --connect-timeout 7 -H 'Range: bytes=0-1023' -sS -o /dev/null -w 'http=%{http_code} final=%{url_effective} type=%{content_type} bytes=%{size_download} error=%{errormsg}\n' "$url"
+          done
