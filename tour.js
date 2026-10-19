@@ -145,14 +145,19 @@
     if(s.gesture){
       hand.hidden=false;
       hand.classList.toggle('is-hold',s.gesture==='press');
+      hand.classList.toggle('is-swipe',s.gesture==='swipe');
       hand.style.left=Math.max(20,Math.min(innerWidth-55,r.left+r.width*.52))+'px';
       hand.style.top=Math.max(20,Math.min(innerHeight-75,r.top+r.height*.52))+'px';
     }else hand.hidden=true;
   }
   async function prepare(step){
     if(step.prepare==='dhikr' && document.getElementById('reader')?.hidden){
-      document.querySelector('.quick-card.morning')?.click();
-      await new Promise(resolve=>setTimeout(resolve,340));
+      // The adhkar catalogue is fetched asynchronously, so wait for its
+      // click handler to have chapters rather than highlighting a hidden counter.
+      for(let attempt=0;attempt<9 && document.getElementById('reader')?.hidden;attempt++){
+        document.querySelector('.quick-card.morning')?.click();
+        await new Promise(resolve=>setTimeout(resolve,280));
+      }
     }
   }
   async function renderStep(){
