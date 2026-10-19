@@ -41,12 +41,13 @@
     splash.classList.add('is-leaving');
     await wait(700);
     splash.hidden = true;
+    document.dispatchEvent(new Event('ayat:splash-finished'));
     playing = false;
   }
   function start() { play().catch(() => {
     document.documentElement.classList.remove('ayat-splash-startup');
     splash.classList.add('is-leaving');
-    setTimeout(() => { splash.hidden = true; playing = false; }, 700);
+    setTimeout(() => { splash.hidden = true; playing = false; document.dispatchEvent(new Event('ayat:splash-finished')); }, 700);
   }); }
   // Internal page navigation must not replay the logo.
   const key = 'ayat-brand-splash-shown';
