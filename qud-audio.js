@@ -287,6 +287,21 @@
     proto.bindAudio = function() {
         originalBindAudio.call(this);
         const element = this.audio;
+        // Loading a new reciter's metadata is passive preparation, not an
+        // actual request to play. Core loadstart/waiting events must not
+        // leave the Play button spinning while it is still paused.
+        const restorePassiveReady = () => {
+            if (element !== this.audio || !this.__qudPreloadingOnly ||
+                this.state.provider !== 'quran-foundation' ||
+                !byId.has(Number(this.state.reciterId)) ||
+                !this.currentTiming || this.audio.error ||
+                !this.audio.paused || this.status !== 'loading') return;
+            this.status = 'ready';
+            this.emit();
+        };
+        element.addEventListener('loadstart', restorePassiveReady);
+        element.addEventListener('waiting', restorePassiveReady);
+        element.addEventListener('stalled', restorePassiveReady);
         let stalledTimer = null;
         const clearStall = () => {
             if (stalledTimer !== null) clearTimeout(stalledTimer);
@@ -333,6 +348,7 @@
         if (this.status === 'error' && this.trackUrl) {
             return this.prepare({ autoplay: true });
         }
+        this.__qudPreloadingOnly = false;
         const selectedAudio = this.audio;
         const selectedReciter = this.state.reciterId;
         const selectedVersion = this.prepareVersion;
@@ -438,6 +454,7 @@
         }
 
         const autoplay = !!options.autoplay;
+        this.__qudPreloadingOnly = !autoplay;
         const previousPosition = Number(this.state.position) || 0;
         const version = ++this.prepareVersion;
         if (autoplay) this.intentToPlay = true;
