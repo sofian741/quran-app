@@ -37,4 +37,9 @@ jobs:
           node --check tests/mushaf-reciter-switch.cjs
           node --check tests/qud-play-browser.cjs
           node tests/mushaf-reciter-switch.cjs
-          node tests/qud-play-browser.cjs
+
+      - name: Verify QUD reciter playback in Chromium
+        env:
+          QURAN_BROWSER_PATH: /usr/bin/chromium
+          QURAN_BASE_URL: http://127.0.0.1:4173
+        run: node tests/qud-play-browser.cjs
