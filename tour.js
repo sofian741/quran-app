@@ -5,7 +5,7 @@
   const ACTIVE = 'ayat-tour-active-' + VERSION;
   const DONE = kind => 'ayat-tour-done-' + kind + '-' + VERSION;
   const SAVED = kind => 'ayat-tour-step-' + kind + '-' + VERSION;
-  const LATER = kind => 'ayat-tour-later-' + kind + '-' + VERSION;
+  const LATER = kind => 'ayat-tour-remind-at-' + kind + '-' + VERSION;
   const GENERAL = [
     {page:'index.html',selector:'.home-reading',title:'كمّل القراءة من مكانك',body:'هنا هتلاقي آخر موضع وصلت له في المصحف. اضغط «متابعة القراءة» عشان ترجع له مباشرة.'},
     {page:'index.html',selector:'.home-verse-actions',title:'آية للتدبّر كل يوم',body:'تقدر تروح للآية في المصحف أو تفتح تفسيرها مباشرة. دي وقفتك اليومية مع معنى ينفعك.'},
@@ -33,8 +33,6 @@
   const read = (key, fallback = null) => {try {const value=localStorage.getItem(key);return value === null ? fallback : value;} catch (_) {return fallback;}};
   const write = (key,value) => {try {localStorage.setItem(key,String(value));} catch (_) {}};
   const erase = key => {try {localStorage.removeItem(key);} catch (_) {}};
-  const sessionRead = key => {try{return sessionStorage.getItem(key)==='1';} catch(_){return false;}};
-  const sessionWrite = key => {try{sessionStorage.setItem(key,'1');} catch(_){}};
   const pageOf = kind => kind === 'general' ? 'index.html' : 'quran.html';
   let active = null, dialog = null, spotlight = false, resizeTimer = 0, changing = false;
   const root = document.createElement('div');
@@ -61,7 +59,7 @@
     modal.querySelector('[role="dialog"]')?.focus({preventScroll:true});
   }
   function offer(kind){
-    if(active || read(DONE(kind))==='1' || sessionRead(LATER(kind))) {document.documentElement.classList.remove('ayat-tour-boot');return;}
+    if(active || read(DONE(kind))==='1' || Number(read(LATER(kind),'0'))>Date.now()) {document.documentElement.classList.remove('ayat-tour-boot');return;}
     const resume = progress(kind)>0;
     const name = kind==='general'?'التطبيق':'المصحف';
     dialogView(kind==='general'?'أهلًا بيك في آيات':'دليل المصحف',
@@ -93,13 +91,14 @@
   function finish(){
     if(!active)return;
     const kind=active.kind;
-    write(DONE(kind),'1');erase(SAVED(kind));erase(ACTIVE);active=null;
+    write(DONE(kind),'1');erase(SAVED(kind));erase(LATER(kind));erase(ACTIVE);active=null;
     closeRoot();
     if(kind==='general' && PAGE!=='index.html')location.href='index.html';
   }
   function postpone(kind){
     if(active&&active.kind===kind){write(SAVED(kind),active.step);erase(ACTIVE);active=null;}
-    sessionWrite(LATER(kind));closeRoot();
+    // Remind gently on another visit, not on each page transition.
+    write(LATER(kind),Date.now()+24*60*60*1000);closeRoot();
   }
   function navigate(next){
     if(!active||changing)return;
@@ -235,4 +234,9 @@
       document.addEventListener('ayat:splash-finished',initialize,{once:true});
     } else initialize();
   } else setTimeout(initialize,PAGE==='quran.html'?240:0);
+  // Capacitor replays the brand on Android resume. Re-offer only if the
+  // postponement has actually expired, without interrupting an open tour.
+  if(PAGE==='index.html') document.addEventListener('ayat:splash-leaving',()=>{
+    if(initialized && root.hidden && !active)offer('general');
+  });
 })();
