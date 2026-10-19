@@ -53,3 +53,25 @@
 
 /* Sit behind the logo for its entire fade; rise above the app afterward. */
 .ayat-tour-root.under-splash{z-index:9998}
+
+/* Only the illuminated control accepts taps during a navigation lesson. */
+.ayat-tour-hit[hidden]{display:none!important}
+.ayat-tour-hit{
+  position:fixed;z-index:2;box-sizing:border-box;min-height:36px;
+  padding:0;border:0;border-radius:15px;
+  background:rgba(245,214,148,.085);pointer-events:auto;
+  cursor:pointer;touch-action:manipulation;animation:ayat-tour-hit-glow 2.1s ease-in-out infinite;
+}
+.ayat-tour-hit:focus-visible{outline:3px solid #fff2c9;outline-offset:3px}
+.ayat-tour-card{z-index:4}
+.ayat-tour-dialog{z-index:6}
+.ayat-tour-gesture{z-index:3}
+.ayat-tour-tap-hint{
+  display:inline-flex;align-items:center;max-width:100%;
+  color:#ffe6a6;font-size:13px;line-height:1.6;font-weight:700;
+}
+@keyframes ayat-tour-hit-glow{
+  0%,100%{background:rgba(245,214,148,.07)}
+  50%{background:rgba(245,214,148,.21)}
+}
+@media(prefers-reduced-motion:reduce){.ayat-tour-hit{animation:none}}
