@@ -221,7 +221,7 @@
     // changes even if the browser discards sessionStorage between pages.
     const hash=location.hash || '';
     if(hash.startsWith(HANDOFF)){
-      const match=/^(general|quran):(\\d+)$/.exec(decodeURIComponent(hash.slice(HANDOFF.length)));
+      const match=/^(general|quran):(\d+)$/.exec(decodeURIComponent(hash.slice(HANDOFF.length)));
       if(match){
         const kind=match[1],step=Number(match[2]);
         if(step>=0 && step<total(kind) && TOURS[kind][step].page===PAGE){
