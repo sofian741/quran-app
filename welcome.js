@@ -37,12 +37,14 @@
       ]);
       await animate(subtitle, [{ opacity: 0 }, { opacity: 1 }], { duration: 650 });
       await wait(800);
+    document.documentElement.classList.remove('ayat-splash-startup');
     splash.classList.add('is-leaving');
     await wait(700);
     splash.hidden = true;
     playing = false;
   }
   function start() { play().catch(() => {
+    document.documentElement.classList.remove('ayat-splash-startup');
     splash.classList.add('is-leaving');
     setTimeout(() => { splash.hidden = true; playing = false; }, 700);
   }); }
