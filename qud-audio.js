@@ -294,11 +294,15 @@
         };
         const watchStall = () => {
             clearStall();
-            if (element !== this.audio || element.paused ||
+            if (element !== this.audio || !this.intentToPlay ||
                 this.state.provider !== 'quran-foundation' ||
                 !byId.has(Number(this.state.reciterId))) return;
+            const selectedReciter = this.state.reciterId;
+            const selectedSurah = this.state.surah;
             stalledTimer = setTimeout(() => {
-                if (element !== this.audio || element.paused ||
+                if (element !== this.audio || !this.intentToPlay ||
+                    this.state.reciterId !== selectedReciter ||
+                    this.state.surah !== selectedSurah ||
                     this.status !== 'loading') return;
                 this.status = 'error';
                 this.error = navigator.onLine === false
@@ -329,6 +333,16 @@
         if (this.status === 'error' && this.trackUrl) {
             return this.prepare({ autoplay: true });
         }
+        const selectedAudio = this.audio;
+        const selectedReciter = this.state.reciterId;
+        const selectedVersion = this.prepareVersion;
+        // A press must give immediate feedback while the remote host is
+        // contacted, even if it has not yet emitted a waiting event.
+        if (this.audio.paused && this.trackUrl) {
+            this.status = 'loading';
+            this.error = '';
+            this.emit();
+        }
         let timeout;
         const deadline = new Promise(resolve => {
             timeout = setTimeout(() => resolve('timeout'), 22000);
@@ -336,6 +350,11 @@
         try {
             const outcome = await Promise.race([originalPlay.call(this), deadline]);
             if (outcome !== 'timeout') return outcome;
+            // A slow request from an earlier reciter must never stop the
+            // recording that the user switched to in the meantime.
+            if (this.audio !== selectedAudio ||
+                this.state.reciterId !== selectedReciter ||
+                this.prepareVersion !== selectedVersion) return false;
             this.audio.pause();
             this.status = 'error';
             this.error = navigator.onLine === false
