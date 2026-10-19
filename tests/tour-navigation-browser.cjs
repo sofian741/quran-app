@@ -55,6 +55,32 @@ async function testFullJourney(browser, origin) {
     await context.close();
 }
 
+async function testQuranTourFromSettings(browser, origin) {
+    const context = await browser.newContext({ viewport: { width: 393, height: 852 } });
+    const page = await context.newPage();
+    await page.addInitScript(() => {
+        localStorage.setItem('ayat-tour-done-quran-v3', '1');
+        localStorage.setItem('ayat-tour-done-general-v3', '1');
+    });
+    await page.goto(`${origin}/quran.html`);
+    await page.waitForFunction(() => document.querySelector('#quran-text')?.dataset.layoutState === 'ready');
+    assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'), /tour\.js\?v=45$/);
+
+    // Reveal the reader toolbar exactly as a touch user does, then use the
+    // real settings controls rather than invoking tour functions directly.
+    await page.locator('#reader-stage').click({ position: { x: 190, y: 300 } });
+    await page.locator('#open-settings').click();
+    await page.waitForSelector('#settings-sheet.is-open');
+    await page.locator('#ayat-tour-settings-button').click();
+    await page.waitForSelector('.ayat-tour-dialog:not([hidden])');
+    await page.locator('[data-tour-action="replay-quran"]').click();
+
+    assert.equal(await visibleStep(page), 'قلّب صفحات المصحف بإصبعك');
+    assert.equal(await page.locator('#settings-sheet').getAttribute('aria-hidden'), 'true');
+    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('ayat-tour-active-v3'))), { kind: 'quran', step: 0 });
+    await context.close();
+}
+
 async function testOfflineHandoff(browser, origin) {
     const context = await browser.newContext({ viewport: { width: 393, height: 852 }, serviceWorkers: 'allow' });
     const page = await context.newPage();
@@ -79,6 +105,7 @@ async function testOfflineHandoff(browser, origin) {
     const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
     try {
         await testFullJourney(browser, origin);
+        await testQuranTourFromSettings(browser, origin);
         await testOfflineHandoff(browser, origin);
         console.log('Tour navigation browser tests passed.');
     } finally {
