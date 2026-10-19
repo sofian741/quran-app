@@ -217,6 +217,42 @@
       return true;
     }catch(_){erase(ACTIVE);return false;}
   }
+  // Only a deliberate tap on the illuminated real control advances a
+  // navigation step. Save the NEXT step before navigation destroys this page.
+  hit.addEventListener('click', () => {
+    if(!active || changing)return;
+    const s=TOURS[active.kind][active.step];
+    if(!s || !s.tap)return;
+    const target=findTarget(s);
+    if(!target)return;
+    const next=active.step+1;
+    if(next>=TOURS[active.kind].length)return;
+    changing=true;
+    active.step=next;
+    write(SAVED(active.kind),next);
+    saveActive();
+    if(s.to){
+      // The target is the app's own visible navigation link, not a fabricated
+      // link or a timed redirect. A fallback handles intercepted anchor clicks.
+      if(target.matches('a[href]') && target.getAttribute('href')===s.to){
+        target.click();
+        setTimeout(()=>{
+          if(PAGE!==s.to && document.visibilityState!=='hidden')location.assign(s.to);
+        },450);
+      } else {
+        // Avoid running a tour on the wrong screen if markup changes.
+        active.step=next-1;
+        write(SAVED(active.kind),active.step);
+        saveActive();
+        changing=false;
+        renderStep();
+      }
+      return;
+    }
+    target.click();
+    changing=false;
+    setTimeout(()=>renderStep(),120);
+  });
   root.addEventListener('click',event=>{
     const b=event.target.closest('[data-tour-action]');
     if(!b)return;
