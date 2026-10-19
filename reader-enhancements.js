@@ -182,53 +182,15 @@
     new MutationObserver(queueMetaSync).observe(text, { childList: true, subtree: false });
     queueMetaSync();
 
+    // Preview and final render must share exactly the same ornamental SVG.
+    // Never install the plain fallback header: a prepared swipe is adopted
+    // directly into the live Mushaf and a missing SVG would persist until reload.
     function previewHeading(surah) {
-        if (headingTemplate) {
-            const heading = headingTemplate.cloneNode(true);
-            heading.dataset.surah = String(surah);
-            const chapter = heading.querySelector('.surah-title-chapter');
-            if (chapter) {
-                // Preserve the main reader's aligned title spans during swipe previews.
-                // Replacing .surah-name.textContent destroys them and makes the title jump on commit.
-                chapter.textContent = SURAH_NAMES[surah - 1];
-            } else {
-                const title = heading.querySelector('.surah-name');
-                if (title) title.textContent = `سورة ${SURAH_NAMES[surah - 1]}`;
-            }
-            return heading;
-        }
-        const heading = document.createElement('header');
-        heading.className = 'surah-heading preview-heading-fallback';
-        heading.dataset.surah = String(surah);
-        const title = document.createElement('h2');
-        title.className = 'surah-name';
-        const titleLine = document.createElement('span');
-        titleLine.className = 'surah-title-line';
-        const prefix = document.createElement('span');
-        prefix.className = 'surah-title-prefix';
-        prefix.textContent = 'سورة';
-        const chapter = document.createElement('span');
-        chapter.className = 'surah-title-chapter';
-        chapter.textContent = SURAH_NAMES[surah - 1];
-        titleLine.append(prefix, document.createTextNode(' '), chapter);
-        title.appendChild(titleLine);
-        heading.appendChild(title);
-        return heading;
+        return window.mushafReader?.createSurahHeading?.(surah) || null;
     }
 
     function previewMarker(ayah) {
-        if (markerTemplate) {
-            const marker = markerTemplate.cloneNode(true);
-            marker.setAttribute('aria-label', `الآية ${ayah}`);
-            marker.dataset.digits = String(ayah).length;
-            const number = marker.querySelector('.ayah-number');
-            if (number) number.textContent = toArabicDigits(ayah);
-            return marker;
-        }
-        const marker = document.createElement('span');
-        marker.className = 'ayah-marker preview-marker-fallback';
-        marker.textContent = toArabicDigits(ayah);
-        return marker;
+        return window.mushafReader?.createAyahMarker?.(ayah) || null;
     }
 
     function previewWord(token) {
@@ -285,7 +247,8 @@
     function createPreview(targetPage, direction) {
         const layout = window.mushafReader?.getPageLayout?.(targetPage) ||
             previewPages?.[targetPage - 1];
-        if (!layout) return null;
+        if (!layout || !window.mushafReader?.createSurahHeading ||
+            !window.mushafReader?.createAyahMarker) return null;
 
         const stageRect = stage.getBoundingClientRect();
         const pageRect = page.getBoundingClientRect();
