@@ -32,6 +32,10 @@
   ];
   const TOURS = {general: GENERAL, quran: QURAN};
   const PAGE = location.pathname.split('/').pop() || 'index.html';
+  const tourParams = new URLSearchParams(location.search);
+  const forcedTour = tourParams.get('ayatTour');
+  const forcedStep = Number(tourParams.get('ayatStep'));
+
   const HANDOFF = '#ayat-tour=';
   // Use query parameters, not a fragment: some mobile WebViews/navigation
   // handlers discard fragments during full-page navigation.
@@ -239,6 +243,16 @@
         }
       }
     }
+    // Query parameters are also understood by this reader, so the step
+    // survives a WebView page reload regardless of storage behavior.
+    if((forcedTour==='general'||forcedTour==='quran') &&
+       Number.isInteger(forcedStep) && forcedStep>=0 &&
+       forcedStep<total(forcedTour) && TOURS[forcedTour][forcedStep].page===PAGE){
+      active={kind:forcedTour,step:forcedStep};
+      write(SAVED(forcedTour),forcedStep);saveActive();
+      try{history.replaceState(history.state,'',location.pathname);}catch(_){}
+      renderStep();return true;
+    }
     const raw=read(ACTIVE);
     if(!raw)return false;
     try {
@@ -336,6 +350,10 @@
     if(initialized)return;
     initialized=true;
     if(restoreActive())return;
+    if(PAGE==='index.html' && document.getElementById('ayat-guide') && !document.getElementById('ayat-guide').hidden){
+      document.addEventListener('ayat:guide-finished',()=>offer('general'),{once:true});
+      return;
+    }
     if(PAGE==='index.html')offer('general');
     else if(PAGE==='quran.html')offer('quran');
     else document.documentElement.classList.remove('ayat-tour-boot');
