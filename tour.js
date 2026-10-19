@@ -159,9 +159,9 @@
     top=Math.max(9,Math.min(innerHeight-height-9,top));
     card.style.left=Math.max(15,(innerWidth-width)/2)+'px';
     card.style.top=top+'px';
-    if(s.gesture){
+    if(s.gesture||s.tap){
       hand.hidden=false;
-      hand.classList.toggle('is-hold',s.gesture==='press');
+      hand.classList.toggle('is-hold',s.gesture==='press'||!!s.tap);
       hand.classList.toggle('is-swipe',s.gesture==='swipe');
       hand.style.left=Math.max(20,Math.min(innerWidth-55,r.left+r.width*.52))+'px';
       hand.style.top=Math.max(20,Math.min(innerHeight-75,r.top+r.height*.52))+'px';
@@ -186,7 +186,7 @@
     shade.hidden=false;shade.style.background='transparent';
     card.hidden=false;card.style.visibility='hidden';
     const count=active.step+1,all=total(kind);
-    card.innerHTML='<div class="ayat-tour-top"><span>'+(kind==='general'?'جولة التطبيق':'جولة المصحف')+'</span><span class="ayat-tour-count">'+count+' / '+all+'</span></div><div class="ayat-tour-progress"><span style="width:'+(count/all*100)+'%"></span></div><h2 class="ayat-tour-title">'+escapeHtml(s.title)+'</h2><p class="ayat-tour-body">'+escapeHtml(s.body)+'</p><div class="ayat-tour-foot"><button class="ayat-tour-main" type="button" data-tour-action="next">'+(count===all?'إنهاء الجولة':'التالي ←')+'</button><button type="button" class="ayat-tour-secondary" data-tour-action="previous" '+(count===1?'hidden':'')+'>السابق</button><button class="ayat-tour-text" type="button" data-tour-action="pause">لاحقًا</button><button class="ayat-tour-text" type="button" data-tour-action="skip">تخطي الجولة</button></div>';
+    card.innerHTML='<div class="ayat-tour-top"><span>'+(kind==='general'?'جولة التطبيق':'جولة المصحف')+'</span><span class="ayat-tour-count">'+count+' / '+all+'</span></div><div class="ayat-tour-progress"><span style="width:'+(count/all*100)+'%"></span></div><h2 class="ayat-tour-title">'+escapeHtml(s.title)+'</h2><p class="ayat-tour-body">'+escapeHtml(s.body)+'</p><div class="ayat-tour-foot">'+(s.tap?'<span class="ayat-tour-tap-hint">👆 اضغط على العنصر المنوّر للمتابعة</span>':'<button class="ayat-tour-main" type="button" data-tour-action="next">'+(count===all?'إنهاء الجولة':'التالي ←')+'</button>')+'<button type="button" class="ayat-tour-secondary" data-tour-action="previous" '+(count===1?'hidden':'')+'>السابق</button><button class="ayat-tour-text" type="button" data-tour-action="pause">لاحقًا</button><button class="ayat-tour-text" type="button" data-tour-action="skip">تخطي الجولة</button></div>';
     await prepare(s);
     if(!active || active.kind!==kind || TOURS[kind][active.step]!==s)return;
     const t=findTarget(s);
