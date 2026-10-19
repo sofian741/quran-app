@@ -312,8 +312,16 @@
             .filter(plan => plan.slots.length > 0);
     }
 
+    // Audio verse bands and selection overlays are absolutely positioned paint
+    // layers. They must never participate in Quran line-width measurements.
+    function lineTextItems(line) {
+        return Array.from(line.children).filter(item =>
+            !item.classList.contains('audio-verse-band') &&
+            !item.classList.contains('verse-highlight-band'));
+    }
+
     function lineItemMetrics(line) {
-        const items = Array.from(line.children);
+        const items = lineTextItems(line);
         return {
             items,
             intrinsic: items.reduce((sum, item) => sum + item.getBoundingClientRect().width, 0),
@@ -322,7 +330,7 @@
     }
 
     function measureLineContent(line) {
-        const boxes = Array.from(line.children).map(child => child.getBoundingClientRect());
+        const boxes = lineTextItems(line).map(child => child.getBoundingClientRect());
         if (!boxes.length) return 0;
         return Math.max(...boxes.map(box => box.right)) - Math.min(...boxes.map(box => box.left));
     }
@@ -529,7 +537,7 @@
             line.style.columnGap = '';
             line.dataset.lineRole = isIntentionalShortRow(container, line, pageNumber) ? 'surah-end' : '';
             line.classList.remove('is-measuring', 'is-full-line', 'is-short-line', 'is-crowded-line');
-            const isFull = line.dataset.lineRole !== 'surah-end' && line.children.length >= 3;
+            const isFull = line.dataset.lineRole !== 'surah-end' && lineTextItems(line).length >= 3;
             line.classList.add(isFull ? 'is-full-line' : 'is-short-line');
         });
 
@@ -560,7 +568,7 @@
 
         const availableWidth = Math.max(1, (lines[0]?.clientWidth || usableTextWidth) - 4);
         lines.forEach(line => {
-            const shouldFill = line.dataset.lineRole !== 'surah-end' && line.children.length >= 3;
+            const shouldFill = line.dataset.lineRole !== 'surah-end' && lineTextItems(line).length >= 3;
             setBoundedGap(line, availableWidth, fontSize);
 
             const beforeFill = measureLineContent(line);
