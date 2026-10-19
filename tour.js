@@ -187,7 +187,13 @@
       const state=JSON.parse(raw);
       if(!TOURS[state.kind]||!Number.isInteger(state.step)||state.step<0||state.step>=total(state.kind)){erase(ACTIVE);return false;}
       active=state;
-      if(TOURS[state.kind][state.step].page!==PAGE){location.href=TOURS[state.kind][state.step].page;return true;}
+      if(TOURS[state.kind][state.step].page!==PAGE){
+        // An external/back navigation must never trap the user in a redirect loop.
+        write(SAVED(state.kind),state.step);
+        write(LATER(state.kind),Date.now()+24*60*60*1000);
+        erase(ACTIVE);active=null;
+        return false;
+      }
       renderStep();
       return true;
     }catch(_){erase(ACTIVE);return false;}
