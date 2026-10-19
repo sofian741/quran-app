@@ -784,10 +784,6 @@
     function initialTheme() {
         const own = readStorage(THEME_KEY);
         if (own === 'light' || own === 'dark') return own;
-        try {
-            const reader = JSON.parse(readStorage('quranReaderSettings') || 'null');
-            if (reader?.theme === 'dark') return 'dark';
-        } catch (_) { /* Home remains usable without reader preferences. */ }
         return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
 
