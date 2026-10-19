@@ -136,6 +136,26 @@ jobs:
           path.write_text(source)
           PY
 
+      - name: Lock Android activity to portrait orientation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          text = manifest.read_text(encoding='utf-8')
+          match = re.search(r'<activity\\b[^>]*android:name="\\.MainActivity"[^>]*>', text, re.S)
+          if not match:
+              raise SystemExit('Capacitor MainActivity not found in Android manifest')
+          tag = match.group(0)
+          if 'android:screenOrientation=' in tag:
+              tag = re.sub(r'android:screenOrientation="[^"]*"', 'android:screenOrientation="portrait"', tag)
+          else:
+              tag = tag[:-1] + ' android:screenOrientation="portrait">'
+          text = text[:match.start()] + tag + text[match.end():]
+          manifest.write_text(text, encoding='utf-8')
+          assert 'android:screenOrientation="portrait"' in manifest.read_text(encoding='utf-8')
+          PY
+
       - name: Register native audio download support
         run: python3 scripts/register-background-downloads.py
 
