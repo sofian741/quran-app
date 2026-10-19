@@ -33,7 +33,9 @@
   const TOURS = {general: GENERAL, quran: QURAN};
   const PAGE = location.pathname.split('/').pop() || 'index.html';
   const HANDOFF = '#ayat-tour=';
-  const handoffUrl = (page,kind,step) => page + HANDOFF + encodeURIComponent(kind + ':' + step);
+  // Use query parameters, not a fragment: some mobile WebViews/navigation
+  // handlers discard fragments during full-page navigation.
+  const handoffUrl = (page,kind,step) => page + '?ayatTour=' + encodeURIComponent(kind) + '&ayatStep=' + step;
   // Mirror the in-progress tour in session storage. Navigating between
   // standalone HTML pages must never make a lesson vanish when local storage
   // is unavailable or near quota. Durable completion still prefers local.
@@ -219,16 +221,19 @@
   function restoreActive(){
     // Explicit URL handoff survives full document reloads and WebView page
     // changes even if the browser discards sessionStorage between pages.
+    const params=new URLSearchParams(location.search);
     const hash=location.hash || '';
-    if(hash.startsWith(HANDOFF)){
-      const match=/^(general|quran):(\d+)$/.exec(decodeURIComponent(hash.slice(HANDOFF.length)));
-      if(match){
-        const kind=match[1],step=Number(match[2]);
+    const legacy=hash.startsWith(HANDOFF) ? /^(general|quran):(\d+)$/.exec(decodeURIComponent(hash.slice(HANDOFF.length))) : null;
+    const passedKind=params.get('ayatTour') || (legacy && legacy[1]);
+    const passedStep=params.get('ayatStep') ?? (legacy && legacy[2]);
+    if(passedKind && passedStep!==null){
+      const kind=passedKind,step=Number(passedStep);
+      {
         if(step>=0 && step<total(kind) && TOURS[kind][step].page===PAGE){
           active={kind,step};
           write(SAVED(kind),step);
           saveActive();
-          try{history.replaceState(history.state,'',location.pathname+location.search);}catch(_){}
+          try{history.replaceState(history.state,'',location.pathname);}catch(_){}
           renderStep();
           return true;
         }
