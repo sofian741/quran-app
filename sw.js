@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v43';
+const APP_CACHE = 'quran-reader-shell-v44';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',
@@ -70,5 +70,19 @@ self.addEventListener('fetch', event => {
     event.respondWith(fetch(request).then(response => {
         if (response.ok) caches.open(APP_CACHE).then(cache => cache.put(request, response.clone()));
         return response;
-    }).catch(() => caches.match(request)));
+    }).catch(async () => {
+        const cache = await caches.open(APP_CACHE);
+        // Tour hand-offs deliberately carry the next step in the query string,
+        // and cache-busted shell assets do the same for their release version.
+        // The pre-cached shell stores the canonical URLs without those queries,
+        // so an exact lookup can make a page load without its tour while offline.
+        const exact = await cache.match(request);
+        if (exact) return exact;
+        const url = new URL(request.url);
+        const isTourAsset = /\/tour\.(?:js|css)$/.test(url.pathname);
+        if (request.mode === 'navigate' || isTourAsset) {
+            return cache.match(request, { ignoreSearch: true });
+        }
+        return undefined;
+    }));
 });

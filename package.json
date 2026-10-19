@@ -5,7 +5,8 @@
   "description": "آيات | Ayat | مصحف وأذكار",
   "scripts": {
     "android:prepare": "node scripts/prepare-android-web.mjs",
-    "android:sync": "npm run android:prepare && npx cap sync android"
+    "android:sync": "npm run android:prepare && npx cap sync android",
+    "test:tour": "node tests/tour-navigation-browser.cjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.2",
