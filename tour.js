@@ -79,6 +79,7 @@
   function newTour(kind,replay=false){
     if(!TOURS[kind])return;
     const from = replay ? 0 : progress(kind);
+    if(replay)erase(DONE(kind));
     erase(LATER(kind));
     active={kind,step:from};
     write(SAVED(kind),from);saveActive();
