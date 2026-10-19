@@ -1,8 +1,8 @@
 {
-  "name": "noor-al-quran",
+  "name": "ayat-quran",
   "private": true,
   "version": "0.1.0",
-  "description": "نور القرآن | مصحف وأذكار",
+  "description": "آيات | Ayat | مصحف وأذكار",
   "scripts": {
     "android:prepare": "node scripts/prepare-android-web.mjs",
     "android:sync": "npm run android:prepare && npx cap sync android"
