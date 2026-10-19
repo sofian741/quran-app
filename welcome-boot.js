@@ -1,15 +1,19 @@
-/* Decide before first paint whether this navigation needs the brand splash. */
+/* Before first paint: preserve a seamless logo -> guided intro -> home transition. */
 (() => {
   'use strict';
-  let seen = false;
-  try { seen = sessionStorage.getItem('ayat-brand-splash-shown') === '1'; }
-  catch (_) {}
-  if (!seen) document.documentElement.classList.add('ayat-splash-startup');
   try {
-    if (localStorage.getItem('ayat-longpress-guide-complete-v1') !== '1') {
-      document.documentElement.classList.add('ayat-guide-pending');
+    if (sessionStorage.getItem('ayat-brand-splash-shown') !== '1') {
+      document.documentElement.classList.add('ayat-splash-startup');
     }
   } catch (_) {
-    document.documentElement.classList.add('ayat-guide-pending');
+    document.documentElement.classList.add('ayat-splash-startup');
   }
+  try {
+    const unfinished = localStorage.getItem('ayat-tour-done-general-v2') !== '1';
+    const deferred = sessionStorage.getItem('ayat-tour-later-general-v2') === '1';
+    const active = localStorage.getItem('ayat-tour-active-v2');
+    if ((unfinished && !deferred) || (active && active.includes('"general"'))) {
+      document.documentElement.classList.add('ayat-tour-boot');
+    }
+  } catch (_) {}
 })();
