@@ -1,7 +1,7 @@
 /* Ayat guided tours. Real-page spotlight, resumable across navigation. */
 (() => {
   'use strict';
-  const VERSION = 'v2';
+  const VERSION = 'v3';
   const ACTIVE = 'ayat-tour-active-' + VERSION;
   const DONE = kind => 'ayat-tour-done-' + kind + '-' + VERSION;
   const SAVED = kind => 'ayat-tour-step-' + kind + '-' + VERSION;
@@ -9,12 +9,14 @@
   const GENERAL = [
     {page:'index.html',selector:'.home-reading',title:'كمّل القراءة من مكانك',body:'هنا هتلاقي آخر موضع وصلت له في المصحف. اضغط «متابعة القراءة» عشان ترجع له مباشرة.'},
     {page:'index.html',selector:'.home-verse-actions',title:'آية للتدبّر كل يوم',body:'تقدر تروح للآية في المصحف أو تفتح تفسيرها مباشرة. دي وقفتك اليومية مع معنى ينفعك.'},
+    {page:'index.html',selector:'.home-feature-audio',tap:true,to:'recitations.html',title:'افتح مكتبة التلاوات بنفسك',body:'شايف زر «مكتبة التلاوات» المنوّر؟ اضغط عليه دلوقتي بإيدك، وهنكمّل الشرح داخل الصفحة اللي هتفتح.'},
     {page:'recitations.html',selector:'.catalog-heading',title:'اختار صوت القارئ اللي تحبه',body:'دي مكتبة القرّاء. اختر قارئًا منها، وبعدها تقدر تحدد الرواية والسورة اللي تحب تسمعها.'},
     {page:'recitations.html',selector:'.controls-fields',title:'القارئ والسورة',body:'من القائمتين دول اختار التسجيل والسورة، وبعدين استخدم زر التشغيل. تغيير القارئ لا يحتاج تنزيلًا.'},
     {page:'recitations.html',selector:'#download-current',title:'اسمع من غير إنترنت',body:'اضغط «تنزيل السورة» عشان تفضل محفوظة على الجهاز. ولو حابب تقدر تنزّل مصحف القارئ من الزر المجاور.'},
-    {page:'recitations.html',selector:'.my-library-card',title:'فين التلاوات اللي نزلتها؟',body:'كل التنزيلات هتلاقيها في «مكتبتي»، مرتبة حسب القارئ والسورة. تقدر تسمعها حتى لو مفيش إنترنت.'},
+    {page:'recitations.html',selector:'.my-library-card',tap:true,to:'library.html',title:'ادخل مكتبتك الصوتية',body:'دلوقتي اضغط بنفسك على «مكتبتي» المحددة بالذهبي. دي الصفحة اللي هتلاقي فيها التلاوات اللي نزلتها للاستماع من غير إنترنت.'},
     {page:'library.html',selector:'.tools',title:'رتّب مكتبتك بسهولة',body:'ابحث عن سورة أو قارئ، أو غيّر الترتيب. لو المكتبة فاضية، ارجع للتلاوات ونزّل سورة الأول.'},
-    {page:'adhkar.html',selector:'.quick-card.morning',title:'اختار باب الأذكار',body:'ابدأ بأذكار الصباح أو المساء أو أي باب. هتشوف الأذكار واحدة واحدة بطريقة مريحة للقراءة.'},
+    {page:'library.html',selector:'.bottom-nav a[href="adhkar.html"]',tap:true,to:'adhkar.html',title:'افتح قسم الأذكار',body:'بص تحت على شريط الصفحات: اضغط «الأذكار» بإيدك. أي وقت تحتاج الأذكار هتلاقي نفس الزر في الشريط السفلي.'},
+    {page:'adhkar.html',selector:'.quick-card.morning',tap:true,title:'ابدأ بأذكار الصباح',body:'اضغط دلوقتي على بطاقة «أذكار الصباح» المنوّرة. هيفتح باب الذكر قدامك، وبعدها هنجرّب العداد مع بعض.'},
     {page:'adhkar.html',selector:'#tasbih',prepare:'dhikr',title:'عداد الذكر مهم جدًا',body:'بعد قراءة الذكر، اضغط على الدائرة بعدد مرات التكرار. التطبيق هيتابع اللي خلصته من غير ما تحتاج تعد بنفسك.',gesture:'press'},
     {page:'adhkar.html',selector:'#reader-foot',prepare:'dhikr',title:'اتنقل وراجع اللي فاتك',body:'من أزرار التنقل تقدر تروح للذكر اللي بعده أو ترجع للسابق. وفي نهاية الباب هتشوف ملخص الجلسة والناقص منها.'},
     {page:'adhkar.html',selector:'#reader-favorite',prepare:'dhikr',title:'احفظ الأبواب المهمة',body:'علامة القلب بتضيف باب الأذكار إلى المفضلة عشان توصله بسرعة بعد كده.'}
@@ -33,7 +35,15 @@
   const read = (key, fallback = null) => {try {const value=localStorage.getItem(key);return value === null ? fallback : value;} catch (_) {return fallback;}};
   const write = (key,value) => {try {localStorage.setItem(key,String(value));} catch (_) {}};
   const erase = key => {try {localStorage.removeItem(key);} catch (_) {}};
-  const pageOf = kind => kind === 'general' ? 'index.html' : 'quran.html';
+  // Version 3 inserts explicit click-to-navigate steps. Preserve prior
+  // completion decisions so existing users never receive surprise popups.
+  for (const kind of ['general','quran']) {
+    if (read('ayat-tour-done-' + kind + '-v2') === '1' && read(DONE(kind)) !== '1') {
+      write(DONE(kind),'1');
+    }
+  }
+  // Incomplete v2 progress was indexed differently: restart at the real
+  // home navigation step so a returning tester learns where pages live.
   let active = null, dialog = null, spotlight = false, resizeTimer = 0, changing = false;
   const root = document.createElement('div');
   root.id='ayat-tour-root';
