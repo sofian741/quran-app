@@ -1084,6 +1084,7 @@
     // Shared interface for the interactive swipe layer.
     window.mushafReader = {
         fitElement,
+        clearFitCache() { pageFitCache.clear(); },
         createSurahHeading,
         createAyahMarker,
         getPageLayout(page) {
