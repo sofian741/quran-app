@@ -34,3 +34,7 @@
 .ayat-welcome-ar,.ayat-welcome-en{filter:none;opacity:0;transform:none}
 .ayat-welcome-line{margin:0 12px}
 .ayat-welcome-word{will-change:clip-path,transform,opacity}
+
+/* Prevent home content from painting behind the launch animation. */
+html.ayat-splash-startup .home-app{visibility:hidden}
+html.ayat-splash-startup #ayat-welcome{display:grid !important}
