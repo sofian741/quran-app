@@ -51,7 +51,7 @@
   const total = kind => TOURS[kind].length;
   const progress = kind => Math.max(0,Math.min(total(kind)-1,parseInt(read(SAVED(kind),'0'),10)||0));
   function openRoot(){root.hidden=false;document.body.classList.add('ayat-tour-on');document.documentElement.classList.remove('ayat-tour-boot');}
-  function closeRoot(){root.hidden=true;modal.hidden=card.hidden=shade.hidden=spot.hidden=hand.hidden=true;document.body.classList.remove('ayat-tour-on');document.documentElement.classList.remove('ayat-tour-boot');}
+  function closeRoot(){root.hidden=true;modal.hidden=card.hidden=shade.hidden=spot.hidden=hand.hidden=true;document.body.classList.remove('ayat-tour-on','ayat-tour-audio');document.documentElement.classList.remove('ayat-tour-boot');}
   function dialogView(kicker,title,description,actions) {
     openRoot();dialog='modal';spotlight=false;
     shade.hidden=true;spot.hidden=true;hand.hidden=true;card.hidden=true;modal.hidden=false;
@@ -165,6 +165,7 @@
     const kind=active.kind,s=TOURS[kind][active.step];
     if(s.page!==PAGE){location.href=s.page;return;}
     openRoot();dialog=null;spotlight=true;modal.hidden=true;shade.hidden=true;spot.hidden=true;hand.hidden=true;
+    document.body.classList.toggle('ayat-tour-audio',kind==='quran'&&(s.selector==='#mushaf-audio-player'||s.selector==='#audio-quick-repeat'));
     shade.hidden=false;shade.style.background='transparent';
     card.hidden=false;card.style.visibility='hidden';
     const count=active.step+1,all=total(kind);
