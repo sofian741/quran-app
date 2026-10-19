@@ -13,3 +13,9 @@ pass validation and the audio-only GitHub Release upload succeeds.
 - Release tag: assets-mishary-synced-v3-opus
 - No Android APK was built by this workflow.
 - Prepared at (UTC): 2026-10-18T21:34:53+00:00
+
+## Android functional-stability QA build
+
+The bundled Mishary audio receipt above is unchanged. Rebuild Android once with the
+latest portrait/zoom, ornate-header, page-fit, synchronized-reciter, and resumable
+download fixes on main. Validate installation over the preceding QA version on device.
