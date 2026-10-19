@@ -292,6 +292,11 @@
             !byId.has(Number(this.state.reciterId))) {
             return originalPlay.call(this);
         }
+        // A retry must re-create an errored media request, not call play()
+        // against the same failed element and instantly fail again.
+        if (this.status === 'error' && this.trackUrl) {
+            return this.prepare({ autoplay: true });
+        }
         let timeout;
         const deadline = new Promise(resolve => {
             timeout = setTimeout(() => resolve('timeout'), 22000);
