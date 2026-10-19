@@ -6,17 +6,9 @@
   const arabic = splash.querySelector('.ayat-welcome-ar');
   const english = splash.querySelector('.ayat-welcome-en');
   const subtitle = splash.querySelector('.ayat-welcome-subtitle');
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   const animate = (element, frames, options) => element.animate(frames, { fill: 'forwards', ...options }).finished;
   async function play() {
-    if (reduced) {
-      line.style.transform = 'scaleY(1)';
-      arabic.style.opacity = english.style.opacity = subtitle.style.opacity = '1';
-      arabic.style.filter = english.style.filter = 'none';
-      arabic.style.transform = english.style.transform = 'none';
-      await wait(2300);
-    } else {
       // Stage 1: the gold line visibly turns twice, one continuous motion.
       await animate(line, [
         { transform: 'scaleY(.55) rotate(0deg)', offset: 0 },
@@ -42,7 +34,6 @@
       ]);
       await animate(subtitle, [{ opacity: 0 }, { opacity: 1 }], { duration: 650 });
       await wait(800);
-    }
     splash.classList.add('is-leaving');
     await wait(700);
     splash.hidden = true;
