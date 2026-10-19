@@ -276,6 +276,44 @@
         return originalGetAlignedChapterAudio?.apply(this, [surah]);
     };
 
+    // The bundled Mishary engine owns __syncContinuousChapter for its own
+    // recording. Other continuous aligned reciters need their own verse
+    // cursor: HTMLAudioElement continues playing after the selected ayah.
+    const previousContinuousSync = proto.__syncContinuousChapter;
+    proto.__syncContinuousChapter = function() {
+        previousContinuousSync?.call(this);
+        const chapter = this.__continuousChapter;
+        if (this.state.provider !== 'quran-foundation' ||
+            !byId.has(Number(this.state.reciterId)) ||
+            !chapter || this.__continuousAudio !== this.audio ||
+            Number(chapter.surah) !== Number(this.state.surah) ||
+            !Number.isFinite(this.audio.currentTime) ||
+            this.audio.readyState < 1) return;
+
+        const ms = this.audio.currentTime * 1000;
+        const verses = chapter.verses;
+        if (!verses?.length) return;
+        // Binary search avoids scanning 286 verses on every animation frame.
+        let lo = 0, hi = verses.length - 1, index = -1;
+        while (lo <= hi) {
+            const mid = (lo + hi) >> 1;
+            if (verses[mid].timestampFrom <= ms + 15) {
+                index = mid;
+                lo = mid + 1;
+            } else hi = mid - 1;
+        }
+        if (index < 0) return;
+        const active = verses[index];
+        if (active.ayah === this.state.ayah) return;
+        // Never jump across a gap in the timing metadata.
+        if (ms > active.timestampTo + 150) return;
+        this.state.ayah = active.ayah;
+        this.currentTiming = active;
+        this.state.position = this.audio.currentTime;
+        this.persist();
+        this.emit();
+    };
+
     proto.goTo = function(surah, ayah = 1, options = {}) {
         if (byId.has(Number(this.state.reciterId)) && Number(surah) !== Number(this.state.surah)) {
             this.state.position = 0;
