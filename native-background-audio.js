@@ -30,6 +30,7 @@
         const state = await statusOf(job);
         if (state.status === 8) finalize(job, state.total > 0 ? state.total : state.received);
         else if (state.status === 16) {
+          await plugin.remove({ id: job.id });
           save(pending().filter(item => item.id !== job.id));
           emitChange();
         }
@@ -38,17 +39,37 @@
   }
   api.DownloadManager.prototype.downloadTrack = async function(track) {
     if (this.active) throw new Error('يوجد تنزيل آخر قيد التنفيذ.');
-    if (!track?.url?.startsWith('https://') || track.provider !== 'mp3quran') return original.call(this, track);
+    if (!track?.url?.startsWith('https://')) return original.call(this, track);
     if (this.list().some(item => item.url === track.url)) return false;
     const existing = pending().find(item => item.track.url === track.url);
-    if (existing) throw new Error('التلاوة قيد التنزيل بالفعل في الخلفية.');
+    // Reattach to the Android DownloadManager job after a lost connection
+    // instead of queuing a duplicate file or blocking future attempts.
+    if (existing) {
+      try {
+        const state = await statusOf(existing);
+        if (state.status === 8) {
+          finalize(existing, state.total > 0 ? state.total : state.received);
+          return false;
+        }
+        if (state.status === 16) {
+          await plugin.remove({ id: existing.id });
+          save(pending().filter(item => item.id !== existing.id));
+        }
+      } catch (_) {
+        save(pending().filter(item => item.id !== existing.id));
+      }
+    }
     this.active = true;
     this.emit({ status: 'starting', track, progress: 0 });
     let job;
     try {
-      const result = await plugin.enqueue({ url: track.url });
-      job = { id: result.id, path: result.path, track };
-      save([...pending(), job]);
+      if (existing && pending().some(item => item.id === existing.id)) {
+        job = existing;
+      } else {
+        const result = await plugin.enqueue({ url: track.url });
+        job = { id: result.id, path: result.path, track };
+        save([...pending(), job]);
+      }
       while (true) {
         const state = await statusOf(job);
         if (state.status === 8) {
@@ -57,7 +78,17 @@
           this.emit({ status: 'done', track, bytes, progress: 1 });
           return true;
         }
-        if (state.status === 16) throw new Error('فشل تنزيل السورة في الخلفية. حاول مرة أخرى.');
+        if (state.status === 16) {
+          await plugin.remove({ id: job.id });
+          save(pending().filter(item => item.id !== job.id));
+          throw new Error('فشل تنزيل السورة. حاول مرة أخرى بعد التأكد من الاتصال.');
+        }
+        if (state.status === 4) {
+          this.emit({ status: 'paused', track, reason: state.reason,
+            received: state.received, total: state.total, progress: 0 });
+          await sleep(1100);
+          continue;
+        }
         const received = Math.max(0, state.received);
         const total = Math.max(0, state.total);
         this.emit({ status: 'downloading', track, received, total, progress: total ? received / total : 0 });
