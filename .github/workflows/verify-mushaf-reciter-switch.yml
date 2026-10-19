@@ -69,7 +69,7 @@ jobs:
           set +e
           for entry in \
             'Maher|https://download.quranicaudio.com/quran/maher_almu3aiqly/year1440/001.mp3' \
-            'Hani|https://verses.quran.com/Hani_Ar_Rifai/mp3/001.mp3'; do
+            'Hani|https://api.quran.com/api/v4/chapter_recitations/5/1'; do
             name="${entry%%|*}"
             url="${entry#*|}"
             echo "===== ${name} actual audio host ====="
