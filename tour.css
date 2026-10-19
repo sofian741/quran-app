@@ -34,3 +34,8 @@
 @media(prefers-reduced-motion:reduce){.ayat-tour-spot,.ayat-tour-card{transition:none}.ayat-tour-gesture,.ayat-tour-gesture:after,.ayat-tour-spot:after{animation:none}}
 /* The shared settings button inherits the reader's existing settings row styling. */
 #ayat-tour-settings-button svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* Expose normally auto-hidden reader controls while they are being taught. */
+.reader-page.ayat-tour-on .reader-overlay{opacity:1!important;visibility:visible!important;transform:translateY(0)!important}
+.reader-page.ayat-tour-on .mushaf-audio-player{opacity:1!important;visibility:visible!important;transform:translateY(0)!important}
+@media(min-width:700px){.reader-page.ayat-tour-on .mushaf-audio-player{transform:translateX(50%)!important}}
