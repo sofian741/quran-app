@@ -50,3 +50,6 @@
   84%{opacity:0;transform:translateX(-67px) rotate(-9deg)}
 }
 @media(prefers-reduced-motion:reduce){.ayat-tour-gesture.is-swipe{animation:none}}
+
+/* Sit behind the logo for its entire fade; rise above the app afterward. */
+.ayat-tour-root.under-splash{z-index:9998}
