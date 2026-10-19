@@ -9,12 +9,12 @@
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   const animate = (element, frames, options) => element.animate(frames, { fill: 'forwards', ...options }).finished;
   async function play() {
-      // A single quick turn, then a deliberate pause before the reveal.
-      await animate(line, [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 850, easing: 'linear' });
+      // A short, restrained half-turn reads as a full turn for a symmetric line.
+      await animate(line, [{ transform: 'rotate(0deg) scaleY(.55)' }, { transform: 'rotate(180deg) scaleY(.55)' }], { duration: 420, easing: 'cubic-bezier(.42,0,.58,1)' });
       // Stage 2: line extends before either word is revealed.
       await animate(line, [
-        { transform: 'rotate(360deg) scaleY(.55)' },
-        { transform: 'rotate(360deg) scaleY(1)' }
+        { transform: 'rotate(180deg) scaleY(.55)' },
+        { transform: 'rotate(180deg) scaleY(1)' }
       ], { duration: 580, easing: 'cubic-bezier(.2,.8,.2,1)' });
       await wait(120);
       // Reveal each word from the central divider using a moving clip edge.
