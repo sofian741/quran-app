@@ -567,22 +567,23 @@
         if (value.startsWith('aligned:')) {
             const id = Number(value.slice('aligned:'.length));
             if (!alignedReciters.some(reciter => reciter.id === id)) return;
-            // Switching the voice must not silently reset the reader to
-            // verse one: auto-follow would jump the visible mushaf page.
             const ready = await engine.selectAligned(id, {
-                surah: Number(ui.surah.value) || 1,
-                ayah: engine.state.provider === 'quran-foundation'
-                    ? engine.state.ayah : 1,
-                autoplay: wasPlaying
+                surah: Number(ui.surah.value) || 1, ayah: 1, autoplay: wasPlaying
             });
-            if (ready) lastAlignedId = id;
+            if (ready) {
+                lastAlignedId = id;
+                window.dispatchEvent(new Event('mushaf:reciter-changed'));
+            }
             else ui.status.textContent = engine.error || 'تعذّر تجهيز تلاوة القارئ المتزامنة لهذه السورة. جرّب قارئًا آخر.';
             return;
         }
         const reciter = catalog.find(item => item.id === Number(value.replace('mp3:', '')));
         if (!reciter) return;
         const moshaf = core.bestMoshaf(reciter);
-        if (moshaf) await engine.selectMp3(reciter, moshaf, { surah: Number(ui.surah.value) || 1, autoplay: wasPlaying });
+        if (moshaf) {
+            const ready = await engine.selectMp3(reciter, moshaf, { surah: Number(ui.surah.value) || 1, autoplay: wasPlaying });
+            if (ready) window.dispatchEvent(new Event('mushaf:reciter-changed'));
+        }
     });
     ui.moshaf.addEventListener('change', async () => {
         if (applyingState || !activeReciter) return;
