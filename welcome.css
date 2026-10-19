@@ -40,7 +40,7 @@ html.ayat-splash-startup .home-app{visibility:hidden}
 html.ayat-splash-startup #ayat-welcome{display:grid !important}
 
 /* Reserve the first home paint for the contextual walkthrough. */
-html.ayat-tour-boot .home-app{visibility:hidden}
+html.ayat-tour-boot .home-app,html.ayat-tour-boot .home-bottom-nav{visibility:hidden}
 
 /* A quiet escape hatch, deliberately less prominent than the logo. */
 .ayat-welcome .ayat-welcome-skip{position:absolute;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:2;min-width:76px;min-height:40px;padding:10px 15px;border:0;border-radius:12px;background:transparent;box-shadow:none;color:#85b5a1;font-family:Tahoma,Arial,sans-serif;font-size:12px;font-weight:400;opacity:.62;cursor:pointer}
