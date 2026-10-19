@@ -1,0 +1,36 @@
+/* Ayat contextual tour: overlays real controls instead of screenshots. */
+.ayat-tour-root{position:fixed;inset:0;z-index:2147483000;direction:rtl;font-family:Tahoma,Arial,sans-serif;color:#f9f4e6;pointer-events:none}
+.ayat-tour-root[hidden],.ayat-tour-root [hidden]{display:none!important}
+.ayat-tour-shade{position:absolute;inset:0;background:rgba(3,19,16,.79);pointer-events:auto}
+.ayat-tour-spot{position:fixed;top:0;left:0;box-sizing:border-box;border:2px solid #e1c37d;border-radius:17px;box-shadow:0 0 0 9999px rgba(3,19,16,.77),0 0 0 5px rgba(218,181,108,.19),0 0 25px rgba(225,195,125,.25);pointer-events:none;transition:top .29s ease,left .29s ease,width .29s ease,height .29s ease}
+.ayat-tour-spot::after{content:"";position:absolute;inset:-5px;border:1px solid rgba(233,201,135,.46);border-radius:inherit;animation:ayat-tour-glow 2.5s ease-in-out infinite}
+@keyframes ayat-tour-glow{0%,100%{opacity:.28}50%{opacity:1}}
+.ayat-tour-card{position:fixed;box-sizing:border-box;width:min(380px,calc(100vw - 30px));max-height:min(50vh,390px);overflow:auto;overscroll-behavior:contain;padding:19px 20px 16px;border:1px solid rgba(227,196,127,.35);border-radius:23px;background:linear-gradient(155deg,#17483a,#0b3026 75%);box-shadow:0 22px 60px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.09);pointer-events:auto;transition:top .25s ease,left .25s ease;scrollbar-width:thin}
+.ayat-tour-card:focus{outline:0}
+.ayat-tour-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px;color:#e4c684;font-size:12px;font-weight:700}
+.ayat-tour-count{color:#b4d0c3;direction:ltr;font-weight:400;font-variant-numeric:tabular-nums}
+.ayat-tour-title{margin:0 0 9px;font-size:clamp(18px,4.9vw,23px);font-weight:700;line-height:1.55;color:#ffe8af}
+.ayat-tour-body{margin:0 0 16px;color:#e2eae1;font-size:clamp(14px,3.8vw,16px);line-height:1.95}
+.ayat-tour-foot{display:flex;gap:9px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ayat-tour-main{border:0;border-radius:13px;padding:12px 21px;min-height:46px;background:#dcbf7d;color:#13392f;font:700 15px Tahoma,Arial,sans-serif;cursor:pointer}
+.ayat-tour-secondary{border:1px solid rgba(202,225,213,.24);border-radius:12px;background:transparent;padding:11px 14px;min-height:44px;color:#dbece2;font:400 14px Tahoma,Arial,sans-serif;cursor:pointer}
+.ayat-tour-text{background:none;border:0;color:#b7cfbd;font:400 12px Tahoma,Arial,sans-serif;padding:10px;min-height:42px;cursor:pointer}
+.ayat-tour-main:focus-visible,.ayat-tour-secondary:focus-visible,.ayat-tour-text:focus-visible{outline:2px solid white;outline-offset:3px}
+.ayat-tour-progress{height:3px;background:#325a4a;border-radius:8px;overflow:hidden;margin-bottom:12px}
+.ayat-tour-progress>span{display:block;height:100%;background:linear-gradient(90deg,#a18a51,#f5dc9e);border-radius:inherit;transition:width .3s ease}
+.ayat-tour-dialog{position:fixed;inset:0;display:grid;place-items:center;padding:18px;background:rgba(3,19,16,.8);pointer-events:auto;overflow:auto}
+.ayat-tour-dialog .ayat-tour-card{position:relative!important;inset:auto!important;max-height:min(86dvh,650px);width:min(420px,100%)}
+.ayat-tour-dialog .ayat-tour-title{font-size:24px}
+.ayat-tour-choices{display:grid;gap:10px}
+.ayat-tour-choices button{text-align:right;width:100%;display:flex;flex-direction:column;gap:5px}
+.ayat-tour-choice-note{font-size:12px;line-height:1.7;font-weight:400;opacity:.83}
+.ayat-tour-gesture{position:fixed;z-index:1;width:37px;height:48px;pointer-events:none;color:#f4d998;filter:drop-shadow(0 4px 9px rgba(0,0,0,.4));animation:ayat-tour-hand 2.9s ease-in-out infinite}
+.ayat-tour-gesture svg{width:100%;height:100%;fill:#f0d6a2;stroke:#6d5536;stroke-width:1.5}
+@keyframes ayat-tour-hand{0%,100%{transform:translate(25px,15px) rotate(8deg);opacity:.1}23%,70%{transform:translate(0,0) rotate(-7deg);opacity:1}80%{transform:translate(-20px,5px) rotate(-11deg);opacity:.8}}
+.ayat-tour-gesture.is-hold{animation:ayat-tour-press 3s ease-in-out infinite}
+@keyframes ayat-tour-press{0%,100%{opacity:0;transform:translate(22px,20px) scale(1.07)}24%,73%{opacity:1;transform:translate(0,0) scale(.95)}}
+.ayat-tour-gesture:after{content:"";position:absolute;top:-3px;right:-5px;border:2px solid #f4d998;border-radius:50%;width:19px;height:19px;animation:ayat-tour-ripple 3s ease-in-out infinite}
+@keyframes ayat-tour-ripple{0%,25%{opacity:0;transform:scale(.4)}40%{opacity:1}75%,100%{opacity:0;transform:scale(2.1)}}
+@media(prefers-reduced-motion:reduce){.ayat-tour-spot,.ayat-tour-card{transition:none}.ayat-tour-gesture,.ayat-tour-gesture:after,.ayat-tour-spot:after{animation:none}}
+/* The shared settings button inherits the reader's existing settings row styling. */
+#ayat-tour-settings-button svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
