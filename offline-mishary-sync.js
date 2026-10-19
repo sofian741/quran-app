@@ -53,8 +53,15 @@
     }
   }
 
+  const previousContinuousSync = proto.__syncContinuousChapter;
   proto.__syncContinuousChapter = function() {
-    if (!isSynced(this) || this.__offlineSyncBusy || this.__offlineSeekPending) return;
+    // QUD and Foundation install their own continuous-verse cursor before
+    // Mishary initializes. Preserve that cursor for every non-Mishary voice.
+    if (!isSynced(this)) {
+      previousContinuousSync?.call(this);
+      return;
+    }
+    if (this.__offlineSyncBusy || this.__offlineSeekPending) return;
     const chapter = this.__offlineMisharyChapter;
     if (chapter.surah !== this.state.surah) return;
     const milliseconds = (Number(this.audio.currentTime) || 0) * 1000;
@@ -187,7 +194,10 @@
   };
 
   proto.preloadUpcomingVerse = function() {
-    if (isSynced(this)) return Promise.resolve();
+    // QUD/Foundation already stream a whole chapter. Preloading the next
+    // verse would issue a duplicate request for the same large MP3 file.
+    if (isSynced(this) || (this.state.provider === 'quran-foundation' &&
+        this.__continuousChapter && Number(this.state.reciterId) !== 7)) return Promise.resolve();
     return originalPreload.call(this);
   };
 
