@@ -173,7 +173,7 @@
     const t=findTarget(s);
     if(t){
       const r=t.getBoundingClientRect();
-      if(r.bottom>innerHeight-90 || r.top<10) t.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
+      if(PAGE!=='quran.html' && (r.bottom>innerHeight-90 || r.top<10)) t.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
     }
     await new Promise(resolve=>setTimeout(resolve,110));
     if(!active||active.kind!==kind||TOURS[kind][active.step]!==s)return;
