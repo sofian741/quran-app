@@ -12,7 +12,8 @@
   font-family:Tahoma,Arial,sans-serif;
 }
 .home-page[data-home-theme="dark"] .ayat-tour-root.is-editorial,
-body[data-theme="dark"] .ayat-tour-root.is-editorial {
+body[data-theme="dark"] .ayat-tour-root.is-editorial,
+body.dark .ayat-tour-root.is-editorial {
   --guide-paper:#202e26;
   --guide-ink:#edf4ec;
   --guide-muted:#adc3b4;
@@ -437,4 +438,100 @@ body.home-page[data-home-theme="dark"] .ayat-tour-complete {
 @media(prefers-reduced-motion:reduce){
   .ayat-tour-reciter-motion svg,
   .ayat-tour-reciter-motion .ayat-tour-reciter-down{animation:none;}
+}
+
+/* Adhkar: the approved Ayat design, actual chapter interaction and genuine page swipe. */
+.ayat-tour-root.is-adhkar .ayat-tour-card{max-height:min(67dvh,510px);}
+.ayat-tour-root.is-adhkar .ayat-tour-spot{
+  border:2px solid #82bea9!important;
+  border-radius:19px;
+  box-shadow:0 0 0 9999px rgba(6,22,18,.71),0 0 0 5px rgba(106,181,159,.16)!important;
+}
+.ayat-tour-root.is-adhkar .ayat-tour-card::before{background:var(--guide-green);}
+.ayat-tour-root.is-adhkar .ayat-tour-invite{
+  border:1px solid var(--guide-line);
+  background:radial-gradient(circle at right top,rgba(46,141,106,.07),transparent 58%),var(--guide-paper);
+}
+.ayat-tour-root.is-adhkar .ayat-tour-hit.is-open-chapter{
+  border:2px solid rgba(103,197,160,.72);
+  border-radius:19px;
+  background:rgba(54,133,101,.08);
+  box-shadow:0 0 0 5px rgba(98,188,153,.15);
+  animation:ayat-guide-chapter-breathe 2.3s ease-in-out infinite;
+}
+.ayat-tour-root.is-adhkar .ayat-tour-hit.is-open-chapter::before,
+.ayat-tour-root.is-adhkar .ayat-tour-hit.is-open-chapter::after{
+  display:block;left:50%;top:50%;right:auto;bottom:auto;
+}
+.ayat-tour-root.is-adhkar .ayat-tour-hit.is-open-chapter::before{
+  width:14px;height:14px;border-radius:50%;
+  background:#4e9e7c;border:2px solid #ecfff5;
+  box-shadow:0 0 0 4px rgba(72,167,124,.18);
+  transform:translate(-50%,-50%);
+  animation:ayat-guide-chapter-touch 2.3s ease-in-out infinite;
+}
+.ayat-tour-root.is-adhkar .ayat-tour-hit.is-open-chapter::after{
+  width:24px;height:24px;border:1.5px solid #64bf9b;border-radius:50%;
+  background:none;box-shadow:none;
+  transform:translate(-50%,-50%);
+  animation:ayat-guide-chapter-ring 2.3s ease-out infinite;
+}
+@keyframes ayat-guide-chapter-breathe{
+  0%,100%{background:rgba(54,133,101,.05)}
+  50%{background:rgba(54,133,101,.16)}
+}
+@keyframes ayat-guide-chapter-touch{
+  0%,100%{opacity:.85;transform:translate(-50%,-50%) scale(.75)}
+  45%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+@keyframes ayat-guide-chapter-ring{
+  0%,25%{opacity:0;transform:translate(-50%,-50%) scale(.6)}
+  40%{opacity:.9}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(2.1)}
+}
+.ayat-tour-root.is-adhkar .ayat-tour-picker-note{
+  margin:5px 0 15px;padding:11px 12px;
+  font-size:12px;line-height:1.8;
+  border:1px solid var(--guide-line);border-radius:12px;
+  background:var(--guide-soft);color:var(--guide-green-deep);
+}
+.ayat-tour-root.is-adhkar.is-real-swipe .ayat-tour-shade{pointer-events:none!important;}
+.ayat-tour-root.is-adhkar.is-real-swipe .ayat-tour-hit{display:none!important;}
+.ayat-tour-root.is-adhkar.is-real-swipe .ayat-tour-spot{
+  border-color:#7ec6a9!important;
+  box-shadow:0 0 0 9999px rgba(6,22,18,.59),0 0 0 5px rgba(106,181,159,.18)!important;
+}
+.ayat-tour-root.is-adhkar .ayat-tour-swipe-note{
+  display:flex;align-items:center;gap:10px;
+  border:1px solid var(--guide-line);background:var(--guide-soft);
+  color:var(--guide-ink);border-radius:13px;
+  padding:11px 12px;margin:0 0 16px;
+  font-size:12px;line-height:1.8;
+}
+.ayat-tour-root.is-adhkar .ayat-tour-swipe-note span{
+  white-space:nowrap;color:var(--guide-green);font-size:16px;
+}
+.ayat-tour-root.is-adhkar .ayat-tour-gesture.is-adhkar-swipe{
+  display:block;width:37px;height:48px;
+  filter:drop-shadow(0 5px 14px rgba(8,29,20,.45));
+  color:#68b391;
+  animation:ayat-guide-dhikr-swipe 2.75s cubic-bezier(.3,.65,.3,1) infinite;
+}
+.ayat-tour-root.is-adhkar .ayat-tour-gesture.is-adhkar-swipe svg{
+  fill:#bce4d0;stroke:#307f63;
+}
+.ayat-tour-root.is-adhkar .ayat-tour-gesture.is-adhkar-swipe::after{
+  border-color:#79bfa3;
+}
+@keyframes ayat-guide-dhikr-swipe{
+  0%,8%,100%{opacity:0;transform:translateX(0) rotate(-6deg)}
+  21%{opacity:1;transform:translateX(0) rotate(-6deg)}
+  68%{opacity:1;transform:translateX(110px) rotate(7deg)}
+  85%{opacity:0;transform:translateX(116px) rotate(7deg)}
+}
+@media(prefers-reduced-motion:reduce){
+  .ayat-tour-root.is-adhkar .ayat-tour-gesture.is-adhkar-swipe,
+  .ayat-tour-root.is-adhkar .ayat-tour-hit.is-open-chapter,
+  .ayat-tour-root.is-adhkar .ayat-tour-hit.is-open-chapter::before,
+  .ayat-tour-root.is-adhkar .ayat-tour-hit.is-open-chapter::after{animation:none;}
 }
