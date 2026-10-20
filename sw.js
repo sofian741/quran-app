@@ -1,10 +1,10 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v55';
+const APP_CACHE = 'quran-reader-shell-v56';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',
-    './style.css', './home.css', './home.js', './welcome.css', './welcome-boot.js', './welcome.js', './tour.css?v=47', './tour-home.css?v=54', './tour.js?v=48', './tour.js?v=55', './onboarding.css', './onboarding.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
+    './style.css', './home.css', './home.js', './welcome.css', './welcome-boot.js', './welcome.js', './tour.css?v=47', './tour-home.css?v=54', './tour-home.css?v=56', './tour.js?v=48', './tour.js?v=55', './tour.js?v=56', './onboarding.css', './onboarding.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
     './recitations-overrides.css', './unified-nav.css', './global-theme.js', './library.css', './adhkar.css', './legal.css',
     './service-worker-register.js', './home-settings.js?v=54', './android-build-info.js', './app-update.js', './app.js', './reader-enhancements.js', './reader-layout-polish.js',
     './mushaf-layout-prewarm-worker.js',
