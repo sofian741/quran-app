@@ -52,7 +52,7 @@ async function testIndependentPages(browser,origin){
   await begin(page,origin+'/index.html','الرئيسية');
   assert.match(await title(page),/متابعة القراءة/);
   assert.equal(await page.locator('#ayat-tour-root .ayat-tour-quiz').count(),0,'No home quizzes');
-  assert.match(await page.locator('link[href^="tour-home.css"]').getAttribute('href'),/tour-home\.css\?v=53$/);
+  assert.match(await page.locator('link[href^="tour-home.css"]').getAttribute('href'),/tour-home\.css\?v=54$/);
   await lesson(page).locator('[data-tour-action="home-next"]').click();
   assert.match(await title(page),/آية للتدبّر/);
   assert.equal(await page.locator('#ayat-tour-root .ayat-tour-spot.is-verse').isVisible(),true);
@@ -84,21 +84,40 @@ async function testIndependentPages(browser,origin){
   assert.equal(await invite(page).isVisible(),false,'Completed home guide does not reappear');
   await page.locator('#home-settings-toggle').click();
   assert.equal(await page.locator('#home-settings-panel').isVisible(),true);
-  assert.equal(await page.locator('#home-check-update').isVisible(),true);
+  assert.equal(await page.locator('#check-app-update').isVisible(),true);
   await page.locator('#home-show-tour').click();
+  assert.equal(await page.locator('#home-settings-panel').isVisible(),false);
+  for(const key of ['home','quran','recitations','library','adhkar']){
+    assert.equal(await page.locator('[data-tour-action="replay-'+key+'"]').count(),1,'Settings must offer '+key);
+  }
+  await page.locator('[data-tour-action="replay-home"]').click();
   assert.match(await title(page),/متابعة القراءة/);
   await lesson(page).locator('[data-tour-action="pause"]').click();
-  await begin(page,origin+'/recitations.html','التلاوات');
-  assert.match(await title(page),/عالم من الأصوات/);
-  await tapNext(page);
-  assert.match(await title(page),/نختار صح/);
-  await lesson(page).locator('[data-tour-answer="0"]').click();
-  assert.match(await title(page),/بدون إنترنت/);
-  await tapNext(page);await title(page);
-  assert.match(await title(page),/فين تلاواتك/);
-  await tapNext(page);
-  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-recitations-v5')==='1');
-  assert.match(page.url(),/recitations\.html$/,'Recitations tutorial must never navigate to library');
+  await begin(page,origin+'/recitations.html','القرّاء');
+  assert.match(await title(page),/القرّاء موجودين تحت/);
+  assert.equal(await lesson(page).locator('.ayat-tour-reciter-motion svg').isVisible(),true,'Vertical guide hand must be visible');
+  assert.equal(await page.locator('.recitations-jump').isVisible(),true,'Permanent jump link must be discoverable');
+  await lesson(page).locator('[data-tour-action="recitations-reveal"]').click();
+  assert.match(await title(page),/اختار القارئ/);
+  assert.equal(await page.locator('#ayat-tour-root').evaluate(el=>el.classList.contains('is-choose-reciter')),true,'Reader list must be touchable');
+  if(await page.locator('#reciter-list .reciter-card').count()){
+    await page.locator('#reciter-list .reciter-card').first().click();
+  }else{
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+  }
+  assert.match(await title(page),/اختيار السورة/);
+  await lesson(page).locator('[data-tour-action="home-next"]').click();
+  assert.match(await title(page),/تشغيل التلاوة/);
+  await lesson(page).locator('[data-tour-action="home-next"]').click();
+  assert.match(await title(page),/تنزيل سورة واحدة/);
+  await lesson(page).locator('[data-tour-action="home-next"]').click();
+  assert.match(await title(page),/تنزيل مصحف القارئ/);
+  await lesson(page).locator('[data-tour-action="home-next"]').click();
+  assert.match(await title(page),/مكتبتي/);
+  assert.equal(await page.locator('#batch-progress').isVisible(),false,'Guide must not trigger a bulk download');
+  await lesson(page).locator('[data-tour-action="home-next"]').click();
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-recitations-v6')==='1');
+  assert.match(page.url(),/recitations\.html$/,'Recitations guide must remain on its page');
   await page.goto(origin+'/library.html');
   await invite(page).waitFor({state:'visible'});
   assert.match(await invite(page).textContent(),/مكتبتي/);
@@ -153,9 +172,9 @@ async function testOfflineNoHandoff(browser,origin){
   await invite(page).waitFor({state:'visible'});
   await context.setOffline(true);
   await invite(page).locator('[data-tour-action="begin"]').click();
-  assert.match(await title(page),/عالم من الأصوات/);
-  await tapNext(page);
-  assert.match(await title(page),/نختار صح/);
+  assert.match(await title(page),/القرّاء موجودين تحت/);
+  await lesson(page).locator('[data-tour-action="recitations-reveal"]').click();
+  assert.match(await title(page),/اختار القارئ/);
   assert.match(page.url(),/recitations\.html$/);
   await context.close();
 }
