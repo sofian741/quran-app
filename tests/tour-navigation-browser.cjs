@@ -4,116 +4,145 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 let chromium;
-try {
-    ({ chromium } = require('playwright'));
-} catch (_) {
-    ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright'));
-}
+try { ({ chromium } = require('playwright')); }
+catch (_) { ({ chromium } = require('/opt/codex/runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright')); }
 
 const root = path.resolve(__dirname, '..');
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.woff2': 'font/woff2' };
-const server = http.createServer((request, response) => {
-    const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
-    const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
-    const file = path.resolve(root, relative);
-    if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
-        response.writeHead(404).end('Not found');
-        return;
-    }
-    response.setHeader('Content-Type', types[path.extname(file)] || 'application/octet-stream');
-    fs.createReadStream(file).pipe(response);
+const types = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.json':'application/json', '.woff2':'font/woff2' };
+const server = http.createServer((request,response)=>{
+  const pathname = decodeURIComponent(new URL(request.url,'http://localhost').pathname);
+  const relative=pathname==='/'?'index.html':pathname.replace(/^\/+/,'');
+  const file=path.resolve(root,relative);
+  if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||fs.statSync(file).isDirectory()){
+    response.writeHead(404).end('Not found');return;
+  }
+  response.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');
+  fs.createReadStream(file).pipe(response);
 });
-
-const visibleStep = async page => {
-    await page.waitForSelector('#ayat-tour-root:not([hidden]) > .ayat-tour-card:not([hidden])');
-    return page.locator('#ayat-tour-root > .ayat-tour-card .ayat-tour-title').textContent();
+const lesson = page=>page.locator('#ayat-tour-root > .ayat-tour-card');
+const invite = page=>page.locator('#ayat-tour-root > .ayat-tour-invite');
+const title = async page=>{
+  await page.waitForFunction(()=>{
+    const card=document.querySelector('#ayat-tour-root > .ayat-tour-card');
+    return card && !card.hidden && card.style.visibility==='visible';
+  });
+  return lesson(page).locator('.ayat-tour-title').textContent();
 };
-
-async function testFullJourney(browser, origin) {
-    const context = await browser.newContext({ viewport: { width: 393, height: 852 } });
-    const page = await context.newPage();
-    await page.goto(`${origin}/index.html?ayatTour=general&ayatStep=2`);
-    assert.equal(await visibleStep(page), 'فين تلاقي التلاوات؟');
-
-    await page.locator('.ayat-tour-hit').click();
-    await page.waitForURL(/recitations\.html/);
-    assert.equal(await visibleStep(page), 'اختار صوت القارئ اللي تحبه');
-
-    for (const title of ['القارئ والسورة', 'اسمع من غير إنترنت', 'ادخل مكتبتك الصوتية']) {
-        await page.locator('#ayat-tour-root > .ayat-tour-card [data-tour-action="next"]').click();
-        assert.equal(await visibleStep(page), title);
+async function preparePage(browser){
+  const context=await browser.newContext({viewport:{width:393,height:852},serviceWorkers:'allow'});
+  const page=await context.newPage();
+  // Keep the first-launch hand gesture and brand splash out of this tour test.
+  await page.addInitScript(()=>{
+    localStorage.setItem('ayat-longpress-guide-complete-v1','1');
+    sessionStorage.setItem('ayat-brand-splash-shown','1');
+  });
+  return {context,page};
+}
+async function begin(page,url,name){
+  await page.goto(url);
+  await invite(page).waitFor({state:'visible'});
+  assert.match(await invite(page).textContent(),new RegExp(name));
+  await invite(page).locator('[data-tour-action="begin"]').click();
+}
+async function tapNext(page){
+  await page.locator('#ayat-tour-root > .ayat-tour-hit').click();
+}
+async function testIndependentPages(browser,origin){
+  const {context,page}=await preparePage(browser);
+  await begin(page,origin+'/index.html','الرئيسية');
+  assert.match(await title(page),/مكان قراءتك/);
+  await tapNext(page);
+  assert.match(await title(page),/آية تستحق/);
+  await tapNext(page);
+  assert.match(await title(page),/باب المصحف/);
+  await tapNext(page);
+  assert.match(await title(page),/اختبار صغير/);
+  await lesson(page).locator('[data-tour-answer="1"]').click();
+  assert.match(await title(page),/وأخيرًا: الأذكار/);
+  await tapNext(page);
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-home-v4')==='1');
+  assert.match(page.url(),/index\.html$/,'The home tutorial must never navigate away');
+  await page.reload();
+  assert.equal(await invite(page).isVisible(),false,'Completed tutorial never reappears on reload');
+  await begin(page,origin+'/recitations.html','التلاوات');
+  assert.match(await title(page),/عالم من الأصوات/);
+  await tapNext(page);
+  assert.match(await title(page),/نختار صح/);
+  await lesson(page).locator('[data-tour-answer="0"]').click();
+  assert.match(await title(page),/بدون إنترنت/);
+  await tapNext(page);await title(page);
+  assert.match(await title(page),/فين تلاواتك/);
+  await tapNext(page);
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-recitations-v4')==='1');
+  assert.match(page.url(),/recitations\.html$/,'Recitations tutorial must never navigate to library');
+  await page.goto(origin+'/library.html');
+  await invite(page).waitFor({state:'visible'});
+  assert.match(await invite(page).textContent(),/مكتبتي/);
+  await invite(page).locator('[data-tour-action="later"]').click();
+  assert.equal(await invite(page).isVisible(),false);
+  await page.goto(origin+'/adhkar.html');
+  await invite(page).waitFor({state:'visible'});
+  assert.match(await invite(page).textContent(),/الأذكار/);
+  await context.close();
+}
+async function testQuranFromSettings(browser,origin){
+  const {context,page}=await preparePage(browser);
+  await page.goto(origin+'/quran.html');
+  await page.waitForFunction(()=>document.querySelector('#quran-text')?.dataset.layoutState==='ready');
+  assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'),/tour\.js\?v=46$/);
+  await invite(page).waitFor({state:'visible'});
+  await invite(page).locator('[data-tour-action="later"]').click();
+  await page.locator('#reader-stage').click({position:{x:190,y:300}});
+  await page.locator('#open-settings').click();
+  await page.waitForSelector('#settings-sheet.is-open');
+  await page.locator('#ayat-tour-settings-button').click();
+  await page.locator('[data-tour-action="replay-quran"]').click();
+  assert.match(await title(page),/جرّب تقليب الصفحة/);
+  assert.equal(await page.locator('#settings-sheet').getAttribute('aria-hidden'),'true');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ayat-tour-step-quran-v4')),'0');
+  const pad=lesson(page).locator('[data-tour-skill="swipe"]');
+  const r=await pad.boundingBox();
+  await page.mouse.move(r.x+r.width*.75,r.y+r.height*.5);
+  await page.mouse.down();
+  await page.mouse.move(r.x+r.width*.2,r.y+r.height*.5,{steps:8});
+  await page.mouse.up();
+  assert.match(await title(page),/الضغط المطوّل/);
+  const hold=lesson(page).locator('[data-tour-skill="hold"]');
+  const p=await hold.boundingBox();
+  await page.mouse.move(p.x+p.width/2,p.y+p.height/2);
+  await page.mouse.down();
+  await page.waitForTimeout(850);
+  await page.mouse.up();
+  assert.match(await title(page),/الفهرس/);
+  await context.close();
+}
+async function testOfflineNoHandoff(browser,origin){
+  const {context,page}=await preparePage(browser);
+  await page.goto(origin+'/index.html');
+  await page.evaluate(async()=>{
+    await navigator.serviceWorker.ready;
+    if(!navigator.serviceWorker.controller){
+      await new Promise(resolve=>navigator.serviceWorker.addEventListener('controllerchange',resolve,{once:true}));
     }
-    await page.locator('.ayat-tour-hit').click();
-    await page.waitForURL(/library\.html/);
-    assert.equal(await visibleStep(page), 'رتّب مكتبتك بسهولة');
-
-    await page.locator('#ayat-tour-root > .ayat-tour-card [data-tour-action="next"]').click();
-    assert.equal(await visibleStep(page), 'افتح قسم الأذكار');
-    await page.locator('.ayat-tour-hit').click();
-    await page.waitForURL(/adhkar\.html/);
-    assert.equal(await visibleStep(page), 'ابدأ بأذكار الصباح');
-    await context.close();
+  });
+  await page.goto(origin+'/recitations.html');
+  await invite(page).waitFor({state:'visible'});
+  await context.setOffline(true);
+  await invite(page).locator('[data-tour-action="begin"]').click();
+  assert.match(await title(page),/عالم من الأصوات/);
+  await tapNext(page);
+  assert.match(await title(page),/نختار صح/);
+  assert.match(page.url(),/recitations\.html$/);
+  await context.close();
 }
-
-async function testQuranTourFromSettings(browser, origin) {
-    const context = await browser.newContext({ viewport: { width: 393, height: 852 } });
-    const page = await context.newPage();
-    await page.addInitScript(() => {
-        localStorage.setItem('ayat-tour-done-quran-v3', '1');
-        localStorage.setItem('ayat-tour-done-general-v3', '1');
-    });
-    await page.goto(`${origin}/quran.html`);
-    await page.waitForFunction(() => document.querySelector('#quran-text')?.dataset.layoutState === 'ready');
-    assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'), /tour\.js\?v=45$/);
-
-    // Reveal the reader toolbar exactly as a touch user does, then use the
-    // real settings controls rather than invoking tour functions directly.
-    await page.locator('#reader-stage').click({ position: { x: 190, y: 300 } });
-    await page.locator('#open-settings').click();
-    await page.waitForSelector('#settings-sheet.is-open');
-    await page.locator('#ayat-tour-settings-button').click();
-    await page.waitForSelector('.ayat-tour-dialog:not([hidden])');
-    await page.locator('[data-tour-action="replay-quran"]').click();
-
-    assert.equal(await visibleStep(page), 'قلّب صفحات المصحف بإصبعك');
-    assert.equal(await page.locator('#settings-sheet').getAttribute('aria-hidden'), 'true');
-    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('ayat-tour-active-v3'))), { kind: 'quran', step: 0 });
-    await context.close();
-}
-
-async function testOfflineHandoff(browser, origin) {
-    const context = await browser.newContext({ viewport: { width: 393, height: 852 }, serviceWorkers: 'allow' });
-    const page = await context.newPage();
-    await page.goto(`${origin}/index.html?ayatTour=general&ayatStep=2`);
-    assert.equal(await visibleStep(page), 'فين تلاقي التلاوات؟');
-    await page.evaluate(async () => {
-        await navigator.serviceWorker.ready;
-        if (!navigator.serviceWorker.controller) {
-            await new Promise(resolve => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true }));
-        }
-    });
-    await context.setOffline(true);
-    await page.locator('.ayat-tour-hit').click();
-    await page.waitForURL(/recitations\.html/);
-    assert.equal(await visibleStep(page), 'اختار صوت القارئ اللي تحبه');
-    await context.close();
-}
-
-(async () => {
-    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-    const origin = `http://127.0.0.1:${server.address().port}`;
-    const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
-    try {
-        await testFullJourney(browser, origin);
-        await testQuranTourFromSettings(browser, origin);
-        await testOfflineHandoff(browser, origin);
-        console.log('Tour navigation browser tests passed.');
-    } finally {
-        await browser.close();
-        server.close();
-    }
-})().catch(error => {
-    console.error(error);
-    server.close();
-    process.exitCode = 1;
-});
+(async()=>{
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const origin='http://127.0.0.1:'+server.address().port;
+  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
+  try{
+    await testIndependentPages(browser,origin);
+    await testQuranFromSettings(browser,origin);
+    await testOfflineNoHandoff(browser,origin);
+    console.log('Independent page discovery browser tests passed.');
+  }finally{await browser.close();server.close();}
+})().catch(err=>{console.error(err);server.close();process.exitCode=1;});
