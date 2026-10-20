@@ -42,16 +42,20 @@
       {selector:'#library-content',fallback:'.summary-line',mode:'quiz',title:'تحدي المكتبة 🎯',body:'كل اللي بتنزلّه من التلاوات تلاقيه هنا.',question:'لو المكتبة فاضية، تعمل إيه؟',choices:['تنزّل سورة من التلاوات','تمسح التطبيق','تغيّر لون المصحف'],correct:0}
     ],
     adhkar: [
-      {selector:'#filters',mode:'tap',title:'كل ذكر في مكانه 🌿',body:'الأبواب مترتبة حسب الموضوع. اكتشف أزرار التصنيف عشان توصل للذكر بسرعة.'},
-      {selector:'.quick-card.morning',mode:'tap',activate:true,title:'افتح أذكار الصباح ☀️',body:'المرادي لمسة حقيقية! اضغط على البطاقة المنوّرة عشان نفتح باب أذكار الصباح سوا.'},
-      {selector:'#tasbih',mode:'tap',wait:'reader',title:'العداد يفتكر بدل منك',body:'دي دائرة العد. في الشرح هنجرّب مكانها بس من غير ما نزود عداد ذكرك الحقيقي.'},
-      {selector:'#reader-foot',mode:'tap',wait:'reader',title:'خطوة لقدّام أو لورا',body:'من هنا تنتقل للذكر التالي أو ترجع للسابق، وتتابع تقدمك.'},
-      {selector:'#reader-favorite',mode:'tap',wait:'reader',title:'احتفظ باللي تحبه ❤️',body:'علامة القلب تحفظ باب الأذكار في المفضلة. مش هنغيّر مفضلتك أثناء التدريب.'}
+      {selector:'.hero',mode:'reveal',group:'دليل الأذكار',title:'باقي الأذكار موجودة تحت',body:'الاختصارات مجرد بداية. هتلاقي أسفلها أبواب حصن المسلم كلها مرتبة. اتبع حركة اليد لتحت، واضغط «اعرض الأبواب» عشان تشوفها.'},
+      {selector:'#filters [data-filter="saved"]',mode:'note',group:'الأبواب والمفضلة',title:'المفضلة أولًا',body:'الزر ده بيعرض الأبواب اللي حفظتها بالقلب. لو لسه محفظتش أي باب، هتكون القائمة فاضية لحد ما تضيف أول مفضلة.'},
+      {selector:'#open-index',mode:'note',group:'الانتقال السريع',title:'فهرس الأذكار',body:'الزر الصغير ده فوق جنب المظهر. بيفتح فهرس الأبواب المتقسم حسب الموضوع، وفيه بحث عشان توصل للذكر بسرعة.'},
+      {selector:'.quick-card.morning',mode:'open-chapter',group:'الاختصارات',title:'افتح أذكار الصباح',body:'الاختصارات دي توصّلك لأكثر الأذكار استخدامًا. اضغط بنفسك على بطاقة «أذكار الصباح» المنوّرة عشان ندخل ونكمل الشرح هناك.'},
+      {selector:'#dhikr-text',wait:'reader',mode:'note',group:'داخل الأذكار',title:'نص الذكر',body:'ده نص الذكر كاملًا. اقراه على مهلك، وفوقه هتشوف رقمه وعدد الأذكار الموجودة في الباب.'},
+      {selector:'#tasbih',wait:'reader',mode:'note',group:'داخل الأذكار',title:'عداد التكرار',body:'اضغط على الدائرة بعد كل مرة تقرأ فيها الذكر. الرقم بيزيد لحد العدد المطلوب، ويحتفظ بتقدّمك. الشرح مش هيغيّر عدادك.'},
+      {selector:'#dhikr-reference',wait:'reader',mode:'note',group:'داخل الأذكار',title:'مرجع الذكر',body:'تحت العداد هتلاقي مصدر الذكر ومرجعه، عشان تعرف النص منقول منين.'},
+      {selector:'#reader-favorite',wait:'reader',mode:'note',group:'حفظ الأبواب',title:'القلب للمفضلة',body:'من هنا تحفظ باب الأذكار كله في المفضلة اللي شفتها في الفهرس. الشرح مش هيضيف أي مفضلة من نفسه.'},
+      {selector:'#reader-viewport',wait:'reader',mode:'real-swipe',group:'حركة التقليب',title:'قلّب الذكر بإيدك',body:'اسحب على مساحة الذكر من الشمال لليمين عشان يفتح الذكر اللي بعده، زي حركة اليد قدامك. جرّبها بنفسك، والجولة هتخلص تلقائيًا بعد تقليب حقيقي.'}
     ]
   };
   const kind = PAGES[PAGE];
   if (!kind) return;
-  const VERSION = kind==='home' ? 'v7' : kind==='recitations' ? 'v6' : 'v5';
+  const VERSION = kind==='home' ? 'v7' : kind==='recitations' ? 'v6' : kind==='adhkar' ? 'v6' : 'v5';
   const DONE = k => 'ayat-tour-done-' + k + '-' + VERSION;
   const STEP = k => 'ayat-tour-step-' + k + '-' + VERSION;
   const LATER = k => 'ayat-tour-remind-at-' + k + '-' + VERSION;
@@ -74,7 +78,7 @@
   let active = null, modalOpen = false, busy = false, resizeTimer = 0, skillTimer = 0, skillStart = null, stepToken = 0, initialized = false;
   const root = document.createElement('div');
   root.id = 'ayat-tour-root';
-  root.className = 'ayat-tour-root' + ((kind==='home'||kind==='recitations')?' is-editorial':'') + (kind==='home'?' is-home':'') + (kind==='recitations'?' is-recitations':'');
+  root.className = 'ayat-tour-root' + ((kind==='home'||kind==='recitations'||kind==='adhkar')?' is-editorial':'') + (kind==='home'?' is-home':'') + (kind==='recitations'?' is-recitations':'') + (kind==='adhkar'?' is-adhkar':'');
   root.hidden = true;
   root.setAttribute('aria-label','دليل استخدام آيات');
   root.innerHTML =
@@ -100,7 +104,8 @@
   function close(){
     ++stepToken;clearTimeout(skillTimer);busy=false;modalOpen=false;active=null;
     root.hidden=true;
-    root.classList.remove('is-verse-focused','is-choose-reciter');
+    root.classList.remove('is-verse-focused','is-choose-reciter','is-real-swipe','is-opening-chapter');
+    hand.classList.remove('is-adhkar-swipe');
     invite.hidden=shade.hidden=spot.hidden=hit.hidden=hand.hidden=modal.hidden=card.hidden=true;
     document.body.classList.remove('ayat-tour-on','ayat-tour-audio');
     document.documentElement.classList.remove('ayat-tour-boot');
@@ -110,17 +115,17 @@
     shade.hidden=spot.hidden=hit.hidden=hand.hidden=true;
   }
   function showInvite(){
-    if(active||modalOpen||storageRead(DONE(kind))==='1'||storageRead(OPT_OUT(kind))==='1'||Number(storageRead(LATER(kind))||0)>Date.now()||(kind!=='home' && kind!=='recitations' && Number(storageRead(LAST(kind))||0)+REOFFER_AFTER>Date.now())){
+    if(active||modalOpen||storageRead(DONE(kind))==='1'||storageRead(OPT_OUT(kind))==='1'||Number(storageRead(LATER(kind))||0)>Date.now()||(kind!=='home' && kind!=='recitations' && kind!=='adhkar' && Number(storageRead(LAST(kind))||0)+REOFFER_AFTER>Date.now())){
       document.documentElement.classList.remove('ayat-tour-boot');return;
     }
     rootOpen(false);clearLayers();save(LAST(kind),Date.now());
     const pending=Math.min(TOURS[kind].length-1,Math.max(0,Number(storageRead(STEP(kind))||0)));
     invite.hidden=false;
-    if(kind==='home'||kind==='recitations'){
+    if(kind==='home'||kind==='recitations'||kind==='adhkar'){
       invite.innerHTML=
         '<div class="ayat-tour-invite-icon" aria-hidden="true">✧</div>' +
-        '<div class="ayat-tour-invite-copy"><strong>'+(kind==='home'?(pending?'نكمل شرح الرئيسية؟':'جولة هادئة في الرئيسية'):(pending?'نكمل شرح التلاوات؟':'اكتشف قائمة القرّاء'))+
-        '</strong><span>'+(kind==='home'?'جولة مختصرة للقراءة والتدبّر وأزرار التنقّل':'القرّاء موجودين أسفل المشغّل، والشرح هيوصلك لهم')+'</span></div>'+
+        '<div class="ayat-tour-invite-copy"><strong>'+(kind==='home'?(pending?'نكمل شرح الرئيسية؟':'جولة هادئة في الرئيسية'):kind==='recitations'?(pending?'نكمل شرح التلاوات؟':'اكتشف قائمة القرّاء'):(pending?'نكمل شرح الأذكار؟':'اكتشف أبواب الأذكار'))+
+        '</strong><span>'+(kind==='home'?'جولة مختصرة للقراءة والتدبّر وأزرار التنقّل':kind==='recitations'?'القرّاء موجودين أسفل المشغّل، والشرح هيوصلك لهم':'اعرف مكان الأبواب والمفضلة، وبعدها جرّب التقليب بنفسك')+'</span></div>'+
         '<div class="ayat-tour-invite-actions"><button type="button" class="ayat-tour-main" data-tour-action="begin">ابدأ الشرح</button><button type="button" class="ayat-tour-text" data-tour-action="later">لاحقًا</button><button type="button" class="ayat-tour-text ayat-tour-never" data-tour-action="never">متظهرش تاني</button></div>';
     }else{
       invite.innerHTML=
@@ -165,7 +170,7 @@
     save(DONE(kind),'1');save(LAST(kind),Date.now());remove(STEP(kind));remove(LATER(kind));
     close();
     // The redesigned editorial guides end quietly without a completion banner.
-    if(kind==='home'||kind==='recitations')return;
+    if(kind==='home'||kind==='recitations'||kind==='adhkar')return;
     const toast=document.createElement('div');
     toast.className='ayat-tour-complete';
     toast.setAttribute('role','status');
@@ -210,12 +215,24 @@
       card.style.top=Math.max(15,innerHeight-ch-88)+'px';
       return;
     }
-    const tapping=s.mode==='tap'||s.mode==='verse'||s.mode==='play';
+    if(kind==='adhkar'&&s.mode==='real-swipe'){
+      hit.hidden=true;hand.hidden=false;
+      hand.classList.add('is-adhkar-swipe');
+      const cw=Math.min(380,innerWidth-24),ch=card.offsetHeight||255;
+      const cy=Math.max(12,innerHeight-ch-100);
+      card.style.left=Math.max(12,(innerWidth-cw)/2)+'px';
+      card.style.top=cy+'px';
+      hand.style.left=Math.max(20,innerWidth*.23)+'px';
+      hand.style.top=Math.max(135,Math.min(cy-70,top+height*.29))+'px';
+      return;
+    }
+    const tapping=s.mode==='tap'||s.mode==='verse'||s.mode==='play'||s.mode==='open-chapter';
     hit.hidden=!tapping;
     if(tapping){
       Object.assign(hit.style,{left:left+'px',top:top+'px',width:width+'px',height:height+'px'});
       hit.classList.toggle('ayat-tour-verse-hit',s.mode==='verse');
-      hit.setAttribute('aria-label',s.mode==='verse'?'افتح آية التدبّر للقراءة':s.activate?'افتح العنصر المنوّر':'اكتشف '+s.title);
+      hit.classList.toggle('is-open-chapter',s.mode==='open-chapter');
+      hit.setAttribute('aria-label',s.mode==='verse'?'افتح آية التدبّر للقراءة':s.mode==='open-chapter'?'اضغط لفتح أذكار الصباح':s.activate?'افتح العنصر المنوّر':'اكتشف '+s.title);
     }
     const cw=Math.min(380,innerWidth-24),ch=card.offsetHeight||220;
     const below=innerHeight-(top+height),above=top;
@@ -256,10 +273,13 @@
     rootOpen(true);clearLayers();
     root.classList.toggle('is-verse-focused',kind==='home'&&step.mode==='verse');
     root.classList.toggle('is-choose-reciter',kind==='recitations'&&step.mode==='pick-reciter');
+    root.classList.toggle('is-real-swipe',kind==='adhkar'&&step.mode==='real-swipe');
+    root.classList.toggle('is-opening-chapter',kind==='adhkar'&&step.mode==='open-chapter');
+    hand.classList.toggle('is-adhkar-swipe',kind==='adhkar'&&step.mode==='real-swipe');
     shade.hidden=false;shade.style.background='transparent';
     card.hidden=false;card.style.visibility='hidden';
-    // Reciter choice intentionally lets the user interact with the real list behind the guide.
-    card.setAttribute('aria-modal',String(step.mode!=='pick-reciter'));
+    // User gestures pass through during actual reciter selection and dhikr swiping.
+    card.setAttribute('aria-modal',String(step.mode!=='pick-reciter'&&step.mode!=='real-swipe'));
     const current=active.step+1;
     const total=TOURS[kind].length;
     const last=current===total;
@@ -271,17 +291,19 @@
         '<span class="ayat-tour-home-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5C9.2 3.6 6.5 3.7 3.5 4.8v14.1c3-1.1 5.7-1 8.5.6 2.8-1.6 5.5-1.7 8.5-.6V4.8c-3-1.1-5.7-1.2-8.5.2Z"/><path d="M12 5v14.5"/></svg></span>'+
         '<span class="ayat-tour-home-heading"><strong>دليل آيات</strong><small>'+html(step.group||'الرئيسية')+'</small></span>'+
         '<span class="ayat-tour-count">'+String(current).padStart(2,'0')+' <span aria-hidden="true">/</span> '+String(total).padStart(2,'0')+'</span></div>'+
-      '<div class="ayat-tour-home-progress" aria-hidden="true">'+progress+'</div>'+
+      '<div class="ayat-tour-home-progress" style="grid-template-columns:repeat('+total+',minmax(0,1fr))" aria-hidden="true">'+progress+'</div>'+
       '<h2 class="ayat-tour-title">'+html(step.title)+'</h2>'+
       '<p class="ayat-tour-body">'+html(step.body)+'</p>'+
       (step.mode==='verse'?'<button class="ayat-tour-home-read" type="button" data-tour-action="verse-open"><span aria-hidden="true">◈</span> اقرأ آية اليوم</button>':'')+
       (step.mode==='reveal'?'<div class="ayat-tour-reciter-guide" aria-label="حركة توضيحية للأسفل">'+
-        '<div class="ayat-tour-reciter-guide-copy"><strong>كمّل لتحت</strong><small>هتلاقي القرّاء أسفل مشغّل التلاوة</small></div>'+
+        '<div class="ayat-tour-reciter-guide-copy"><strong>كمّل لتحت</strong><small>'+(kind==='adhkar'?'هتلاقي أبواب حصن المسلم أسفل الاختصارات':'هتلاقي القرّاء أسفل مشغّل التلاوة')+'</small></div>'+
         '<div class="ayat-tour-reciter-motion" aria-hidden="true"><svg viewBox="0 0 48 64"><path d="M17 59c-6-9-14-19-12-24 2-5 8-3 13 4V12c0-9 10-9 10 0v20c2-5 9-6 11-1 5 0 7 5 6 10l-3 17Z"/></svg><span class="ayat-tour-reciter-down">↓</span></div></div>':'')+
       (step.mode==='pick-reciter'?'<div class="ayat-tour-picker-note">اضغط على أي اسم في القائمة. لو النت مش متاح، تقدر تكمّل الشرح بزر «التالي».</div>':'')+
+      (step.mode==='open-chapter'?'<div class="ayat-tour-picker-note">المس بطاقة «أذكار الصباح» المضيئة عشان تفتحها بنفسك.</div>':'')+
+      (step.mode==='real-swipe'?'<div class="ayat-tour-swipe-note" aria-live="polite"><span aria-hidden="true">← <strong>اسحب</strong> →</span> مرّر إصبعك على الذكر ناحية اليمين. مفيش زر «التالي» هنا.</div>':'')+
       '<div class="ayat-tour-home-foot">'+
       (current===1?'':'<button type="button" class="ayat-tour-secondary" data-tour-action="previous">السابق</button>')+
-      '<button class="ayat-tour-main" type="button" data-tour-action="'+(step.mode==='reveal'?'recitations-reveal':'home-next')+'">'+(step.mode==='reveal'?'اعرض القرّاء':last?'إنهاء الشرح':'التالي')+' <span aria-hidden="true">'+(step.mode==='reveal'?'↓':'←')+'</span></button>'+
+      (step.mode==='real-swipe'?'':'<button class="ayat-tour-main" type="button" data-tour-action="'+(step.mode==='reveal'?(kind==='adhkar'?'adhkar-reveal':'recitations-reveal'):'home-next')+'">'+(step.mode==='reveal'?(kind==='adhkar'?'اعرض الأبواب':'اعرض القرّاء'):last?'إنهاء الشرح':'التالي')+' <span aria-hidden="true">'+(step.mode==='reveal'?'↓':'←')+'</span></button>')+
       '<button class="ayat-tour-text" type="button" data-tour-action="pause">خروج</button></div>';
     await prepare(step,token);
     if(token!==stepToken||!active)return;
@@ -289,7 +311,7 @@
     if(kind==='recitations'&&step.mode==='reveal'&&window.scrollY>80){
       window.scrollTo({top:0,behavior:'auto'});
     }
-    if(target&&!step.selector.startsWith('.home-bottom-nav')&&step.mode!=='reveal'){
+    if(target&&!step.selector.startsWith('.home-bottom-nav')&&step.mode!=='reveal'&&step.mode!=='real-swipe'){
       const rect=target.getBoundingClientRect();
       if(rect.bottom>innerHeight-110||rect.top<12){
         target.scrollIntoView({block:step.mode==='pick-reciter'?'start':'center',inline:'nearest',behavior:'auto'});
@@ -326,7 +348,7 @@
   }
   async function render(){
     if(!active)return;
-    if(kind==='home'||kind==='recitations')return renderEditorial();
+    if(kind==='home'||kind==='recitations'||kind==='adhkar')return renderEditorial();
     const token=++stepToken;
     const s=TOURS[kind][active.step];
     rootOpen(true);clearLayers();
@@ -371,7 +393,8 @@
   }
   function advance(){
     if(!active||busy)return;
-    if(kind==='home'||kind==='recitations'){
+    if(kind==='home'||kind==='recitations'||kind==='adhkar'){
+      if(kind==='adhkar'&&TOURS[kind][active.step]?.mode==='real-swipe')return;
       const next=active.step+1;
       if(next>=TOURS[kind].length){finish();return;}
       active.step=next;save(STEP(kind),next);render();
@@ -393,6 +416,11 @@
     if(!active||busy)return;
     const s=TOURS[kind][active.step];
     if(kind==='home'&&s.mode==='verse'){openHomeVerse();return;}
+    if(s.mode==='open-chapter'&&kind==='adhkar'){
+      const target=targetFor(s);
+      if(target)target.click();
+      return;
+    }
     if(s.mode==='play'&&kind==='recitations'){
       const player=targetFor(s);
       if(player&&!player.disabled)player.click();
@@ -424,7 +452,11 @@
     if(!button)return;
     const action=button.getAttribute('data-tour-action');
     if(action==='begin')start();
-    else if(action==='home-next'&&(kind==='home'||kind==='recitations'))advance();
+    else if(action==='home-next'&&(kind==='home'||kind==='recitations'||kind==='adhkar'))advance();
+    else if(action==='adhkar-reveal'&&kind==='adhkar'){
+      document.getElementById('library')?.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+      setTimeout(()=>{if(active&&kind==='adhkar'&&TOURS[kind][active.step]?.mode==='reveal')advance();},500);
+    }
     else if(action==='recitations-reveal'&&kind==='recitations'){
       const catalog=document.getElementById('catalog');
       if(catalog){catalog.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});}
@@ -476,7 +508,7 @@
       return;
     }
     if(e.key!=='Tab')return;
-    if(kind==='recitations'&&active&&TOURS[kind][active.step]?.mode==='pick-reciter')return;
+    if(active&&((kind==='recitations'&&TOURS[kind][active.step]?.mode==='pick-reciter')||(kind==='adhkar'&&TOURS[kind][active.step]?.mode==='real-swipe')))return;
     const panel=!modal.hidden?modal:!card.hidden?card:invite;
     const focusable=[...(!hit.hidden?[hit]:[]),...panel.querySelectorAll('button:not(:disabled):not([hidden]),[tabindex="0"]')].filter(el=>el.getClientRects().length);
     if(!focusable.length)return;
@@ -511,6 +543,14 @@
     if(kind==='recitations'&&active&&TOURS[kind][active.step]?.mode==='pick-reciter'){
       setTimeout(()=>{if(active&&TOURS[kind][active.step]?.mode==='pick-reciter')advance();},380);
     }
+  });
+  document.addEventListener('ayat:dhikr-opened',()=>{
+    if(kind==='adhkar'&&active&&TOURS.adhkar[active.step]?.mode==='open-chapter')advance();
+  });
+  document.addEventListener('ayat:dhikr-swiped',event=>{
+    if(kind!=='adhkar'||!active||TOURS.adhkar[active.step]?.mode!=='real-swipe'||event.detail?.direction!=='next')return;
+    // Keep the newly opened dhikr on screen after the genuine reader transition.
+    setTimeout(()=>{if(active&&TOURS.adhkar[active.step]?.mode==='real-swipe')finish();},410);
   });
   function initialize(){
     if(initialized)return;
