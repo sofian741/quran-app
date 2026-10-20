@@ -51,29 +51,43 @@ async function testIndependentPages(browser,origin){
   const {context,page}=await preparePage(browser);
   await begin(page,origin+'/index.html','الرئيسية');
   assert.match(await title(page),/متابعة القراءة/);
-  assert.equal(await page.locator('#ayat-tour-root .ayat-tour-quiz').count(),0,'Home is an explanation, not a quiz');
-  assert.match(await page.locator('link[href^="tour-home.css"]').getAttribute('href'),/tour-home\.css\?v=51$/);
-  assert.equal(await lesson(page).locator('[data-tour-action="home-next"]').isVisible(),true);
+  assert.equal(await page.locator('#ayat-tour-root .ayat-tour-quiz').count(),0,'No home quizzes');
+  assert.match(await page.locator('link[href^="tour-home.css"]').getAttribute('href'),/tour-home\.css\?v=53$/);
   await lesson(page).locator('[data-tour-action="home-next"]').click();
-  await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent==='آية للتدبّر');
   assert.match(await title(page),/آية للتدبّر/);
-  assert.equal(await page.locator('#ayat-tour-root .ayat-tour-spot.is-verse').isVisible(),true,'Real verse should receive the unique gold spotlight');
+  assert.equal(await page.locator('#ayat-tour-root .ayat-tour-spot.is-verse').isVisible(),true);
   await page.locator('#ayat-tour-root > .ayat-tour-hit').click();
   await page.locator('#ayat-tour-root .ayat-tour-verse-sheet').waitFor({state:'visible'});
   const realVerse=await page.locator('.home-verse blockquote').textContent();
   const previewVerse=await page.locator('#ayat-tour-root .ayat-tour-verse-sheet blockquote').textContent();
-  assert.equal(previewVerse,realVerse,'Reflection preview must display the real daily verse');
+  assert.equal(previewVerse,realVerse,'The reflection sheet must show the real daily verse');
   await page.locator('[data-tour-action="verse-next"]').click();
-  await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent==='الذهاب للآية');
   assert.match(await title(page),/الذهاب للآية/);
   await lesson(page).locator('[data-tour-action="home-next"]').click();
-  await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent==='التفسير');
   assert.match(await title(page),/التفسير/);
+  for(const [label,selector] of [
+    ['الرئيسية','.home-bottom-nav a[href="index.html"]'],
+    ['المصحف','.home-bottom-nav a[href="quran.html"]'],
+    ['التلاوات','.home-bottom-nav a[href="recitations.html"]'],
+    ['الأذكار','.home-bottom-nav a[href="adhkar.html"]']
+  ]){
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    assert.equal(await title(page),label,'Home must explain each bottom tab: '+label);
+    assert.equal(await page.locator(selector).count(),1);
+    assert.equal(await page.locator('#ayat-tour-root > .ayat-tour-spot').isVisible(),true);
+  }
   await lesson(page).locator('[data-tour-action="home-next"]').click();
-  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-home-v6')==='1');
-  assert.match(page.url(),/index\.html$/,'The home tutorial must never navigate away');
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-home-v7')==='1');
+  assert.equal(await page.locator('.ayat-tour-complete').count(),0,'Home guide ends without a toast');
+  assert.match(page.url(),/index\.html$/,'Home guide must not navigate');
   await page.reload();
-  assert.equal(await invite(page).isVisible(),false,'Completed tutorial waits 12 hours before reappearing');
+  assert.equal(await invite(page).isVisible(),false,'Completed home guide does not reappear');
+  await page.locator('#home-settings-toggle').click();
+  assert.equal(await page.locator('#home-settings-panel').isVisible(),true);
+  assert.equal(await page.locator('#home-check-update').isVisible(),true);
+  await page.locator('#home-show-tour').click();
+  assert.match(await title(page),/متابعة القراءة/);
+  await lesson(page).locator('[data-tour-action="pause"]').click();
   await begin(page,origin+'/recitations.html','التلاوات');
   assert.match(await title(page),/عالم من الأصوات/);
   await tapNext(page);
