@@ -8,12 +8,7 @@
   } catch (_) {
     document.documentElement.classList.add('ayat-splash-startup');
   }
-  try {
-    const unfinished = localStorage.getItem('ayat-tour-done-general-v3') !== '1' && localStorage.getItem('ayat-tour-done-general-v2') !== '1';
-    const deferred = Number(localStorage.getItem('ayat-tour-remind-at-general-v3') || 0) > Date.now();
-    const active = sessionStorage.getItem('ayat-tour-active-v3') || localStorage.getItem('ayat-tour-active-v3');
-    if ((unfinished && !deferred) || (active && active.includes('"general"'))) {
-      document.documentElement.classList.add('ayat-tour-boot');
-    }
-  } catch (_) {}
+  // The lightweight page invitations are scheduled by tour.js itself.
+  // Legacy global-tour state must never keep the home screen hidden.
+  document.documentElement.classList.remove('ayat-tour-boot');
 })();
