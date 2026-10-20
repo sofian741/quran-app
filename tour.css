@@ -101,3 +101,81 @@
   80%,100%{transform:translate(-50%,-50%) scale(2.5);opacity:0}
 }
 @media(prefers-reduced-motion:reduce){.ayat-tour-hit::before,.ayat-tour-hit::after{animation:none}}
+
+
+/* v46: lightweight, opt-in discovery invitations and playful challenges. */
+.ayat-tour-invite{
+  position:fixed;z-index:10;bottom:calc(78px + env(safe-area-inset-bottom,0px));
+  left:50%;transform:translateX(-50%);width:min(420px,calc(100vw - 26px));
+  box-sizing:border-box;display:grid;grid-template-columns:36px minmax(0,1fr);gap:9px 11px;
+  padding:13px 14px 11px;border:1px solid rgba(213,178,110,.58);
+  border-radius:20px;background:linear-gradient(135deg,#16483a,#0e342b);
+  box-shadow:0 14px 36px rgba(3,22,16,.27);pointer-events:auto;
+  text-align:right;direction:rtl;animation:ayat-tour-invite-in .4s both;
+}
+.ayat-tour-invite[hidden]{display:none!important}
+.ayat-tour-invite-icon{
+  width:36px;height:36px;display:grid;place-items:center;border-radius:12px;
+  background:rgba(224,194,128,.14);color:#f5d991;font-size:23px;
+}
+.ayat-tour-invite-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
+.ayat-tour-invite-copy strong{font-size:15px;color:#ffe7ab;line-height:1.6}
+.ayat-tour-invite-copy span{font-size:12px;line-height:1.65;color:#d7e8dc}
+.ayat-tour-invite-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;grid-column:1 / -1}
+.ayat-tour-invite .ayat-tour-main{min-height:38px;padding:7px 17px;font-size:13px}
+.ayat-tour-invite .ayat-tour-text{min-height:38px;padding:5px 9px;font-size:12px}
+.ayat-tour-invite .ayat-tour-never{margin-inline-start:auto;color:#a8c6b6;font-size:11px}
+@keyframes ayat-tour-invite-in{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+.ayat-tour-mission{
+  color:#fce5a9;font-size:13px;font-weight:700;line-height:1.8;
+  background:rgba(226,191,117,.12);border:1px dashed rgba(236,199,129,.34);
+  border-radius:13px;padding:9px 11px;margin:4px 0 12px;
+}
+.ayat-tour-question{font-size:15px;font-weight:700;color:#ffe8ab;line-height:1.7;margin:0 0 9px}
+.ayat-tour-quiz{display:grid;gap:8px;margin-bottom:11px}
+.ayat-tour-quiz button{
+  font:600 14px Tahoma,Arial,sans-serif;text-align:right;min-height:44px;
+  background:rgba(255,255,255,.05);color:#f5f1e4;
+  border:1px solid rgba(236,220,170,.25);border-radius:12px;padding:10px 13px;cursor:pointer;
+  transition:background .18s,border-color .18s,transform .18s;
+}
+.ayat-tour-quiz button:focus-visible,.ayat-tour-playground:focus-visible{outline:2px solid #ffe5aa;outline-offset:2px}
+.ayat-tour-quiz button.correct{background:#28674c;border-color:#a3e4a9;color:#fff}
+.ayat-tour-quiz button.incorrect{border-color:#da9388;background:rgba(198,85,71,.14)}
+.ayat-tour-playground{
+  touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;
+  padding:13px;margin:0 0 10px;min-height:92px;border-radius:15px;
+  border:1px dashed rgba(243,210,145,.55);background:radial-gradient(circle at 50% 50%,rgba(224,186,101,.17),rgba(222,189,112,.04));
+  color:#ffebb9;text-align:center;
+}
+.ayat-tour-playground.is-pressing{transform:scale(.985);background:rgba(229,189,115,.24)}
+.ayat-tour-play-icon{font-size:28px;line-height:1.1;animation:ayat-tour-practice 2.4s ease-in-out infinite}
+.ayat-tour-playground strong{font-size:14px}
+.ayat-tour-playground small{font-size:11px;color:#c9ded1}
+@keyframes ayat-tour-practice{0%,100%{transform:scale(.9);opacity:.65}50%{transform:scale(1.13);opacity:1}}
+.ayat-tour-feedback{font-size:13px;line-height:1.6;margin:0;color:#ffce9d}
+.ayat-tour-feedback:empty{display:none}
+.ayat-tour-feedback.is-success{color:#abefbc;font-weight:700}
+.ayat-tour-win{border-color:#a9e5ae!important;box-shadow:0 0 0 3px rgba(171,236,179,.13),0 22px 60px rgba(0,0,0,.4)!important}
+.ayat-tour-card .ayat-tour-foot{gap:4px 7px;justify-content:flex-start}
+.ayat-tour-card .ayat-tour-foot .ayat-tour-text{min-height:36px;padding:7px 6px;font-size:11px}
+.ayat-tour-card .ayat-tour-foot .ayat-tour-secondary{min-height:36px;padding:7px 12px;font-size:12px}
+.ayat-tour-complete{
+  position:fixed;bottom:calc(86px + env(safe-area-inset-bottom,0px));
+  left:50%;transform:translateX(-50%);
+  width:max-content;max-width:calc(100vw - 30px);box-sizing:border-box;
+  z-index:2147483001;padding:13px 18px;border-radius:16px;
+  background:#174b38;color:#ffecb7;border:1px solid #c5b176;
+  box-shadow:0 12px 30px rgba(0,0,0,.23);
+  font:700 14px/1.8 Tahoma,Arial,sans-serif;text-align:center;
+  pointer-events:none;animation:ayat-tour-invite-in .3s both;
+}
+@media(max-height:650px){
+  .ayat-tour-card{max-height:65vh}
+  .ayat-tour-invite{bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+}
+@media(prefers-reduced-motion:reduce){
+  .ayat-tour-invite,.ayat-tour-complete,.ayat-tour-play-icon{animation:none}
+  .ayat-tour-quiz button{transition:none}
+}
