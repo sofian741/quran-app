@@ -51,9 +51,13 @@ async function testIndependentPages(browser,origin){
   const {context,page}=await preparePage(browser);
   await begin(page,origin+'/index.html','الرئيسية');
   assert.match(await title(page),/متابعة القراءة/);
+  assert.equal(await page.locator('#ayat-tour-root .ayat-tour-quiz').count(),0,'Home is an explanation, not a quiz');
+  assert.match(await page.locator('link[href^="tour-home.css"]').getAttribute('href'),/tour-home\.css\?v=50$/);
+  assert.equal(await lesson(page).locator('[data-tour-action="home-next"]').isVisible(),true);
   await lesson(page).locator('[data-tour-action="home-next"]').click();
   await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent==='آية للتدبّر');
   assert.match(await title(page),/آية للتدبّر/);
+  assert.equal(await page.locator('#ayat-tour-root .ayat-tour-spot.is-verse').isVisible(),true,'Real verse should receive the unique gold spotlight');
   await page.locator('#ayat-tour-root > .ayat-tour-hit').click();
   await page.locator('#ayat-tour-root .ayat-tour-verse-sheet').waitFor({state:'visible'});
   const realVerse=await page.locator('.home-verse blockquote').textContent();
@@ -66,7 +70,7 @@ async function testIndependentPages(browser,origin){
   await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent==='التفسير');
   assert.match(await title(page),/التفسير/);
   await lesson(page).locator('[data-tour-action="home-next"]').click();
-  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-home-v5')==='1');
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-home-v6')==='1');
   assert.match(page.url(),/index\.html$/,'The home tutorial must never navigate away');
   await page.reload();
   assert.equal(await invite(page).isVisible(),false,'Completed tutorial waits 12 hours before reappearing');
