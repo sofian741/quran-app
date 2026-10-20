@@ -48,8 +48,11 @@
       {selector:'.my-library-card',mode:'note',group:'ملفاتك المحفوظة',title:'مكتبتي',body:'أي سورة أو مصحف نزّلته هتلاقيه هنا مرتبًا حسب القارئ والسورة، وتقدر تشغّله من غير إنترنت.'}
     ],
     library: [
-      {selector:'.tools',mode:'tap',title:'مكتبتك تحت السيطرة',body:'تقدر تبحث باسم قارئ أو سورة وتغيّر ترتيب التسجيلات. جرّب تكتشف أدوات التنظيم.'},
-      {selector:'#library-content',fallback:'.summary-line',mode:'quiz',title:'تحدي المكتبة 🎯',body:'كل اللي بتنزلّه من التلاوات تلاقيه هنا.',question:'لو المكتبة فاضية، تعمل إيه؟',choices:['تنزّل سورة من التلاوات','تمسح التطبيق','تغيّر لون المصحف'],correct:0}
+      {selector:'.hero',mode:'note',group:'مكتبتك الصوتية',title:'التلاوات المحفوظة',body:'هنا بتلاقي كل السور اللي حمّلتها من التلاوات، وتقدر تسمعها من غير إنترنت.'},
+      {selector:'#library-search',mode:'note',group:'التنظيم',title:'البحث في المكتبة',body:'اكتب اسم القارئ أو السورة عشان توصل للتسجيل المطلوب بسرعة.'},
+      {selector:'#sort-mode',mode:'note',group:'التنظيم',title:'ترتيب التلاوات',body:'رتّب الملفات حسب القارئ أو السورة أو الأحدث تنزيلًا، بالطريقة اللي تريحك.'},
+      {selector:'#library-content',fallback:'#library-empty',mode:'note',group:'ملفاتك',title:'ملفاتك المحمّلة',body:'السور المحفوظة بتظهر هنا مرتبة، ولو المكتبة فاضية تقدر ترجع للتلاوات وتحمّل اللي تحبه.'},
+      {selector:'#clear-library',mode:'note',group:'إدارة المساحة',title:'حذف التنزيلات',body:'من هنا تقدر تحذف التنزيلات كلها لو محتاج تفضّي مساحة. الشرح مش هيمسح أي ملف.'}
     ],
     adhkar: [
       {selector:'.hero',mode:'reveal',group:'دليل الأذكار',title:'باقي الأذكار موجودة تحت',body:'الاختصارات مجرد بداية. هتلاقي أسفلها أبواب حصن المسلم كلها مرتبة. اتبع حركة اليد لتحت، واضغط «اعرض الأبواب» عشان تشوفها.'},
@@ -65,7 +68,7 @@
   };
   const kind = PAGES[PAGE];
   if (!kind) return;
-  const VERSIONS = {home:'v7',quran:'v6',recitations:'v6',library:'v5',adhkar:'v6'};
+  const VERSIONS = {home:'v7',quran:'v6',recitations:'v6',library:'v6',adhkar:'v6'};
   const versionFor = k => VERSIONS[k] || 'v1';
   const DONE = k => 'ayat-tour-done-' + k + '-' + versionFor(k);
   const STEP = k => 'ayat-tour-step-' + k + '-' + versionFor(k);
@@ -90,7 +93,7 @@
   let active = null, modalOpen = false, busy = false, resizeTimer = 0, skillTimer = 0, skillStart = null, stepToken = 0, initialized = false, tourVerseKey = '';
   const root = document.createElement('div');
   root.id = 'ayat-tour-root';
-  root.className = 'ayat-tour-root' + ((kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='quran')?' is-editorial':'') + (kind==='home'?' is-home':'') + (kind==='recitations'?' is-recitations':'') + (kind==='adhkar'?' is-adhkar':'') + (kind==='quran'?' is-quran':'');
+  root.className = 'ayat-tour-root' + ((kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='quran'||kind==='library')?' is-editorial':'') + (kind==='home'?' is-home':'') + (kind==='recitations'?' is-recitations':'') + (kind==='adhkar'?' is-adhkar':'')+(kind==='library'?' is-library':'') + (kind==='quran'?' is-quran':'');
   root.hidden = true;
   root.setAttribute('aria-label','دليل استخدام آيات');
   root.innerHTML =
@@ -138,11 +141,11 @@
     rootOpen(false);clearLayers();save(LAST(kind),Date.now());
     const pending=Math.min(TOURS[kind].length-1,Math.max(0,Number(storageRead(STEP(kind))||0)));
     invite.hidden=false;
-    if(kind==='home'||kind==='recitations'||kind==='adhkar'){
+    if(kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='library'){
       invite.innerHTML=
         '<div class="ayat-tour-invite-icon" aria-hidden="true">✧</div>' +
-        '<div class="ayat-tour-invite-copy"><strong>'+(kind==='home'?(pending?'نكمل شرح الرئيسية؟':'جولة هادئة في الرئيسية'):kind==='recitations'?(pending?'نكمل شرح التلاوات؟':'اكتشف قائمة القرّاء'):(pending?'نكمل شرح الأذكار؟':'اكتشف أبواب الأذكار'))+
-        '</strong><span>'+(kind==='home'?'جولة مختصرة للقراءة والتدبّر وأزرار التنقّل':kind==='recitations'?'القرّاء موجودين أسفل المشغّل، والشرح هيوصلك لهم':'اعرف مكان الأبواب والمفضلة، وبعدها جرّب التقليب بنفسك')+'</span></div>'+
+        '<div class="ayat-tour-invite-copy"><strong>'+(kind==='home'?(pending?'نكمل شرح الرئيسية؟':'جولة هادئة في الرئيسية'):kind==='recitations'?(pending?'نكمل شرح التلاوات؟':'اكتشف قائمة القرّاء'):(kind==='library'?(pending?'نكمل شرح المكتبة؟':'دليل المكتبة الصوتية'):(pending?'نكمل شرح الأذكار؟':'اكتشف أبواب الأذكار')))+
+        '</strong><span>'+(kind==='home'?'جولة مختصرة للقراءة والتدبّر وأزرار التنقّل':kind==='recitations'?'القرّاء موجودين أسفل المشغّل، والشرح هيوصلك لهم':(kind==='library'?'تعرّف على البحث والترتيب وملفاتك المحفوظة':'اعرف مكان الأبواب والمفضلة، وبعدها جرّب التقليب بنفسك'))+'</span></div>'+
         '<div class="ayat-tour-invite-actions"><button type="button" class="ayat-tour-main" data-tour-action="begin">ابدأ الشرح</button><button type="button" class="ayat-tour-text" data-tour-action="later">لاحقًا</button><button type="button" class="ayat-tour-text ayat-tour-never" data-tour-action="never">متظهرش تاني</button></div>';
     }else{
       invite.innerHTML=
@@ -215,7 +218,7 @@
     closeQuranPanels();
     close();
     // The redesigned editorial guides end quietly without a completion banner.
-    if(kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='quran')return;
+    if(kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='quran'||kind==='library')return;
     const toast=document.createElement('div');
     toast.className='ayat-tour-complete';
     toast.setAttribute('role','status');
@@ -434,7 +437,7 @@
   }
   async function render(){
     if(!active)return;
-    if(kind==='home'||kind==='recitations'||kind==='adhkar')return renderEditorial();
+    if(kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='library')return renderEditorial();
     const token=++stepToken;
     const s=TOURS[kind][active.step];
     if(s.selector!=='@tour-verse')clearTourVerse();
@@ -511,7 +514,7 @@
   }
   function advance(){
     if(!active||busy)return;
-    if(kind==='home'||kind==='recitations'||kind==='adhkar'){
+    if(kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='library'){
       if(kind==='adhkar'&&TOURS[kind][active.step]?.mode==='real-swipe')return;
       const next=active.step+1;
       if(next>=TOURS[kind].length){finish();return;}
@@ -576,7 +579,7 @@
     if(!button)return;
     const action=button.getAttribute('data-tour-action');
     if(action==='begin')start();
-    else if(action==='home-next'&&(kind==='home'||kind==='recitations'||kind==='adhkar'))advance();
+    else if(action==='home-next'&&(kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='library'))advance();
     else if(action==='quran-next'&&kind==='quran')advance();
     else if(action==='adhkar-reveal'&&kind==='adhkar'){
       document.getElementById('library')?.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
