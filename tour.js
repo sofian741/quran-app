@@ -102,7 +102,7 @@
     shade.hidden=spot.hidden=hit.hidden=hand.hidden=true;
   }
   function showInvite(){
-    if(active||modalOpen||storageRead(OPT_OUT(kind))==='1'||Number(storageRead(LATER(kind))||0)>Date.now()||Number(storageRead(LAST(kind))||0)+REOFFER_AFTER>Date.now()){
+    if(active||modalOpen||storageRead(OPT_OUT(kind))==='1'||Number(storageRead(LATER(kind))||0)>Date.now()||(kind!=='home' && Number(storageRead(LAST(kind))||0)+REOFFER_AFTER>Date.now())){
       document.documentElement.classList.remove('ayat-tour-boot');return;
     }
     rootOpen(false);clearLayers();save(LAST(kind),Date.now());
@@ -461,6 +461,7 @@
   },true);
   // Explicit user entry point is independent of invitation and completion state.
   window.ayatOpenTour = chooser;
+  window.ayatStartHomeTour = () => { if(kind==='home')start(true); };
   function initialize(){
     if(initialized)return;
     initialized=true;
