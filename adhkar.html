@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="adhkar.css">
     <link rel="stylesheet" href="unified-nav.css">
   <link rel="stylesheet" href="tour.css?v=47">
+  <link rel="stylesheet" href="tour-home.css?v=56">
 </head>
 <body>
 <div class="shell">
@@ -38,7 +39,7 @@
             <span class="eyebrow">حصن المسلم</span>
             <h1>ذكرك قريب منك في كل وقت</h1>
             <p>مكتبة كبيرة ومنظمة من الأذكار والأدعية، مع عداد تفاعلي ومرجع كل نص.</p>
-            <div class="hero-stats"><span id="stat-chapters">١٣٣ بابًا</span><span class="dot"></span><span id="stat-items">٣٠٢ ذكرًا ودعاءً</span></div>
+            <div class="hero-stats"><span id="stat-chapters">١٣٣ بابًا</span><span class="dot"></span><span id="stat-items">٣٠٢ ذكرًا ودعاءً</span></div><a class="adhkar-jump" href="#library" aria-label="انتقل إلى فهرس أبواب الأذكار أسفل الاختصارات"><span>استعرض أبواب الأذكار</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 4v15m-6-6 6 6 6-6"/></svg></a>
         </section>
 
         <section class="quick" aria-labelledby="quick-title">
@@ -56,7 +57,7 @@
         <section class="library" id="library" aria-labelledby="library-title">
             <div class="section-heading"><div><span class="overline">المكتبة الكاملة</span><h2 id="library-title">فهرس حصن المسلم</h2></div><span id="visible-count" class="count"></span></div>
             <label class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg><input id="search" type="search" placeholder="ابحث عن ذكر أو دعاء أو موقف..." autocomplete="off" aria-label="البحث في الأذكار"></label>
-            <div id="filters" class="filters" aria-label="تصفية أبواب الأذكار"><button data-filter="all" class="selected" type="button">الكل</button><button data-filter="daily" type="button">اليوم والليلة</button><button data-filter="prayer" type="button">الصلاة والعبادة</button><button data-filter="wellbeing" type="button">الهم والمرض</button><button data-filter="social" type="button">الناس والأسرة</button><button data-filter="travel" type="button">السفر والطبيعة</button><button data-filter="general" type="button">أذكار وآداب</button><button data-filter="saved" type="button">المفضلة</button></div>
+            <div id="filters" class="filters" aria-label="تصفية أبواب الأذكار"><button data-filter="saved" type="button">المفضلة</button><button data-filter="all" class="selected" type="button">الكل</button><button data-filter="daily" type="button">اليوم والليلة</button><button data-filter="prayer" type="button">الصلاة والعبادة</button><button data-filter="wellbeing" type="button">الهم والمرض</button><button data-filter="social" type="button">الناس والأسرة</button><button data-filter="travel" type="button">السفر والطبيعة</button><button data-filter="general" type="button">أذكار وآداب</button></div>
             <div id="chapter-list" class="chapter-list" aria-live="polite"></div>
             <p id="empty" class="empty" hidden>لا توجد نتائج مطابقة. جرّب كلمة أخرى.</p>
         </section>
@@ -112,6 +113,6 @@
 </nav>
 <script src="service-worker-register.js"></script>
 <script src="adhkar.js"></script>
-<script src="tour.js?v=48"></script>
+<script src="tour.js?v=56"></script>
 </body>
 </html>
