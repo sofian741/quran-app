@@ -52,7 +52,7 @@ async function testIndependentPages(browser,origin){
   await begin(page,origin+'/index.html','الرئيسية');
   assert.match(await title(page),/متابعة القراءة/);
   assert.equal(await page.locator('#ayat-tour-root .ayat-tour-quiz').count(),0,'No home quizzes');
-  assert.match(await page.locator('link[href^="tour-home.css"]').getAttribute('href'),/tour-home\.css\?v=54$/);
+  assert.match(await page.locator('link[href^="tour-home.css"]').getAttribute('href'),/tour-home\.css\?v=59$/);
   await lesson(page).locator('[data-tour-action="home-next"]').click();
   assert.match(await title(page),/آية للتدبّر/);
   assert.equal(await page.locator('#ayat-tour-root .ayat-tour-spot.is-verse').isVisible(),true);
@@ -217,7 +217,7 @@ async function testManualCrossPageLaunch(browser,origin){
   assert.equal(await page.evaluate(()=>localStorage.getItem('ayat-tour-manual-request-v1')),null);
   await lesson(page).locator('[data-tour-action="pause"]').click();
 
-  for(const [destination,pattern] of [['library',/مكتبتك تحت السيطرة/],['adhkar',/باقي الأذكار موجودة تحت/]]){
+  for(const [destination,pattern] of [['library',/التلاوات المحفوظة/],['adhkar',/باقي الأذكار موجودة تحت/]]){
     await page.evaluate(()=>localStorage.setItem('ayat-tour-done-home-v7','1'));
     await page.goto(origin+'/index.html');
     await page.locator('#home-settings-toggle').click();
