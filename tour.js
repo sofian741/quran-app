@@ -3,7 +3,8 @@
   'use strict';
   const VERSION = 'v5';
   const REOFFER_AFTER = 12 * 60 * 60 * 1000;
-  const PAGE = location.pathname.split('/').pop() || 'index.html';
+  const routeName = (location.pathname.split('/').filter(Boolean).pop() || 'index').toLowerCase();
+  const PAGE = routeName === 'index' ? 'index.html' : (routeName.endsWith('.html') ? routeName : routeName + '.html');
   const PAGES = { 'index.html':'home', 'quran.html':'quran', 'recitations.html':'recitations', 'library.html':'library', 'adhkar.html':'adhkar' };
   const PAGE_FOR = {home:'index.html', quran:'quran.html', recitations:'recitations.html', library:'library.html', adhkar:'adhkar.html'};
   const NAMES = {home:'الرئيسية', quran:'المصحف', recitations:'التلاوات', library:'مكتبتي', adhkar:'الأذكار'};
