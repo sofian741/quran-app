@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   // Refresh only the redesigned home lesson; preserve saved progress on other pages.
-  const VERSION = (location.pathname.split('/').filter(Boolean).pop() || 'index').replace(/\.html$/,'') === 'index' ? 'v6' : 'v5';
+  const VERSION = (location.pathname.split('/').filter(Boolean).pop() || 'index').replace(/\.html$/,'') === 'index' ? 'v7' : 'v5';
   const REOFFER_AFTER = 12 * 60 * 60 * 1000;
   const routeName = (location.pathname.split('/').filter(Boolean).pop() || 'index').toLowerCase();
   const PAGE = routeName === 'index' ? 'index.html' : (routeName.endsWith('.html') ? routeName : routeName + '.html');
@@ -11,10 +11,14 @@
   const NAMES = {home:'الرئيسية', quran:'المصحف', recitations:'التلاوات', library:'مكتبتي', adhkar:'الأذكار'};
   const TOURS = {
     home: [
-      {selector:'.home-reading',mode:'note',title:'متابعة القراءة',body:'هنا بتلاقي آخر سورة وصفحة وصلت لها، وتقدر تكمل قراءتك من نفس المكان بضغطة واحدة.'},
-      {selector:'.home-verse blockquote',fallback:'.home-verse',mode:'verse',title:'آية للتدبّر',body:'وقفة جديدة مع آية من القرآن كل يوم. اضغط على الآية المضيئة عشان تقراها بوضوح وتتأمل معناها.'},
-      {selector:'.home-verse-action.is-primary',mode:'note',title:'الذهاب للآية',body:'الزر ده بيفتح نفس الآية داخل المصحف، عشان تقراها في موضعها بين الآيات.'},
-      {selector:'.home-verse-action:not(.is-primary)',mode:'note',title:'التفسير',body:'ومن هنا بتفتح تفسير الآية مباشرة، عشان تعرف معناها وتتدبّرها بشكل أعمق.'}
+      {selector:'.home-reading',mode:'note',group:'القراءة',title:'متابعة القراءة',body:'هنا بتلاقي آخر سورة وصفحة وصلت لها. زر «أكمل القراءة» يرجعك لنفس موضعك مباشرة.'},
+      {selector:'.home-verse blockquote',fallback:'.home-verse',mode:'verse',group:'وقفة مع القرآن',title:'آية للتدبّر',body:'الآية دي بتتجدد كل يوم. اضغط على نص الآية المنوّر عشان تقراها كاملة وتتأمل معناها.'},
+      {selector:'.home-verse-action.is-primary',mode:'note',group:'آية التدبّر',title:'الذهاب للآية',body:'يفتح الآية اللي قدامك في مكانها داخل المصحف، عشان تكمل القراءة من سياقها.'},
+      {selector:'.home-verse-action:not(.is-primary)',mode:'note',group:'آية التدبّر',title:'التفسير',body:'بيفتح تفسير الآية مباشرة، عشان تعرف معناها وتفهمها بشكل أوضح.'},
+      {selector:'.home-bottom-nav a[href="index.html"]',mode:'note',group:'شريط التنقل',title:'الرئيسية',body:'الزر ده بيرجعك للصفحة دي من أي مكان في التطبيق، وفيها متابعة القراءة وآية التدبّر.'},
+      {selector:'.home-bottom-nav a[href="quran.html"]',mode:'note',group:'شريط التنقل',title:'المصحف',body:'من هنا تفتح المصحف للقراءة أو البحث أو الاستماع. وليه شرح مستقل لما تزوره.'},
+      {selector:'.home-bottom-nav a[href="recitations.html"]',mode:'note',group:'شريط التنقل',title:'التلاوات',body:'اسمع القرّاء واختار السور وحمّل تلاواتك للاستماع من غير إنترنت.'},
+      {selector:'.home-bottom-nav a[href="adhkar.html"]',mode:'note',group:'شريط التنقل',title:'الأذكار',body:'هنا أذكار الصباح والمساء والأدعية، متقسّمة لأبواب عشان توصل للي محتاجه بسهولة.'}
     ],
     quran: [
       {selector:'#mushaf-page',mode:'swipe',title:'جرّب تقليب الصفحة 👆',body:'حرّك إصبعك فوق بطاقة التدريب يمينًا أو شمالًا. دي تجربة آمنة للحركة، ومش هنغيّر صفحتك الحقيقية.'},
@@ -93,6 +97,7 @@
   function close(){
     ++stepToken;clearTimeout(skillTimer);busy=false;modalOpen=false;active=null;
     root.hidden=true;
+    root.classList.remove('is-verse-focused');
     invite.hidden=shade.hidden=spot.hidden=hit.hidden=hand.hidden=modal.hidden=card.hidden=true;
     document.body.classList.remove('ayat-tour-on','ayat-tour-audio');
     document.documentElement.classList.remove('ayat-tour-boot');
@@ -112,7 +117,7 @@
       invite.innerHTML=
         '<div class="ayat-tour-invite-icon" aria-hidden="true">✧</div>' +
         '<div class="ayat-tour-invite-copy"><strong>'+(pending?'نكمل شرح الرئيسية؟':'جولة هادئة في الرئيسية')+
-        '</strong><span>أربع خطوات قصيرة تعرّفك على القراءة وآية التدبّر</span></div>'+
+        '</strong><span>جولة مختصرة للقراءة والتدبّر وأزرار التنقّل</span></div>'+
         '<div class="ayat-tour-invite-actions"><button type="button" class="ayat-tour-main" data-tour-action="begin">ابدأ الشرح</button><button type="button" class="ayat-tour-text" data-tour-action="later">لاحقًا</button><button type="button" class="ayat-tour-text ayat-tour-never" data-tour-action="never">متظهرش تاني</button></div>';
     }else{
       invite.innerHTML=
@@ -156,11 +161,12 @@
   function finish(){
     save(DONE(kind),'1');save(LAST(kind),Date.now());remove(STEP(kind));remove(LATER(kind));
     close();
-    // A tiny, self-dismissed celebration rather than another blocking modal.
+    // Home guide finishes quietly without a completion banner.
+    if(kind==='home')return;
     const toast=document.createElement('div');
     toast.className='ayat-tour-complete';
     toast.setAttribute('role','status');
-    toast.textContent=kind==='home'?'تم شرح الصفحة الرئيسية. يمكنك إعادة الشرح في أي وقت.':'اكتمل شرح '+NAMES[kind];
+    toast.textContent='اكتمل شرح '+NAMES[kind];
     document.body.appendChild(toast);
     setTimeout(()=>toast.remove(),3100);
   }
@@ -232,32 +238,40 @@
     }
   }
     // Home tour: calm, guided explanations; interactive reading only where useful.
+  // Home's editorial guide explains real controls without simulated quizzes.
   async function renderHome(){
     if(!active)return;
     const token=++stepToken;
-    const s=TOURS.home[active.step];
+    const step=TOURS.home[active.step];
     rootOpen(true);clearLayers();
+    root.classList.toggle('is-verse-focused',step.mode==='verse');
     shade.hidden=false;shade.style.background='transparent';
     card.hidden=false;card.style.visibility='hidden';
-    const count=active.step+1;
+    const current=active.step+1;
     const total=TOURS.home.length;
-    const last=count===total;
+    const last=current===total;
+    const progress=TOURS.home.map((_,i)=>
+      '<span class="'+(i<current?'is-reached ':'')+(i===active.step?'is-active':'')+'"></span>'
+    ).join('');
     card.innerHTML=
-      '<div class="ayat-tour-home-top"><span class="ayat-tour-home-label">دليل آيات <span aria-hidden="true">/</span> الرئيسية</span><span class="ayat-tour-count">'+count+' من '+total+'</span></div>'+
-      '<div class="ayat-tour-progress" aria-hidden="true"><span style="width:'+(count/total*100)+'%"></span></div>'+
-      '<h2 class="ayat-tour-title">'+html(s.title)+'</h2>'+
-      '<p class="ayat-tour-body">'+html(s.body)+'</p>'+
-      (s.mode==='verse'?'<button class="ayat-tour-home-read" type="button" data-tour-action="verse-open"><span aria-hidden="true">◈</span> قراءة آية اليوم</button>':'')+
+      '<div class="ayat-tour-home-top">'+
+        '<span class="ayat-tour-home-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5C9.2 3.6 6.5 3.7 3.5 4.8v14.1c3-1.1 5.7-1 8.5.6 2.8-1.6 5.5-1.7 8.5-.6V4.8c-3-1.1-5.7-1.2-8.5.2Z"/><path d="M12 5v14.5"/></svg></span>'+
+        '<span class="ayat-tour-home-heading"><strong>دليل آيات</strong><small>'+html(step.group||'الرئيسية')+'</small></span>'+
+        '<span class="ayat-tour-count">'+String(current).padStart(2,'0')+' <span aria-hidden="true">/</span> '+String(total).padStart(2,'0')+'</span></div>'+
+      '<div class="ayat-tour-home-progress" aria-hidden="true">'+progress+'</div>'+
+      '<h2 class="ayat-tour-title">'+html(step.title)+'</h2>'+
+      '<p class="ayat-tour-body">'+html(step.body)+'</p>'+
+      (step.mode==='verse'?'<button class="ayat-tour-home-read" type="button" data-tour-action="verse-open"><span aria-hidden="true">◈</span> اقرأ آية اليوم</button>':'')+
       '<div class="ayat-tour-home-foot">'+
-      (count===1?'':'<button type="button" class="ayat-tour-secondary" data-tour-action="previous">السابق</button>')+
+      (current===1?'':'<button type="button" class="ayat-tour-secondary" data-tour-action="previous">السابق</button>')+
       '<button class="ayat-tour-main" type="button" data-tour-action="home-next">'+(last?'إنهاء الشرح':'التالي')+' <span aria-hidden="true">←</span></button>'+
       '<button class="ayat-tour-text" type="button" data-tour-action="pause">خروج</button></div>';
-    await prepare(s,token);
+    await prepare(step,token);
     if(token!==stepToken||!active)return;
-    const target=targetFor(s);
-    if(target){
-      const r=target.getBoundingClientRect();
-      if(r.bottom>innerHeight-110||r.top<12){
+    const target=targetFor(step);
+    if(target&&!step.selector.startsWith('.home-bottom-nav')){
+      const rect=target.getBoundingClientRect();
+      if(rect.bottom>innerHeight-110||rect.top<12){
         target.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
       }
     }
