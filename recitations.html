@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="recitations-overrides.css">
   <link rel="stylesheet" href="unified-nav.css">
   <link rel="stylesheet" href="tour.css?v=47">
+  <link rel="stylesheet" href="tour-home.css?v=54">
 </head>
 <body>
 <div class="recitations-app">
@@ -29,7 +30,7 @@
 
   <main class="layout">
     <section class="intro" aria-labelledby="intro-title">
-      <div class="intro-copy"><span class="eyebrow"><span class="eyebrow-dot"></span> استمع بقلبك</span><h1 id="intro-title">مكتبة <span>التلاوات</span></h1><p>اختر قارئك المفضل، استمع مباشرة، أو نزّل ما تحب ليظهر مرتبًا في مكتبتك.</p><div class="statline"><span id="reader-count">جاري تحميل القرّاء…</span><span id="connection-label">التشغيل عبر الإنترنت</span></div></div>
+      <div class="intro-copy"><span class="eyebrow"><span class="eyebrow-dot"></span> استمع بقلبك</span><h1 id="intro-title">مكتبة <span>التلاوات</span></h1><p>اختر قارئك المفضل، استمع مباشرة، أو نزّل ما تحب ليظهر مرتبًا في مكتبتك.</p><div class="statline"><span id="reader-count">جاري تحميل القرّاء…</span><span id="connection-label">التشغيل عبر الإنترنت</span></div><a href="#catalog" class="recitations-jump" aria-label="الانتقال إلى قائمة القرّاء أسفل المشغّل"><span>تصفّح كل القرّاء</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v15m-6-6 6 6 6-6"/></svg></a></div>
       <div class="intro-art" aria-hidden="true"><span class="intro-art-ring ring-one"></span><span class="intro-art-ring ring-two"></span><span class="intro-art-center"><svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2"><path d="M40 18C30 12 20 12 10 16v42c11-4 21-3 30 4 9-7 19-8 30-4V16c-10-4-20-4-30 2Z"/><path d="M40 18v44M20 28c6-1 11 0 15 2m10 0c5-2 10-3 15-2M20 38c6-1 11 0 15 2m10 0c5-2 10-3 15-2"/></svg></span></div>
     </section>
 
@@ -60,7 +61,7 @@
       <p id="player-status" class="status" role="status" aria-live="polite">اختر القارئ المفضل لديك.</p><audio id="recitation-audio" preload="none"></audio>
     </section>
 
-    <section class="catalog" aria-labelledby="catalog-title">
+    <section class="catalog" id="catalog" aria-labelledby="catalog-title">
       <div class="catalog-heading"><div><span class="eyebrow">أصوات القرآن</span><h2 id="catalog-title">اختر قارئك المفضل</h2><p>تصفح القرّاء واستمع إلى تلاواتهم بسهولة.</p></div><button id="reload-catalog" class="refresh" type="button" aria-label="تحديث قائمة القراء"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.2 6M20 4v7h-7"/></svg><span>تحديث</span></button></div>
       <div class="filters"><label class="search-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="reciter-search" type="search" placeholder="ابحث عن قارئ…" autocomplete="off" aria-label="ابحث باسم القارئ"></label><label class="complete-only"><input type="checkbox" id="complete-only"><span>المصاحف الكاملة فقط</span></label></div>
       <div id="reciter-list" class="reciter-grid" aria-live="polite"></div><p id="catalog-status" class="catalog-status" role="status"></p>
@@ -91,6 +92,6 @@
 <script src="recitations.js"></script>
 <script src="audio-bulk-download.js"></script>
 <script src="recitations-library-link.js"></script>
-<script src="tour.js?v=48"></script>
+<script src="tour.js?v=54"></script>
 </body>
 </html>
