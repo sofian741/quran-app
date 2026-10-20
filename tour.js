@@ -214,17 +214,13 @@
     start(true);
   }
   function finish(){
-    save(DONE(kind),'1');save(LAST(kind),Date.now());remove(STEP(kind));remove(LATER(kind));
+    save(DONE(kind),'1');
+    save(LAST(kind),Date.now());
+    remove(STEP(kind));
+    remove(LATER(kind));
     closeQuranPanels();
     close();
-    // The redesigned editorial guides end quietly without a completion banner.
-    if(kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='quran'||kind==='library')return;
-    const toast=document.createElement('div');
-    toast.className='ayat-tour-complete';
-    toast.setAttribute('role','status');
-    toast.textContent='اكتمل شرح '+NAMES[kind];
-    document.body.appendChild(toast);
-    setTimeout(()=>toast.remove(),3100);
+    // The guide closes quietly. No congratulations or completion toast.
   }
   function postpone(){
     if(active)save(STEP(kind),active.step);
@@ -527,17 +523,11 @@
       active.step=next;save(STEP(kind),next);render();
       return;
     }
-    busy=true;
-    const s=TOURS[kind][active.step];
-    feedback('✨ أحسنت! نجحت في التحدي',true);
-    card.classList.add('ayat-tour-win');
-    setTimeout(()=>{
-      if(!active||TOURS[kind][active.step]!==s)return;
-      busy=false;card.classList.remove('ayat-tour-win');
-      const next=active.step+1;
-      if(next>=TOURS[kind].length){finish();return;}
-      active.step=next;save(STEP(kind),next);render();
-    },580);
+    const next=active.step+1;
+    if(next>=TOURS[kind].length){finish();return;}
+    active.step=next;
+    save(STEP(kind),next);
+    render();
   }
   hit.addEventListener('click',()=>{
     if(!active||busy)return;
