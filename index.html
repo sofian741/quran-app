@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="home.css">
     <link rel="stylesheet" href="welcome.css">
     <link rel="stylesheet" href="tour.css?v=47">
-    <link rel="stylesheet" href="tour-home.css?v=53">
+    <link rel="stylesheet" href="tour-home.css?v=54">
     <link rel="stylesheet" href="onboarding.css">
 </head>
 <body class="home-page" data-home-theme="light">
@@ -69,23 +69,6 @@
                     <button id="home-settings-toggle" class="home-icon-button" type="button" aria-label="فتح إعدادات الرئيسية" title="الإعدادات" aria-controls="home-settings-panel" aria-haspopup="dialog" aria-expanded="false">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.07-.07A1.7 1.7 0 0 0 16 18.3a1.7 1.7 0 0 0-1 1.56V20h-6v-.14A1.7 1.7 0 0 0 8 18.3a1.7 1.7 0 0 0-1.93.34l-.07.07-1.8-1.8.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.57-1H3v-4h.03A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88L4.2 7.06l1.8-1.8.07.07A1.7 1.7 0 0 0 8 5.7a1.7 1.7 0 0 0 1-1.56V4h6v.14A1.7 1.7 0 0 0 16 5.7a1.7 1.7 0 0 0 1.93-.34l.07-.07 1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.57 1H21v4h-.03A1.7 1.7 0 0 0 19.4 15Z"/></svg>
                     </button>
-                    <section id="home-settings-panel" class="home-settings-panel" role="dialog" aria-modal="false" aria-labelledby="home-settings-title" hidden>
-                        <div class="home-settings-heading">
-                            <div><span class="home-settings-eyebrow">آيات | Ayat</span><h2 id="home-settings-title">الإعدادات</h2></div>
-                            <button id="home-settings-close" class="home-settings-close" type="button" aria-label="إغلاق الإعدادات">×</button>
-                        </div>
-                        <button id="home-show-tour" class="home-settings-item" type="button">
-                            <span class="home-settings-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h7a4 4 0 0 1 4 4v11a4 4 0 0 0-4-4H4zM20 5h-1a4 4 0 0 0-4 4v11a4 4 0 0 1 4-4h1z"/></svg></span>
-                            <span class="home-settings-item-copy"><strong>شرح استخدام التطبيق</strong><small>أعد شرح الصفحة الرئيسية في أي وقت</small></span>
-                            <span class="home-settings-arrow" aria-hidden="true">‹</span>
-                        </button>
-                        <button id="home-check-update" class="home-settings-item" type="button">
-                            <span class="home-settings-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/><path d="M12 7v5l3 2"/></svg></span>
-                            <span class="home-settings-item-copy"><strong>التحقق من التحديثات</strong><small>فحص نسخة التطبيق وتحديثها</small></span>
-                            <span class="home-settings-arrow" aria-hidden="true">‹</span>
-                        </button>
-                        <p id="home-update-status" class="home-update-status" aria-live="polite" hidden></p>
-                    </section>
                 </div>
             </div>
         </header>
@@ -132,6 +115,26 @@
         <footer class="home-footer"><span>نص القرآن الكريم من <a href="https://tanzil.net" target="_blank" rel="noopener noreferrer">Tanzil Project</a> • <a href="licenses.html">المصادر والتراخيص والخصوصية</a></span></footer>
     </div>
 
+    <div id="home-settings-backdrop" class="home-settings-backdrop" hidden></div>
+    <aside id="home-settings-panel" class="home-settings-sheet" role="dialog" aria-modal="true" aria-label="إعدادات التطبيق" aria-hidden="true" hidden>
+        <div class="home-sheet-handle" aria-hidden="true"></div>
+        <div class="home-sheet-title">
+            <div><small>تخصيص التطبيق</small><h2>إعدادات آيات</h2></div>
+            <button id="home-settings-close" type="button" class="home-settings-close" aria-label="إغلاق الإعدادات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="home-settings-section-label">المساعدة والتحديثات</div>
+        <button id="home-show-tour" class="home-settings-row" type="button" aria-haspopup="dialog" aria-controls="ayat-tour-root">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.7 9.1a2.6 2.6 0 0 1 5 .9c0 1.7-2.7 2.2-2.7 4.1M12 17.4h.01"/></svg>
+            <span><strong>شرح استخدام التطبيق</strong><small>اختر شرح الرئيسية أو المصحف أو التلاوات أو مكتبتك أو الأذكار</small></span>
+        </button>
+        <button id="check-app-update" class="home-settings-row" type="button" aria-describedby="app-update-status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.7 9A7 7 0 0 1 18 7l2 5M4 12l2 5a7 7 0 0 0 12.3-2"/></svg>
+            <span><strong>التحقق من تحديثات التطبيق</strong><small>نفس نظام فحص التحديث الموجود في إعدادات المصحف</small></span>
+        </button>
+        <p id="app-update-status" class="home-settings-note" role="status" aria-live="polite">تحديثات النسخة التجريبية</p>
+        <p class="home-settings-footer-note">يمكنك إعادة أي شرح في أي وقت من هنا دون فقد بيانات القراءة.</p>
+    </aside>
+
     <nav class="home-bottom-nav" aria-label="التنقل الرئيسي">
         <a class="home-nav-item is-active" href="index.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z"/></svg><span>الرئيسية</span></a>
         <a class="home-nav-item" href="quran.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5C9 3 5 3 2 5v15c4-2 7-2 10 0 3-2 6-2 10 0V5c-3-2-7-2-10 0ZM12 5v15"/></svg><span>المصحف</span></a>
@@ -142,9 +145,10 @@
     <script src="android-navigation.js"></script>
     <script src="home.js"></script>
     <script src="android-build-info.js"></script>
-    <script src="home-settings.js?v=53"></script>
+    <script src="app-update.js"></script>
+    <script src="home-settings.js?v=54"></script>
     <script src="onboarding.js"></script>
-    <script src="tour.js?v=53"></script>
+    <script src="tour.js?v=54"></script>
     <script src="welcome.js"></script>
 </body>
 </html>
