@@ -48,3 +48,28 @@ body.dark {
 .hero, body.dark .hero {
     background: linear-gradient(138deg, #1d786b 0%, #125e55 58%, #0d4843 100%);
 }
+
+/* Adhkar chapters link: always visible, even without the onboarding guide. */
+.adhkar-jump{
+  display:inline-flex;align-items:center;gap:9px;
+  margin-top:17px;padding:9px 15px;min-height:42px;
+  border:1px solid rgba(237,251,240,.46);border-radius:13px;
+  background:rgba(255,255,255,.13);
+  color:#f7fff9;text-decoration:none;
+  font-size:12px;font-weight:800;line-height:1.5;
+  transition:background .18s ease,transform .18s ease;
+}
+.adhkar-jump:hover{background:rgba(255,255,255,.23);}
+.adhkar-jump:active{transform:translateY(2px);}
+.adhkar-jump svg{
+  display:block;width:20px;height:20px;flex:0 0 20px;
+  animation:adhkar-jump-nudge 2.6s ease-in-out infinite;
+}
+#library{scroll-margin-top:18px;}
+@keyframes adhkar-jump-nudge{
+  0%,100%{transform:translateY(-2px)}
+  55%{transform:translateY(3px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .adhkar-jump,.adhkar-jump svg{animation:none;transition:none;}
+}
