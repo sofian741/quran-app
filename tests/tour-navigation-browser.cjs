@@ -60,10 +60,10 @@ async function testIndependentPages(browser,origin){
   await lesson(page).locator('[data-tour-answer="1"]').click();
   assert.match(await title(page),/وأخيرًا: الأذكار/);
   await tapNext(page);
-  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-home-v4')==='1');
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-home-v5')==='1');
   assert.match(page.url(),/index\.html$/,'The home tutorial must never navigate away');
   await page.reload();
-  assert.equal(await invite(page).isVisible(),false,'Completed tutorial never reappears on reload');
+  assert.equal(await invite(page).isVisible(),false,'Completed tutorial waits 12 hours before reappearing');
   await begin(page,origin+'/recitations.html','التلاوات');
   assert.match(await title(page),/عالم من الأصوات/);
   await tapNext(page);
@@ -73,7 +73,7 @@ async function testIndependentPages(browser,origin){
   await tapNext(page);await title(page);
   assert.match(await title(page),/فين تلاواتك/);
   await tapNext(page);
-  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-recitations-v4')==='1');
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-recitations-v5')==='1');
   assert.match(page.url(),/recitations\.html$/,'Recitations tutorial must never navigate to library');
   await page.goto(origin+'/library.html');
   await invite(page).waitFor({state:'visible'});
@@ -89,7 +89,7 @@ async function testQuranFromSettings(browser,origin){
   const {context,page}=await preparePage(browser);
   await page.goto(origin+'/quran.html');
   await page.waitForFunction(()=>document.querySelector('#quran-text')?.dataset.layoutState==='ready');
-  assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'),/tour\.js\?v=46$/);
+  assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'),/tour\.js\?v=47$/);
   await invite(page).waitFor({state:'visible'});
   await invite(page).locator('[data-tour-action="later"]').click();
   await page.locator('#reader-stage').click({position:{x:190,y:300}});
@@ -99,7 +99,7 @@ async function testQuranFromSettings(browser,origin){
   await page.locator('[data-tour-action="replay-quran"]').click();
   assert.match(await title(page),/جرّب تقليب الصفحة/);
   assert.equal(await page.locator('#settings-sheet').getAttribute('aria-hidden'),'true');
-  assert.equal(await page.evaluate(()=>localStorage.getItem('ayat-tour-step-quran-v4')),'0');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ayat-tour-step-quran-v5')),'0');
   const pad=lesson(page).locator('[data-tour-skill="swipe"]');
   const r=await pad.boundingBox();
   await page.mouse.move(r.x+r.width*.75,r.y+r.height*.5);
