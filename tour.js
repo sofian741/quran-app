@@ -30,7 +30,7 @@
     ],
     recitations: [
       {selector:'.intro',mode:'reveal',group:'ابدأ من هنا',title:'القرّاء موجودين تحت',body:'صفحة التلاوات فيها قرّاء كتير، لكن قائمتهم أسفل المشغّل. تابع حركة اليد لتعرف الاتجاه، وبعدها اضغط «اعرض القرّاء» عشان نوصل لهم مباشرة.'},
-      {selector:'#reciter-list',mode:'pick-reciter',group:'اختيار القارئ',title:'اختار القارئ اللي تحبه',body:'دي القائمة الكاملة للقرّاء. اضغط على أي قارئ بنفسك، وهيظهر اختياره في المشغّل فوق. تقدر تبحث باسمه كمان.',wait:'catalog'},
+      {selector:'#reciter-list',mode:'pick-reciter',group:'اختيار القارئ',title:'اختار القارئ اللي تحبه',body:'دي القائمة الكاملة للقرّاء. اضغط على أي قارئ بنفسك، وهيظهر اختياره في المشغّل فوق. تقدر تبحث باسمه كمان.'},
       {selector:'#surah-select',mode:'note',group:'التلاوة',title:'اختيار السورة',body:'بعد اختيار القارئ، من القائمة دي تختار السورة اللي عايز تسمعها.'},
       {selector:'#play-pause',mode:'play',group:'الاستماع',title:'تشغيل التلاوة',body:'ده زر التشغيل والإيقاف المؤقت. تقدر تضغط عليه دلوقتي وتسمع القارئ اللي اخترته، أو تكمل الشرح من غير تشغيل.'},
       {selector:'#download-current',mode:'note',group:'التنزيل',title:'تنزيل سورة واحدة',body:'الزر ده بيحفظ السورة المختارة على جهازك عشان تسمعها لاحقًا بدون إنترنت. الشرح نفسه مش هيبدأ أي تنزيل.'},
@@ -236,12 +236,6 @@
     }
   }
   async function prepare(s,token){
-    if(s.wait==='catalog'){
-      for(let i=0;i<32 && !document.querySelector('#reciter-list .reciter-card');i++){
-        if(token!==stepToken)return;
-        await delay(250);
-      }
-    }
     if(s.wait==='reader'){
       for(let i=0;i<15 && document.getElementById('reader')?.hidden;i++){
         if(token!==stepToken)return;
