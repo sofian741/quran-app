@@ -233,3 +233,23 @@
   border:1px solid var(--home-border);
   box-shadow:0 14px 40px rgba(6,35,24,.17);
 }
+
+/* Completion notice sits outside the tour root; keep it in the same restrained palette. */
+body.home-page .ayat-tour-complete {
+  background:#fffefa;
+  color:#193d32;
+  border:1px solid #dfe9e1;
+  box-shadow:0 12px 30px rgba(5,30,23,.18);
+  font-weight:700;
+}
+body.home-page[data-home-theme="dark"] .ayat-tour-complete {
+  background:#202e26;
+  color:#edf4ec;
+  border-color:#43584b;
+}
+.ayat-tour-root.is-home .ayat-tour-top {color:var(--guide-muted)}
+.ayat-tour-root.is-home .ayat-tour-top span:first-child {color:var(--guide-green)}
+.ayat-tour-root.is-home .ayat-tour-choices {gap:9px}
+@media(prefers-reduced-motion:reduce) {
+  .ayat-tour-root.is-home .ayat-tour-main {transition:none}
+}
