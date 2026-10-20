@@ -284,6 +284,12 @@
       '<button class="ayat-tour-main" type="button" data-tour-action="verse-next">متابعة الشرح <span aria-hidden="true">←</span></button></div></div>';
     modal.querySelector('[role="dialog"]')?.focus({preventScroll:true});
   }
+  function closeHomeVerse(){
+    if(kind!=='home'||!modalOpen||!active||TOURS.home[active.step].mode!=='verse')return false;
+    modalOpen=false;modal.hidden=true;card.hidden=false;
+    position();card.focus({preventScroll:true});
+    return true;
+  }
   async function render(){
     if(!active)return;
     if(kind==='home')return renderHome();
@@ -381,9 +387,7 @@
     if(action==='begin')start();
     else if(action==='home-next'&&kind==='home')advance();
     else if(action==='verse-open')openHomeVerse();
-    else if(action==='verse-back'&&modalOpen&&kind==='home'){
-      modalOpen=false;modal.hidden=true;card.hidden=false;position();card.focus({preventScroll:true});
-    }
+    else if(action==='verse-back'&&kind==='home')closeHomeVerse();
     else if(action==='verse-next'&&modalOpen&&kind==='home'){
       modalOpen=false;modal.hidden=true;card.hidden=false;advance();
     }
@@ -438,7 +442,12 @@
       e.preventDefault();first.focus();
     }
   });
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!root.hidden){e.preventDefault();active?postpone():close();}});
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape'||root.hidden)return;
+    e.preventDefault();
+    if(closeHomeVerse())return;
+    active?postpone():close();
+  });
   window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(position,75)});
   window.addEventListener('scroll',()=>{if(active)requestAnimationFrame(position)},true);
   document.addEventListener('ayat:splash-finished',()=>root.classList.remove('under-splash'));
