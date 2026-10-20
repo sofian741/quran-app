@@ -52,7 +52,7 @@ async function testIndependentPages(browser,origin){
   await begin(page,origin+'/index.html','الرئيسية');
   assert.match(await title(page),/متابعة القراءة/);
   assert.equal(await page.locator('#ayat-tour-root .ayat-tour-quiz').count(),0,'Home is an explanation, not a quiz');
-  assert.match(await page.locator('link[href^="tour-home.css"]').getAttribute('href'),/tour-home\.css\?v=50$/);
+  assert.match(await page.locator('link[href^="tour-home.css"]').getAttribute('href'),/tour-home\.css\?v=51$/);
   assert.equal(await lesson(page).locator('[data-tour-action="home-next"]').isVisible(),true);
   await lesson(page).locator('[data-tour-action="home-next"]').click();
   await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent==='آية للتدبّر');
