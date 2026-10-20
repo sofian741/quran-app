@@ -222,3 +222,14 @@
   .ayat-tour-root.is-home .ayat-tour-hit.ayat-tour-verse-hit::before,
   .ayat-tour-root.is-home .ayat-tour-hit.ayat-tour-verse-hit::after {animation:none}
 }
+
+/* Home navigation chooser and completion notification share the new neutral surfaces. */
+.ayat-tour-root.is-home .ayat-tour-dialog .ayat-tour-top {color:var(--guide-green)}
+.ayat-tour-root.is-home .ayat-tour-dialog .ayat-tour-top .ayat-tour-count {color:var(--guide-muted)}
+.ayat-tour-root.is-home .ayat-tour-dialog .ayat-tour-choice-note {color:var(--guide-muted)}
+.home-page .ayat-tour-complete {
+  background:var(--home-surface);
+  color:var(--home-text);
+  border:1px solid var(--home-border);
+  box-shadow:0 14px 40px rgba(6,35,24,.17);
+}
