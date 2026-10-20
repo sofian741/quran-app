@@ -90,7 +90,7 @@
   let active = null, modalOpen = false, busy = false, resizeTimer = 0, skillTimer = 0, skillStart = null, stepToken = 0, initialized = false, tourVerseKey = '';
   const root = document.createElement('div');
   root.id = 'ayat-tour-root';
-  root.className = 'ayat-tour-root' + ((kind==='home'||kind==='recitations'||kind==='adhkar')?' is-editorial':'') + (kind==='home'?' is-home':'') + (kind==='recitations'?' is-recitations':'') + (kind==='adhkar'?' is-adhkar':'');
+  root.className = 'ayat-tour-root' + ((kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='quran')?' is-editorial':'') + (kind==='home'?' is-home':'') + (kind==='recitations'?' is-recitations':'') + (kind==='adhkar'?' is-adhkar':'') + (kind==='quran'?' is-quran':'');
   root.hidden = true;
   root.setAttribute('aria-label','دليل استخدام آيات');
   root.innerHTML =
@@ -215,7 +215,7 @@
     closeQuranPanels();
     close();
     // The redesigned editorial guides end quietly without a completion banner.
-    if(kind==='home'||kind==='recitations'||kind==='adhkar')return;
+    if(kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='quran')return;
     const toast=document.createElement('div');
     toast.className='ayat-tour-complete';
     toast.setAttribute('role','status');
@@ -446,28 +446,50 @@
     card.hidden=false;card.style.visibility='hidden';
     const count=active.step+1;
     const total=TOURS[kind].length;
-    const action=s.mode==='tap'
-      ? '<p class="ayat-tour-mission">👆 '+(s.activate?'المس البطاقة الذهبية لفتحها':'المس الجزء المضيء لاكتشافه، من غير انتقال أو تغيير بيانات')+'</p>'
-      : s.mode==='real-verse'
-      ? '<p class="ayat-tour-mission">اضغط مطولًا على الآية المضيئة نفسها. الجولة لن تضغط بدلًا منك.</p>'
+    const quranGuide=kind==='quran';
+    const instruction=s.mode==='real-verse'
+      ? 'اضغط مطولًا على الآية المنوّرة نفسها عشان تفتح خياراتها.'
       : s.mode==='real-open'
-      ? '<p class="ayat-tour-mission">اضغط على الزر المضيء الحقيقي للمتابعة.</p>'
+      ? 'اضغط على الزر المنوّر في التطبيق عشان تفتحه بنفسك.'
       : s.mode==='pick-quran-reciter'
-      ? '<p class="ayat-tour-mission">افتح قائمة القارئ واختر قارئًا بنفسك. لن يبدأ الصوت أثناء الشرح.</p>'
-      : s.mode==='quiz'
-      ? '<div class="ayat-tour-question">'+html(s.question)+'</div><div class="ayat-tour-quiz">'+s.choices.map((choice,i)=>'<button type="button" data-tour-answer="'+i+'">'+html(choice)+'</button>').join('')+'</div>'
-      : (s.mode==='swipe'||s.mode==='hold')
-      ? '<div class="ayat-tour-playground" data-tour-skill="'+s.mode+'" role="button" tabindex="0" aria-label="'+(s.mode==='swipe'?'منطقة تجربة السحب':'منطقة تجربة الضغط المطوّل')+'"><span class="ayat-tour-play-icon">'+(s.mode==='swipe'?'↔':'◎')+'</span><strong>'+(s.mode==='swipe'?'اسحب هنا بإصبعك':'اضغط هنا لمدة ثانية')+'</strong><small>تدريب صغير من غير تغيير المصحف</small></div>'
+      ? 'اختار القارئ من القائمة بنفسك. الشرح مش هيشغّل الصوت.'
       : '';
-    card.innerHTML='<div class="ayat-tour-top"><span>✦ مغامرة '+NAMES[kind]+'</span><span class="ayat-tour-count">'+count+' / '+total+'</span></div>' +
-      '<div class="ayat-tour-progress"><span style="width:'+(count/total*100)+'%"></span></div>'+
-      '<h2 class="ayat-tour-title">'+html(s.title)+'</h2><p class="ayat-tour-body">'+html(s.body)+'</p>'+
-      action+'<p class="ayat-tour-feedback" aria-live="polite"></p>'+
-      '<div class="ayat-tour-foot"><button class="ayat-tour-secondary" type="button" data-tour-action="previous" '+(count===1?'hidden':'')+'>السابق</button>'+
-      (s.mode==='note'?'<button class="ayat-tour-main" type="button" data-tour-action="quran-next">'+(count===total?'إنهاء الشرح':'التالي ←')+'</button>':'')+
-      '<button class="ayat-tour-text" type="button" data-tour-action="assist">مش قادر؟ عدّي الخطوة</button>'+
-      '<button class="ayat-tour-text" type="button" data-tour-action="pause">لاحقًا</button>'+
-      '<button class="ayat-tour-text" type="button" data-tour-action="never">إنهاء الشرح</button></div>';
+    if(quranGuide){
+      const progress=TOURS.quran.map((_,i)=>
+        '<span class="'+(i<count?'is-reached ':'')+(i===active.step?'is-active':'')+'"></span>'
+      ).join('');
+      const interactive=s.mode==='real-verse'||s.mode==='real-open'||s.mode==='pick-quran-reciter';
+      card.innerHTML=
+        '<div class="ayat-tour-home-top">'+
+          '<span class="ayat-tour-home-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5C9.2 3.6 6.5 3.7 3.5 4.8v14.1c3-1.1 5.7-1 8.5.6 2.8-1.6 5.5-1.7 8.5-.6V4.8c-3-1.1-5.7-1.2-8.5.2Z"/><path d="M12 5v14.5"/></svg></span>'+
+          '<span class="ayat-tour-home-heading"><strong>دليل آيات</strong><small>'+html(s.group||'المصحف')+'</small></span>'+
+          '<span class="ayat-tour-count">'+String(count).padStart(2,'0')+' <span aria-hidden="true">/</span> '+String(total).padStart(2,'0')+'</span>'+
+        '</div>'+
+        '<div class="ayat-tour-home-progress" aria-hidden="true">'+progress+'</div>'+
+        '<h2 class="ayat-tour-title">'+html(s.title)+'</h2>'+
+        '<p class="ayat-tour-body">'+html(s.body)+'</p>'+
+        (instruction?'<div class="ayat-tour-quran-hint"><span aria-hidden="true">◎</span>'+html(instruction)+'</div>':'')+
+        '<div class="ayat-tour-home-foot">'+
+          (count===1?'':'<button type="button" class="ayat-tour-secondary" data-tour-action="previous">السابق</button>')+
+          (!interactive?'<button type="button" class="ayat-tour-main" data-tour-action="quran-next">'+(count===total?'إنهاء الشرح':'التالي')+' <span aria-hidden="true">←</span></button>':'')+
+          (interactive?'<button type="button" class="ayat-tour-secondary" data-tour-action="assist">تخطي الخطوة</button>':'')+
+          '<button type="button" class="ayat-tour-text" data-tour-action="pause">خروج</button>'+
+        '</div>';
+    }else{
+      const action=s.mode==='tap'
+        ? '<p class="ayat-tour-mission">المس الجزء المضيء لاكتشافه</p>'
+        : s.mode==='quiz'
+        ? '<div class="ayat-tour-question">'+html(s.question)+'</div><div class="ayat-tour-quiz">'+s.choices.map((choice,i)=>'<button type="button" data-tour-answer="'+i+'">'+html(choice)+'</button>').join('')+'</div>'
+        : '';
+      card.innerHTML='<div class="ayat-tour-top"><span>دليل '+NAMES[kind]+'</span><span class="ayat-tour-count">'+count+' / '+total+'</span></div>' +
+        '<div class="ayat-tour-progress"><span style="width:'+(count/total*100)+'%"></span></div>'+
+        '<h2 class="ayat-tour-title">'+html(s.title)+'</h2><p class="ayat-tour-body">'+html(s.body)+'</p>'+
+        action+'<p class="ayat-tour-feedback" aria-live="polite"></p>'+
+        '<div class="ayat-tour-foot"><button class="ayat-tour-secondary" type="button" data-tour-action="previous" '+(count===1?'hidden':'')+'>السابق</button>'+
+        (s.mode==='note'?'<button class="ayat-tour-main" type="button" data-tour-action="quran-next">'+(count===total?'إنهاء الشرح':'التالي ←')+'</button>':'')+
+        '<button class="ayat-tour-text" type="button" data-tour-action="assist">تخطي الخطوة</button>'+
+        '<button class="ayat-tour-text" type="button" data-tour-action="pause">خروج</button></div>';
+    }
     await prepare(s,token);
     if(token!==stepToken || !active)return;
     const t=targetFor(s);
@@ -491,6 +513,12 @@
     if(!active||busy)return;
     if(kind==='home'||kind==='recitations'||kind==='adhkar'){
       if(kind==='adhkar'&&TOURS[kind][active.step]?.mode==='real-swipe')return;
+      const next=active.step+1;
+      if(next>=TOURS[kind].length){finish();return;}
+      active.step=next;save(STEP(kind),next);render();
+      return;
+    }
+    if(kind==='quran'){
       const next=active.step+1;
       if(next>=TOURS[kind].length){finish();return;}
       active.step=next;save(STEP(kind),next);render();
