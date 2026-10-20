@@ -1,373 +1,385 @@
-/* Ayat guided tours. Real-page spotlight, resumable across navigation. */
+/* Ayat page-by-page interactive discovery. Each lesson lives and finishes on its own page. */
 (() => {
   'use strict';
-  const VERSION = 'v3';
-  const ACTIVE = 'ayat-tour-active-' + VERSION;
-  const DONE = kind => 'ayat-tour-done-' + kind + '-' + VERSION;
-  const SAVED = kind => 'ayat-tour-step-' + kind + '-' + VERSION;
-  const LATER = kind => 'ayat-tour-remind-at-' + kind + '-' + VERSION;
-  const GENERAL = [
-    {page:'index.html',selector:'.home-reading',title:'كمّل القراءة من مكانك',body:'هنا هتلاقي آخر موضع وصلت له في المصحف. اضغط «متابعة القراءة» عشان ترجع له مباشرة.'},
-    {page:'index.html',selector:'.home-verse-actions',title:'آية للتدبّر كل يوم',body:'تقدر تروح للآية في المصحف أو تفتح تفسيرها مباشرة. دي وقفتك اليومية مع معنى ينفعك.'},
-    {page:'index.html',selector:'.home-bottom-nav a[href="recitations.html"]',tap:true,to:'recitations.html',title:'فين تلاقي التلاوات؟',body:'بص تحت في شريط التنقل: زر «التلاوات» موجود هنا في كل وقت. اضغط عليه بإيدك عشان ندخل للمكتبة ونكمل الشرح.'},
-    {page:'recitations.html',selector:'.catalog-heading',title:'اختار صوت القارئ اللي تحبه',body:'دي مكتبة القرّاء. اختر قارئًا منها، وبعدها تقدر تحدد الرواية والسورة اللي تحب تسمعها.'},
-    {page:'recitations.html',selector:'.controls-fields',title:'القارئ والسورة',body:'من القائمتين دول اختار التسجيل والسورة، وبعدين استخدم زر التشغيل. تغيير القارئ لا يحتاج تنزيلًا.'},
-    {page:'recitations.html',selector:'#download-current',title:'اسمع من غير إنترنت',body:'اضغط «تنزيل السورة» عشان تفضل محفوظة على الجهاز. ولو حابب تقدر تنزّل مصحف القارئ من الزر المجاور.'},
-    {page:'recitations.html',selector:'.my-library-card',tap:true,to:'library.html',title:'ادخل مكتبتك الصوتية',body:'دلوقتي اضغط بنفسك على «مكتبتي» المحددة بالذهبي. دي الصفحة اللي هتلاقي فيها التلاوات اللي نزلتها للاستماع من غير إنترنت.'},
-    {page:'library.html',selector:'.tools',title:'رتّب مكتبتك بسهولة',body:'ابحث عن سورة أو قارئ، أو غيّر الترتيب. لو المكتبة فاضية، ارجع للتلاوات ونزّل سورة الأول.'},
-    {page:'library.html',selector:'.bottom-nav a[href="adhkar.html"]',tap:true,to:'adhkar.html',title:'افتح قسم الأذكار',body:'بص تحت على شريط الصفحات: اضغط «الأذكار» بإيدك. أي وقت تحتاج الأذكار هتلاقي نفس الزر في الشريط السفلي.'},
-    {page:'adhkar.html',selector:'.quick-card.morning',tap:true,title:'ابدأ بأذكار الصباح',body:'اضغط دلوقتي على بطاقة «أذكار الصباح» المنوّرة. هيفتح باب الذكر قدامك، وبعدها هنجرّب العداد مع بعض.'},
-    {page:'adhkar.html',selector:'#tasbih',prepare:'dhikr',title:'عداد الذكر مهم جدًا',body:'بعد قراءة الذكر، اضغط على الدائرة بعدد مرات التكرار. التطبيق هيتابع اللي خلصته من غير ما تحتاج تعد بنفسك.',gesture:'press'},
-    {page:'adhkar.html',selector:'#reader-foot',prepare:'dhikr',title:'اتنقل وراجع اللي فاتك',body:'من أزرار التنقل تقدر تروح للذكر اللي بعده أو ترجع للسابق. وفي نهاية الباب هتشوف ملخص الجلسة والناقص منها.'},
-    {page:'adhkar.html',selector:'#reader-favorite',prepare:'dhikr',title:'احفظ الأبواب المهمة',body:'علامة القلب بتضيف باب الأذكار إلى المفضلة عشان توصله بسرعة بعد كده.'}
-  ];
-  const QURAN = [
-    {page:'quran.html',selector:'#mushaf-page',title:'قلّب صفحات المصحف بإصبعك',body:'اسحب الصفحة بإصبعك يمينًا أو يسارًا للتقليب. الحركة بتتبع إصبعك، مش محتاج تضغط زرار.',gesture:'swipe'},
-    {page:'quran.html',selector:'#quran-text',fallback:'#mushaf-page',title:'اضغط مطولًا على الآية',body:'خليك ضاغط بإصبعك على أي آية لحظة بسيطة عشان تظهر خياراتها: التفسير، الاستماع، الحفظ والمشاركة.',gesture:'press'},
-    {page:'quran.html',selector:'#open-index',title:'الفهرس: أسرع طريق لسورة',body:'من هنا اختار سورة أو جزء وانتقل له مباشرة، بدل ما تقلب صفحات كتيرة.'},
-    {page:'quran.html',selector:'#toggle-page-marker',title:'احفظ مكانك في القراءة',body:'اضغط على علامة الفاصلة لحفظ الصفحة اللي واقف عندها. تقدر ترجع للمحفوظات من الإعدادات.'},
-    {page:'quran.html',selector:'#mushaf-audio-player',title:'استمع وأنت بتقرأ',body:'ده مشغّل التلاوة داخل المصحف. تقدر تشغّل وتوقف وتتقدم في التسجيل، وتختار القارئ من اسمه.'},
-    {page:'quran.html',selector:'#audio-quick-repeat',title:'كرر الآيات للحفظ والمراجعة',body:'من هنا حدد آية واحدة أو مجموعة آيات وعدد مرات تكرارها، وده مفيد جدًا في الحفظ.'},
-    {page:'quran.html',selector:'#open-settings',title:'البحث والمحفوظات والألوان',body:'داخل إعدادات المصحف هتلاقي البحث، والمفضلة، وألوان الصفحات. وهتلاقي زر «شرح استخدام التطبيق» عشان تعيد أي جولة في أي وقت.'}
-  ];
-  const TOURS = {general: GENERAL, quran: QURAN};
+  const VERSION = 'v4';
   const PAGE = location.pathname.split('/').pop() || 'index.html';
-
-  const HANDOFF = '#ayat-tour=';
-  // Use query parameters, not a fragment: some mobile WebViews/navigation
-  // handlers discard fragments during full-page navigation.
-  const handoffUrl = (page,kind,step) => page + '?ayatTour=' + encodeURIComponent(kind) + '&ayatStep=' + step;
-  // Mirror the in-progress tour in session storage. Navigating between
-  // standalone HTML pages must never make a lesson vanish when local storage
-  // is unavailable or near quota. Durable completion still prefers local.
-  const read = (key, fallback = null) => {
-    let local = null, session = null;
-    try {local=localStorage.getItem(key);} catch (_) {}
-    try {session=sessionStorage.getItem(key);} catch (_) {}
-    const value=key===ACTIVE?(session??local):(local??session);
-    return value === null ? fallback : value;
+  const PAGES = { 'index.html':'home', 'quran.html':'quran', 'recitations.html':'recitations', 'library.html':'library', 'adhkar.html':'adhkar' };
+  const PAGE_FOR = {home:'index.html', quran:'quran.html', recitations:'recitations.html', library:'library.html', adhkar:'adhkar.html'};
+  const NAMES = {home:'الرئيسية', quran:'المصحف', recitations:'التلاوات', library:'مكتبتي', adhkar:'الأذكار'};
+  const TOURS = {
+    home: [
+      {selector:'.home-reading',mode:'tap',title:'أول محطة: مكان قراءتك 📖',body:'دي بطاقتك للعودة لآخر صفحة وصلت لها. المس الإطار الذهبي عشان تكتشفها، من غير ما نفتح المصحف دلوقتي.'},
+      {selector:'.home-verse-actions',mode:'tap',title:'آية تستحق الوقوف عندها ✨',body:'من هنا توصل للآية أو تفسيرها. جرّب تكتشف مكان الأزرار المنوّرة.'},
+      {selector:'.home-bottom-nav a[href="quran.html"]',mode:'tap',title:'باب المصحف',body:'الزر ده بيفتح المصحف وقت ما تحب. لمسه في الجولة مجرد تجربة، مش هينقلك بعيد.'},
+      {selector:'.home-bottom-nav',mode:'quiz',title:'اختبار صغير 🎯',body:'بص على شريط الصفحات تحت، وجاوب:',question:'لو عايز تسمع شيخك المفضل هتروح فين؟',choices:['المصحف','التلاوات','الأذكار'],correct:1},
+      {selector:'.home-bottom-nav a[href="adhkar.html"]',mode:'tap',title:'وأخيرًا: الأذكار 🌿',body:'هنا أذكار الصباح والمساء وغيرها. لكل قسم شرح لوحده لما تزوره لأول مرة.'}
+    ],
+    quran: [
+      {selector:'#mushaf-page',mode:'swipe',title:'جرّب تقليب الصفحة 👆',body:'حرّك إصبعك فوق بطاقة التدريب يمينًا أو شمالًا. دي تجربة آمنة للحركة، ومش هنغيّر صفحتك الحقيقية.'},
+      {selector:'#quran-text',fallback:'#mushaf-page',mode:'hold',title:'سر الضغط المطوّل 🔍',body:'اضغط مطولًا على بطاقة التدريب لفتح خيارات الآية: التفسير والاستماع والمزيد.'},
+      {selector:'#open-index',mode:'tap',title:'الفهرس في متناول إيدك',body:'هنا توصل لأي سورة أو جزء بسرعة. اكتشف مكان الفهرس من غير ما نفتح أي نافذة.'},
+      {selector:'#toggle-page-marker',mode:'tap',title:'علّم الصفحة اللي بتحبها',body:'ده زر حفظ موضعك. التجربة هنا مش هتغيّر العلامة الحالية.'},
+      {selector:'#mushaf-audio-player',fallback:'#audio-quick-repeat',mode:'quiz',title:'تلاوة مع القراءة 🎧',body:'المصحف فيه مشغّل تلاوة وتحكم في التكرار.',question:'إيه اللي يساعدك تحفظ آية بالتكرار؟',choices:['تكرار التلاوة','تغيير لون المصحف','الفهرس'],correct:0},
+      {selector:'#audio-quick-repeat',mode:'tap',title:'ميزة الحفظ والمراجعة',body:'الزر ده بيفتح إعدادات تكرار الآيات. دلوقتي جرّب تكتشف مكانه بس.'},
+      {selector:'#open-settings',mode:'tap',title:'الإعدادات والشرح في أي وقت',body:'من هنا هتلاقي خيارات العرض والبحث والمحفوظات، وكمان تقدر تعيد أي شرح.'}
+    ],
+    recitations: [
+      {selector:'.catalog-heading',mode:'tap',title:'عالم من الأصوات 🎙️',body:'دي مكتبة القرّاء. جرّب تكتشف مكانها، وبعد الجولة اختار الصوت اللي ترتاح له.'},
+      {selector:'.controls-fields',mode:'quiz',title:'خلّينا نختار صح',body:'كل تسجيل له قارئ وسورة.',question:'عايز تغيّر السورة اللي بتسمعها. تستخدم إيه؟',choices:['قائمة السورة','زر التنزيل','مكتبتي'],correct:0},
+      {selector:'#download-current',mode:'tap',title:'التلاوة معاك بدون إنترنت',body:'ده زر تنزيل السورة الحالية. لمس الإطار في التدريب مش هيبدأ أي تحميل.'},
+      {selector:'.my-library-card',mode:'tap',title:'فين تلاواتك المحفوظة؟ 📚',body:'هنا «مكتبتي» لكل اللي نزلته. لما تزورها في وقتك هتلاقي ليها شرح مستقل.'}
+    ],
+    library: [
+      {selector:'.tools',mode:'tap',title:'مكتبتك تحت السيطرة',body:'تقدر تبحث باسم قارئ أو سورة وتغيّر ترتيب التسجيلات. جرّب تكتشف أدوات التنظيم.'},
+      {selector:'#library-content',fallback:'.summary-line',mode:'quiz',title:'تحدي المكتبة 🎯',body:'كل اللي بتنزلّه من التلاوات تلاقيه هنا.',question:'لو المكتبة فاضية، تعمل إيه؟',choices:['تنزّل سورة من التلاوات','تمسح التطبيق','تغيّر لون المصحف'],correct:0}
+    ],
+    adhkar: [
+      {selector:'#filters',mode:'tap',title:'كل ذكر في مكانه 🌿',body:'الأبواب مترتبة حسب الموضوع. اكتشف أزرار التصنيف عشان توصل للذكر بسرعة.'},
+      {selector:'.quick-card.morning',mode:'tap',activate:true,title:'افتح أذكار الصباح ☀️',body:'المرادي لمسة حقيقية! اضغط على البطاقة المنوّرة عشان نفتح باب أذكار الصباح سوا.'},
+      {selector:'#tasbih',mode:'tap',wait:'reader',title:'العداد يفتكر بدل منك',body:'دي دائرة العد. في الشرح هنجرّب مكانها بس من غير ما نزود عداد ذكرك الحقيقي.'},
+      {selector:'#reader-foot',mode:'tap',wait:'reader',title:'خطوة لقدّام أو لورا',body:'من هنا تنتقل للذكر التالي أو ترجع للسابق، وتتابع تقدمك.'},
+      {selector:'#reader-favorite',mode:'tap',wait:'reader',title:'احتفظ باللي تحبه ❤️',body:'علامة القلب تحفظ باب الأذكار في المفضلة. مش هنغيّر مفضلتك أثناء التدريب.'}
+    ]
   };
-  const write = (key,value) => {
-    try {localStorage.setItem(key,String(value));} catch (_) {}
-    try {sessionStorage.setItem(key,String(value));} catch (_) {}
+  const kind = PAGES[PAGE];
+  if (!kind) return;
+  const DONE = k => 'ayat-tour-done-' + k + '-' + VERSION;
+  const STEP = k => 'ayat-tour-step-' + k + '-' + VERSION;
+  const LATER = k => 'ayat-tour-remind-at-' + k + '-' + VERSION;
+  const storageRead = key => {
+    try {const v=localStorage.getItem(key);if(v!==null)return v;}catch(_){}
+    try {return sessionStorage.getItem(key);}catch(_){return null;}
   };
-  const erase = key => {
-    try {localStorage.removeItem(key);} catch (_) {}
-    try {sessionStorage.removeItem(key);} catch (_) {}
+  const save = (key,value) => {
+    try{localStorage.setItem(key,String(value));}catch(_){}
+    try{sessionStorage.setItem(key,String(value));}catch(_){}
   };
-  // Version 3 inserts explicit click-to-navigate steps. Preserve prior
-  // completion decisions so existing users never receive surprise popups.
-  for (const kind of ['general','quran']) {
-    if (read('ayat-tour-done-' + kind + '-v2') === '1' && read(DONE(kind)) !== '1') {
-      write(DONE(kind),'1');
-    }
-  }
-  // Incomplete v2 progress was indexed differently: restart at the real
-  // home navigation step so a returning tester learns where pages live.
-  let active = null, dialog = null, spotlight = false, resizeTimer = 0, changing = false;
+  const remove = key => {
+    try{localStorage.removeItem(key);}catch(_){}
+    try{sessionStorage.removeItem(key);}catch(_){}
+  };
+  const html = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const delay = ms => new Promise(done=>setTimeout(done,ms));
+  let active = null, modalOpen = false, busy = false, resizeTimer = 0, skillTimer = 0, skillStart = null, stepToken = 0, initialized = false;
   const root = document.createElement('div');
-  root.id='ayat-tour-root';
-  root.className='ayat-tour-root';
+  root.id = 'ayat-tour-root';
+  root.className = 'ayat-tour-root';
   root.hidden = true;
-  root.setAttribute('aria-label','دليل استخدام آيات');
-  root.innerHTML = '<div class="ayat-tour-shade" hidden></div><div class="ayat-tour-spot" hidden></div><button type="button" class="ayat-tour-hit" hidden aria-label="اضغط هنا للانتقال"></button><div class="ayat-tour-gesture" hidden aria-hidden="true"><svg viewBox="0 0 48 64"><path d="M17 59c-6-9-14-19-12-24 2-5 8-3 13 4V12c0-9 10-9 10 0v20c2-5 9-6 11-1 5 0 7 5 6 10l-3 17Z"/></svg></div><section class="ayat-tour-dialog" hidden></section><section class="ayat-tour-card" hidden role="dialog" aria-modal="true" aria-label="خطوة من شرح استخدام آيات" tabindex="-1"></section>';
+  root.setAttribute('aria-label','دليل آيات التفاعلي');
+  root.innerHTML =
+    '<div class="ayat-tour-shade" hidden></div><div class="ayat-tour-spot" hidden></div>' +
+    '<button type="button" class="ayat-tour-hit" hidden aria-label="اكتشف العنصر المنوّر"></button>' +
+    '<div class="ayat-tour-gesture" hidden aria-hidden="true"><svg viewBox="0 0 48 64"><path d="M17 59c-6-9-14-19-12-24 2-5 8-3 13 4V12c0-9 10-9 10 0v20c2-5 9-6 11-1 5 0 7 5 6 10l-3 17Z"/></svg></div>' +
+    '<section class="ayat-tour-dialog" hidden></section><section class="ayat-tour-card" role="dialog" aria-modal="true" aria-label="درس تفاعلي" tabindex="-1" hidden></section>' +
+    '<section class="ayat-tour-invite" hidden role="status" aria-live="polite"></section>';
   document.body.appendChild(root);
   const shade = root.querySelector('.ayat-tour-shade');
   const spot = root.querySelector('.ayat-tour-spot');
-  const hand = root.querySelector('.ayat-tour-gesture');
   const hit = root.querySelector('.ayat-tour-hit');
+  const hand = root.querySelector('.ayat-tour-gesture');
   const modal = root.querySelector('.ayat-tour-dialog');
   const card = root.querySelector(':scope > .ayat-tour-card');
-  const escapeHtml = v => String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const total = kind => TOURS[kind].length;
-  const progress = kind => Math.max(0,Math.min(total(kind)-1,parseInt(read(SAVED(kind),'0'),10)||0));
-  function openRoot(){root.hidden=false;root.classList.toggle('under-splash',!!document.getElementById('ayat-welcome')&&!document.getElementById('ayat-welcome').hidden);document.body.classList.add('ayat-tour-on');document.documentElement.classList.remove('ayat-tour-boot');}
-  function closeRoot(){root.hidden=true;modal.hidden=card.hidden=shade.hidden=spot.hidden=hand.hidden=hit.hidden=true;document.body.classList.remove('ayat-tour-on','ayat-tour-audio');document.documentElement.classList.remove('ayat-tour-boot');}
-  function dialogView(kicker,title,description,actions) {
-    openRoot();dialog='modal';spotlight=false;
-    shade.hidden=true;spot.hidden=true;hand.hidden=hit.hidden=true;card.hidden=true;modal.hidden=false;
-    modal.innerHTML='<div class="ayat-tour-card" role="dialog" aria-modal="true" aria-label="'+escapeHtml(title)+'" tabindex="-1"><div class="ayat-tour-top"><span>'+escapeHtml(kicker)+'</span><span>آيات | Ayat</span></div><h2 class="ayat-tour-title">'+escapeHtml(title)+'</h2><p class="ayat-tour-body">'+escapeHtml(description)+'</p><div class="ayat-tour-choices">'+actions.map(a=>'<button type="button" class="'+(a.primary?'ayat-tour-main':'ayat-tour-secondary')+'" data-tour-action="'+a.action+'">'+escapeHtml(a.label)+(a.note?'<span class="ayat-tour-choice-note">'+escapeHtml(a.note)+'</span>':'')+'</button>').join('')+'</div></div>';
-    modal.querySelector('[role="dialog"]')?.focus({preventScroll:true});
+  const invite = root.querySelector('.ayat-tour-invite');
+  function rootOpen(forLesson=false){
+    root.hidden=false;
+    root.classList.toggle('under-splash',!!document.getElementById('ayat-welcome')&&!document.getElementById('ayat-welcome').hidden);
+    document.documentElement.classList.remove('ayat-tour-boot');
+    document.body.classList.toggle('ayat-tour-on',forLesson);
   }
-  function offer(kind){
-    if(active || read(DONE(kind))==='1' || Number(read(LATER(kind),'0'))>Date.now()) {document.documentElement.classList.remove('ayat-tour-boot');return;}
-    const resume = progress(kind)>0;
-    const name = kind==='general'?'التطبيق':'المصحف';
-    dialogView(kind==='general'?'أهلًا بيك في آيات':'دليل المصحف',
-      resume?'نكمل الشرح من مكاننا؟':'تحب أوريك أهم المميزات؟',
-      kind==='general'?'هنمشي سوا خطوة خطوة فوق صفحات التطبيق الحقيقية، ونبدأ بالأهم. تقدر توقف الشرح وقت ما تحب.':'هنشرح تقليب الصفحات والضغط المطوّل والفهرس والصوت على المصحف نفسه. الشرح مش هيغيّر موضع قراءتك.',
-      [{action:'begin-'+kind,label:resume?'متابعة الشرح':'ابدأ الآن',primary:true,note:resume?'هنكمّل من آخر خطوة وصلت لها':'شرح عملي خطوة بخطوة'},
-       {action:'later-'+kind,label:'لاحقًا',note:'هنفكّرك في زيارة قادمة'},
-       {action:'never-'+kind,label:'عدم العرض مجددًا',note:'تقدر تفتحه وقت ما تحب من الإعدادات'}]);
+  function close(){
+    ++stepToken;clearTimeout(skillTimer);busy=false;modalOpen=false;active=null;
+    root.hidden=true;
+    invite.hidden=shade.hidden=spot.hidden=hit.hidden=hand.hidden=modal.hidden=card.hidden=true;
+    document.body.classList.remove('ayat-tour-on','ayat-tour-audio');
+    document.documentElement.classList.remove('ayat-tour-boot');
+  }
+  function clearLayers(){
+    invite.hidden=true;modal.hidden=true;card.hidden=true;
+    shade.hidden=spot.hidden=hit.hidden=hand.hidden=true;
+  }
+  function showInvite(){
+    if(active||modalOpen||storageRead(DONE(kind))==='1'||Number(storageRead(LATER(kind))||0)>Date.now()){
+      document.documentElement.classList.remove('ayat-tour-boot');return;
+    }
+    rootOpen(false);clearLayers();
+    const pending=Math.min(TOURS[kind].length-1,Math.max(0,Number(storageRead(STEP(kind))||0)));
+    invite.hidden=false;
+    invite.innerHTML=
+      '<div class="ayat-tour-invite-icon" aria-hidden="true">✦</div>' +
+      '<div class="ayat-tour-invite-copy"><strong>'+ (pending?'نكمل اكتشاف '+NAMES[kind]+'؟':'تحب نكتشف '+NAMES[kind]+'؟') +
+      '</strong><span>تجارب خفيفة على الصفحة نفسها، من غير ما نخرج منها 🎮</span></div>' +
+      '<div class="ayat-tour-invite-actions"><button type="button" class="ayat-tour-main" data-tour-action="begin">يلا نجرّب</button><button type="button" class="ayat-tour-text" data-tour-action="later">لاحقًا</button><button type="button" class="ayat-tour-text ayat-tour-never" data-tour-action="never">متظهرش تاني</button></div>';
   }
   function chooser(){
-    dialogView('دليل آيات','تحب نشرح إيه؟','اختار الجولة اللي تحب تعيدها. تقدر تبدأها من الأول حتى لو خلصتها قبل كده.',
-      [{action:'replay-general',label:'شرح التطبيق',primary:true,note:'الرئيسية، التلاوات، المكتبة والأذكار'},
-       {action:'replay-quran',label:'شرح المصحف',note:'التقليب، الضغط المطوّل، الفهرس، التلاوة والمحفوظات'},
-       {action:'dismiss',label:'رجوع'}]);
+    ++stepToken;clearLayers();rootOpen(false);modalOpen=true;
+    modal.hidden=false;
+    modal.innerHTML='<div class="ayat-tour-card" role="dialog" aria-modal="true" aria-label="اختيار شرح آيات" tabindex="-1">' +
+      '<div class="ayat-tour-top"><span>دليل آيات</span><span>✦ اختار مغامرتك</span></div>' +
+      '<h2 class="ayat-tour-title">تحب تكتشف إيه؟</h2><p class="ayat-tour-body">كل صفحة ليها شرحها الخاص. تقدر تعيد أي شرح وقت ما تحب.</p>' +
+      '<div class="ayat-tour-choices">' + Object.keys(PAGE_FOR).map(k=>'<button type="button" class="'+(k===kind?'ayat-tour-main':'ayat-tour-secondary')+'" data-tour-action="replay-'+k+'">'+html('شرح '+NAMES[k])+(k===kind?' · الصفحة الحالية':'')+'</button>').join('') +
+      '<button type="button" class="ayat-tour-text" data-tour-action="dismiss">رجوع</button></div></div>';
+    modal.querySelector('[role="dialog"]')?.focus({preventScroll:true});
   }
-  function saveActive() {if(active)write(ACTIVE,JSON.stringify(active));}
-  function newTour(kind,replay=false){
-    if(!TOURS[kind])return;
-    const from = replay ? 0 : progress(kind);
-    if(replay)erase(DONE(kind));
-    erase(LATER(kind));
-    active={kind,step:from};
-    write(SAVED(kind),from);saveActive();
-    const s=TOURS[kind][from];
-    if(s.page!==PAGE){location.href=handoffUrl(s.page,kind,from);return;}
-    // Close reader settings if the tour was launched from its menu.
+  function start(replay=false){
+    ++stepToken;modalOpen=false;
+    remove(LATER(kind));remove(DONE(kind));
+    const saved=Number(storageRead(STEP(kind))||0);
+    const index=!replay&&Number.isInteger(saved)?Math.min(Math.max(0,saved),TOURS[kind].length-1):0;
+    active={kind,step:index};
+    save(STEP(kind),index);
     document.getElementById('close-settings')?.click();
-    renderStep();
+    clearLayers();rootOpen(true);
+    render();
+  }
+  function replay(k){
+    if(!TOURS[k])return;
+    remove(DONE(k));remove(LATER(k));remove(STEP(k));
+    if(k!==kind){
+      // This is an explicit choice from Settings, not a guided page hand-off.
+      location.assign(PAGE_FOR[k]+'?ayatHelp='+encodeURIComponent(k));
+      return;
+    }
+    start(true);
   }
   function finish(){
-    if(!active)return;
-    const kind=active.kind;
-    write(DONE(kind),'1');erase(SAVED(kind));erase(LATER(kind));erase(ACTIVE);active=null;
-    closeRoot();
-    // Leave the reader on the page they reached; navigation is their choice.
+    save(DONE(kind),'1');remove(STEP(kind));remove(LATER(kind));
+    close();
+    // A tiny, self-dismissed celebration rather than another blocking modal.
+    const toast=document.createElement('div');
+    toast.className='ayat-tour-complete';
+    toast.setAttribute('role','status');
+    toast.textContent='✨ برافو! اكتشفت '+NAMES[kind]+'، والباقي عليك';
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(),3100);
   }
-  function postpone(kind){
-    if(active&&active.kind===kind){write(SAVED(kind),active.step);erase(ACTIVE);active=null;}
-    // Remind gently on another visit, not on each page transition.
-    write(LATER(kind),Date.now()+24*60*60*1000);closeRoot();
+  function postpone(){
+    if(active)save(STEP(kind),active.step);
+    save(LATER(kind),Date.now()+24*60*60*1000);
+    close();
   }
-  function navigate(next){
-    if(!active||changing)return;
-    changing=true;
-    const steps=TOURS[active.kind];
-    const nextIndex=active.step+next;
-    if(nextIndex>=steps.length){changing=false;finish();return;}
-    if(nextIndex<0){changing=false;return;}
-    active.step=nextIndex;write(SAVED(active.kind),nextIndex);saveActive();
-    if(steps[nextIndex].page!==PAGE){location.href=handoffUrl(steps[nextIndex].page,active.kind,nextIndex);return;}
-    changing=false;renderStep();
+  function never(){
+    save(DONE(kind),'1');remove(STEP(kind));remove(LATER(kind));close();
   }
-  function findTarget(step) {
+  function targetFor(step){
     let t=document.querySelector(step.selector);
-    if(!t || t.hidden || !t.getClientRects().length || getComputedStyle(t).display==='none')
-      t=step.fallback?document.querySelector(step.fallback):null;
-    return t&&t.getClientRects().length?t:null;
-  }
-  function getRect(t){
-    const r=t.getBoundingClientRect();
-    const margin=5;
-    const left=Math.max(7,r.left-margin),top=Math.max(8,r.top-margin);
-    return {left,top,width:Math.min(innerWidth-left-7,r.width+margin*2),height:Math.min(innerHeight-top-7,r.height+margin*2)};
+    const valid=el=>el&&!el.hidden&&el.getClientRects().length&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden';
+    if(!valid(t))t=step.fallback?document.querySelector(step.fallback):null;
+    return valid(t)?t:null;
   }
   function position(){
-    if(!active || !spotlight || card.hidden)return;
-    const s=TOURS[active.kind][active.step];const t=findTarget(s);
-    if(!t){spot.hidden=true;hand.hidden=hit.hidden=true;card.style.left='15px';card.style.top=Math.max(12,(innerHeight-card.offsetHeight)/2)+'px';return;}
-    const r=getRect(t);
-    spot.hidden=false;spot.style.left=r.left+'px';spot.style.top=r.top+'px';spot.style.width=Math.max(12,r.width)+'px';spot.style.height=Math.max(12,r.height)+'px';
-    hit.hidden=!s.tap;
-    if(s.tap){
-      hit.style.left=r.left+'px';hit.style.top=r.top+'px';
-      hit.style.width=Math.max(12,r.width)+'px';hit.style.height=Math.max(12,r.height)+'px';
-      hit.setAttribute('aria-label','اضغط هنا: '+s.title);
+    if(!active||card.hidden)return;
+    const s=TOURS[kind][active.step];
+    const t=targetFor(s);
+    if(!t){
+      spot.hidden=true;hit.hidden=true;hand.hidden=true;
+      card.style.left=Math.max(12,(innerWidth-Math.min(380,innerWidth-24))/2)+'px';
+      card.style.top=Math.max(12,(innerHeight-card.offsetHeight)/2)+'px';
+      return;
     }
-    const width=Math.min(380,innerWidth-30);
-    card.style.width=width+'px';
-    const height=card.offsetHeight || 220;
-    const roomTop=r.top;
-    const roomBottom=innerHeight-(r.top+r.height);
-    let top;
-    if(roomBottom>=height+20)top=r.top+r.height+12;
-    else if(roomTop>=height+20)top=r.top-height-12;
-    else top=roomBottom>roomTop?Math.min(innerHeight-height-12,r.top+r.height+8):Math.max(12,r.top-height-8);
-    top=Math.max(9,Math.min(innerHeight-height-9,top));
-    card.style.left=Math.max(15,(innerWidth-width)/2)+'px';
-    card.style.top=top+'px';
-    if(s.gesture && !s.tap){
-      hand.hidden=false;
-      hand.classList.toggle('is-hold',s.gesture==='press'||!!s.tap);
-      hand.classList.toggle('is-swipe',s.gesture==='swipe');
-      hand.style.left=Math.max(20,Math.min(innerWidth-55,r.left+r.width*.52))+'px';
-      hand.style.top=Math.max(20,Math.min(innerHeight-75,r.top+r.height*.52))+'px';
-    }else hand.hidden=true;
+    const r=t.getBoundingClientRect();
+    const left=Math.max(7,r.left-5),top=Math.max(8,r.top-5);
+    const width=Math.max(12,Math.min(innerWidth-left-7,r.width+10));
+    const height=Math.max(12,Math.min(innerHeight-top-7,r.height+10));
+    spot.hidden=false;Object.assign(spot.style,{left:left+'px',top:top+'px',width:width+'px',height:height+'px'});
+    const tapping=s.mode==='tap';
+    hit.hidden=!tapping;
+    if(tapping){
+      Object.assign(hit.style,{left:left+'px',top:top+'px',width:width+'px',height:height+'px'});
+      hit.setAttribute('aria-label',s.activate?'افتح العنصر المنوّر':'اكتشف '+s.title);
+    }
+    const cw=Math.min(380,innerWidth-24),ch=card.offsetHeight||220;
+    const below=innerHeight-(top+height),above=top;
+    let cy;
+    if(below>=ch+16)cy=top+height+10;
+    else if(above>=ch+16)cy=top-ch-10;
+    else cy=below>above?top+height+8:top-ch-8;
+    cy=Math.min(Math.max(9,cy),Math.max(9,innerHeight-ch-9));
+    card.style.left=Math.max(12,(innerWidth-cw)/2)+'px';
+    card.style.top=cy+'px';
+    const gesture=s.mode==='swipe'||s.mode==='hold';
+    hand.hidden=!gesture;
+    if(gesture){
+      hand.classList.toggle('is-swipe',s.mode==='swipe');
+      hand.classList.toggle('is-hold',s.mode==='hold');
+      hand.style.left=Math.max(20,Math.min(innerWidth-55,left+width*.5))+'px';
+      hand.style.top=Math.max(20,Math.min(innerHeight-75,top+height*.5))+'px';
+    }
   }
-  async function prepare(step){
-    if(step.prepare==='dhikr' && document.getElementById('reader')?.hidden){
-      // The adhkar catalogue is fetched asynchronously, so wait for its
-      // click handler to have chapters rather than highlighting a hidden counter.
-      for(let attempt=0;attempt<9 && document.getElementById('reader')?.hidden;attempt++){
-        document.querySelector('.quick-card.morning')?.click();
-        await new Promise(resolve=>setTimeout(resolve,280));
+  async function prepare(s,token){
+    if(s.wait==='reader'){
+      for(let i=0;i<15 && document.getElementById('reader')?.hidden;i++){
+        if(token!==stepToken)return;
+        await delay(220);
       }
     }
+    for(let i=0;i<9 && !targetFor(s);i++){
+      if(token!==stepToken)return;
+      await delay(190);
+    }
   }
-  async function renderStep(){
+  async function render(){
     if(!active)return;
-    const kind=active.kind,s=TOURS[kind][active.step];
-    if(s.page!==PAGE){location.href=handoffUrl(s.page,kind,active.step);return;}
-    openRoot();dialog=null;spotlight=true;modal.hidden=true;shade.hidden=true;spot.hidden=true;hand.hidden=hit.hidden=true;
+    const token=++stepToken;
+    const s=TOURS[kind][active.step];
+    rootOpen(true);clearLayers();
     document.body.classList.toggle('ayat-tour-audio',kind==='quran'&&(s.selector==='#mushaf-audio-player'||s.selector==='#audio-quick-repeat'));
     shade.hidden=false;shade.style.background='transparent';
     card.hidden=false;card.style.visibility='hidden';
-    const count=active.step+1,all=total(kind);
-    card.innerHTML='<div class="ayat-tour-top"><span>'+(kind==='general'?'جولة التطبيق':'جولة المصحف')+'</span><span class="ayat-tour-count">'+count+' / '+all+'</span></div><div class="ayat-tour-progress"><span style="width:'+(count/all*100)+'%"></span></div><h2 class="ayat-tour-title">'+escapeHtml(s.title)+'</h2><p class="ayat-tour-body">'+escapeHtml(s.body)+'</p><div class="ayat-tour-foot">'+(s.tap?'<span class="ayat-tour-tap-hint">👆 اضغط على العنصر المنوّر للمتابعة</span>':'<button class="ayat-tour-main" type="button" data-tour-action="next">'+(count===all?'إنهاء الجولة':'التالي ←')+'</button>')+'<button type="button" class="ayat-tour-secondary" data-tour-action="previous" '+(count===1?'hidden':'')+'>السابق</button><button class="ayat-tour-text" type="button" data-tour-action="pause">لاحقًا</button><button class="ayat-tour-text" type="button" data-tour-action="skip">تخطي الجولة</button></div>';
-    await prepare(s);
-    if(!active || active.kind!==kind || TOURS[kind][active.step]!==s)return;
-    const t=findTarget(s);
+    const count=active.step+1;
+    const total=TOURS[kind].length;
+    const action=s.mode==='tap'
+      ? '<p class="ayat-tour-mission">👆 '+(s.activate?'المس البطاقة الذهبية لفتحها':'المس الجزء المضيء لاكتشافه، من غير انتقال أو تغيير بيانات')+'</p>'
+      : s.mode==='quiz'
+      ? '<div class="ayat-tour-question">'+html(s.question)+'</div><div class="ayat-tour-quiz">'+s.choices.map((choice,i)=>'<button type="button" data-tour-answer="'+i+'">'+html(choice)+'</button>').join('')+'</div>'
+      : (s.mode==='swipe'||s.mode==='hold')
+      ? '<div class="ayat-tour-playground" data-tour-skill="'+s.mode+'" role="button" tabindex="0" aria-label="'+(s.mode==='swipe'?'منطقة تجربة السحب':'منطقة تجربة الضغط المطوّل')+'"><span class="ayat-tour-play-icon">'+(s.mode==='swipe'?'↔':'◎')+'</span><strong>'+(s.mode==='swipe'?'اسحب هنا بإصبعك':'اضغط هنا لمدة ثانية')+'</strong><small>تدريب صغير من غير تغيير المصحف</small></div>'
+      : '';
+    card.innerHTML='<div class="ayat-tour-top"><span>✦ مغامرة '+NAMES[kind]+'</span><span class="ayat-tour-count">'+count+' / '+total+'</span></div>' +
+      '<div class="ayat-tour-progress"><span style="width:'+(count/total*100)+'%"></span></div>'+
+      '<h2 class="ayat-tour-title">'+html(s.title)+'</h2><p class="ayat-tour-body">'+html(s.body)+'</p>'+
+      action+'<p class="ayat-tour-feedback" aria-live="polite"></p>'+
+      '<div class="ayat-tour-foot"><button class="ayat-tour-secondary" type="button" data-tour-action="previous" '+(count===1?'hidden':'')+'>السابق</button>'+
+      '<button class="ayat-tour-text" type="button" data-tour-action="assist">مش قادر؟ عدّي الخطوة</button>'+
+      '<button class="ayat-tour-text" type="button" data-tour-action="pause">لاحقًا</button>'+
+      '<button class="ayat-tour-text" type="button" data-tour-action="never">إنهاء الشرح</button></div>';
+    await prepare(s,token);
+    if(token!==stepToken || !active)return;
+    const t=targetFor(s);
     if(t){
       const r=t.getBoundingClientRect();
-      if(PAGE!=='quran.html' && (r.bottom>innerHeight-90 || r.top<10)) t.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
+      if(kind!=='quran'&&(r.bottom>innerHeight-95||r.top<10)){
+        t.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
+      }
     }
-    await new Promise(resolve=>setTimeout(resolve,110));
-    if(!active||active.kind!==kind||TOURS[kind][active.step]!==s)return;
+    await delay(110);
+    if(token!==stepToken||!active)return;
     card.style.visibility='visible';
-    position();card.focus({preventScroll:true});
+    position();
+    card.focus({preventScroll:true});
   }
-  function restoreActive(){
-    // A URL handoff is authoritative. Keep it intact until the next page has
-    // actually mounted the explanation; no automatic redirects or silent
-    // deletion of an in-progress cross-page tour.
-    const params=new URLSearchParams(location.search);
-    const rawKind=params.get('ayatTour');
-    const rawStep=params.get('ayatStep');
-    const hash=location.hash || '';
-    const legacy=hash.startsWith(HANDOFF)
-      ? /^(general|quran):(\d+)$/.exec(decodeURIComponent(hash.slice(HANDOFF.length))) : null;
-    const kind=rawKind || legacy?.[1];
-    const stepText=rawStep ?? legacy?.[2];
-    const explicit=kind && stepText!==null && stepText!==undefined;
-    if(explicit && TOURS[kind]){
-      const step=Number(stepText);
-      if(Number.isInteger(step) && step>=0 && step<total(kind)){
-        if(TOURS[kind][step].page===PAGE){
-          active={kind,step};
-          write(SAVED(kind),step);saveActive();
-          renderStep().then(()=>{
-            // Only clear the handoff after successful mounting.
-            try{history.replaceState(history.state,'',location.pathname);}catch(_){}
-          }).catch(error=>{
-            console.error('[Ayat Tour] Failed to render destination step',error);
-            // Keep the URL so a refresh can retry.
-          });
-          return true;
-        }
-        console.warn('[Ayat Tour] Destination mismatch', {expected:TOURS[kind][step].page,actual:PAGE});
-      }
-    }
-    const raw=read(ACTIVE);
-    if(!raw)return false;
-    try {
-      const state=JSON.parse(raw);
-      if(!TOURS[state.kind] || !Number.isInteger(state.step) ||
-         state.step<0 || state.step>=total(state.kind)){
-        erase(ACTIVE);return false;
-      }
-      if(TOURS[state.kind][state.step].page!==PAGE){
-        // Do not cancel a pending tour merely because navigation is still in
-        // progress or the user used Back. It can be resumed from settings.
-        return false;
-      }
-      active=state;
-      renderStep().catch(error=>console.error('[Ayat Tour] Resume failed',error));
-      return true;
-    }catch(error){
-      console.warn('[Ayat Tour] Could not read saved tour state',error);
-      return false;
-    }
+  function feedback(message,success){
+    const el=card.querySelector('.ayat-tour-feedback');
+    if(el){el.textContent=message;el.classList.toggle('is-success',!!success);}
   }
-  // Only a deliberate tap on the illuminated real control advances a
-  // navigation step. Save the NEXT step before navigation destroys this page.
-  hit.addEventListener('click', () => {
-    if(!active || changing)return;
-    const s=TOURS[active.kind][active.step];
-    if(!s || !s.tap)return;
-    const target=findTarget(s);
-    if(!target)return;
-    const next=active.step+1;
-    if(next>=TOURS[active.kind].length)return;
-    changing=true;
-    active.step=next;
-    write(SAVED(active.kind),next);
-    saveActive();
-    if(s.to){
-      // The target is the app's own visible navigation link, not a fabricated
-      // link or a timed redirect. A fallback handles intercepted anchor clicks.
-      if(target.matches('a[href]') && target.getAttribute('href')===s.to){
-        // Navigate using the real link destination, with the tour step
-        // attached to the URL. Never depend on the previous page's JS state.
-        location.assign(handoffUrl(s.to,active.kind,next));
+  function advance(){
+    if(!active||busy)return;
+    busy=true;
+    const s=TOURS[kind][active.step];
+    feedback('✨ أحسنت! نجحت في التحدي',true);
+    card.classList.add('ayat-tour-win');
+    setTimeout(()=>{
+      if(!active||TOURS[kind][active.step]!==s)return;
+      busy=false;card.classList.remove('ayat-tour-win');
+      const next=active.step+1;
+      if(next>=TOURS[kind].length){finish();return;}
+      active.step=next;save(STEP(kind),next);render();
+    },580);
+  }
+  hit.addEventListener('click',()=>{
+    if(!active||busy)return;
+    const s=TOURS[kind][active.step];
+    if(s.mode!=='tap')return;
+    if(s.activate){
+      const target=targetFor(s);
+      if(!target){feedback('البطاقة لسه بتتحمّل، جرّب تاني بعد لحظة.',false);return;}
+      target.click();
+    }
+    advance();
+  });
+  root.addEventListener('click',event=>{
+    const answer=event.target.closest('[data-tour-answer]');
+    if(answer&&active&&!busy){
+      const s=TOURS[kind][active.step];
+      if(s.mode!=='quiz')return;
+      const index=Number(answer.getAttribute('data-tour-answer'));
+      if(index===s.correct){
+        answer.classList.add('correct');advance();
       } else {
-        // Avoid running a tour on the wrong screen if markup changes.
-        active.step=next-1;
-        write(SAVED(active.kind),active.step);
-        saveActive();
-        changing=false;
-        renderStep();
+        answer.classList.add('incorrect');
+        feedback('قريب! جرّب إجابة تانية 😊',false);
       }
       return;
     }
-    target.click();
-    changing=false;
-    setTimeout(()=>renderStep(),120);
+    const button=event.target.closest('[data-tour-action]');
+    if(!button)return;
+    const action=button.getAttribute('data-tour-action');
+    if(action==='begin')start();
+    else if(action==='later'||action==='pause')postpone();
+    else if(action==='never')never();
+    else if(action==='dismiss')close();
+    else if(action==='assist')advance();
+    else if(action==='previous'&&active&&!busy&&active.step>0){active.step--;save(STEP(kind),active.step);render();}
+    else if(action.startsWith('replay-'))replay(action.slice(7));
   });
-  root.addEventListener('click',event=>{
-    const b=event.target.closest('[data-tour-action]');
-    if(!b)return;
-    const action=b.dataset.tourAction;
-    if(action==='next')navigate(1);
-    else if(action==='previous')navigate(-1);
-    else if(action==='pause' && active)postpone(active.kind);
-    else if(action==='skip' && active) {
-      const kind=active.kind;
-      dialogView('إنهاء الجولة','عايز توقف الشرح؟','ممكن نحتفظ بآخر خطوة ونكمل لاحقًا، أو نقفل التلميحات التلقائية تمامًا.',
-        [{action:'stop-later-'+kind,label:'كمّل معايا لاحقًا',primary:true},{action:'stop-forever-'+kind,label:'عدم العرض مجددًا'},{action:'return-step',label:'الرجوع للشرح'}]);
-    } else if(action==='return-step')renderStep();
-    else if(action==='dismiss')closeRoot();
-    else if(action.startsWith('begin-'))newTour(action.slice(6));
-    else if(action.startsWith('replay-'))newTour(action.slice(7),true);
-    else if(action.startsWith('later-'))postpone(action.slice(6));
-    else if(action.startsWith('never-')){write(DONE(action.slice(6)),'1');erase(SAVED(action.slice(6)));closeRoot();}
-    else if(action.startsWith('stop-later-'))postpone(action.slice(11));
-    else if(action.startsWith('stop-forever-')){const k=action.slice(13);write(DONE(k),'1');erase(ACTIVE);erase(SAVED(k));active=null;closeRoot();}
-  });
-  // Keyboard and screen-reader users remain inside the open explanation.
-  root.addEventListener('keydown',event=>{
-    if(event.key!=='Tab')return;
-    const panel=!modal.hidden?modal:card;
-    const focusable=[...(active && TOURS[active.kind]?.[active.step]?.tap && !hit.hidden?[hit]:[]),...panel.querySelectorAll('button:not([disabled]):not([hidden])')].filter(el=>el.getClientRects().length);
-    if(!focusable.length)return;
-    const first=focusable[0],last=focusable[focusable.length-1];
-    if(event.shiftKey && (document.activeElement===first || document.activeElement===panel.querySelector('[role="dialog"]') || document.activeElement===card)){
-      event.preventDefault();last.focus();
-    }else if(!event.shiftKey && (document.activeElement===last || document.activeElement===panel.querySelector('[role="dialog"]') || document.activeElement===card)){
-      event.preventDefault();first.focus();
+  const skillPoint=e=>({x:e.clientX,y:e.clientY});
+  function clearSkill(){
+    clearTimeout(skillTimer);
+    skillTimer=0;skillStart=null;
+  }
+  root.addEventListener('pointerdown',e=>{
+    const pad=e.target.closest('[data-tour-skill]');
+    if(!pad||!active||busy)return;
+    clearSkill();skillStart={...skillPoint(e),step:active.step};
+    if(pad.dataset.tourSkill==='hold'){
+      pad.classList.add('is-pressing');
+      skillTimer=setTimeout(()=>{if(active&&skillStart&&skillStart.step===active.step){clearSkill();pad.classList.remove('is-pressing');advance();}},680);
     }
   });
-  window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(position,65)});
-  window.addEventListener('scroll',()=>{if(spotlight)requestAnimationFrame(position)},true);
-  document.addEventListener('keydown',e=>{if(root.hidden)return;if(e.key==='Escape'&&active){e.preventDefault();postpone(active.kind);}else if(e.key==='Escape'&&dialog){e.preventDefault();closeRoot();}});
+  root.addEventListener('pointerup',e=>{
+    const pad=e.target.closest('[data-tour-skill]');
+    if(!pad||!skillStart||!active||busy){clearSkill();return;}
+    const x=e.clientX-skillStart.x;
+    const mode=pad.dataset.tourSkill;
+    if(mode==='swipe'&&Math.abs(x)>=50){
+      clearSkill();advance();
+    }else if(mode==='swipe')feedback('اسحب مسافة أطول شوية ↔',false);
+    else feedback('اثبت بإصبعك لحظة كمان 👆',false);
+    pad.classList.remove('is-pressing');clearSkill();
+  });
+  root.addEventListener('pointercancel',clearSkill);
+  root.addEventListener('keydown',e=>{
+    const pad=e.target.closest('[data-tour-skill]');
+    if(pad&&(e.key==='Enter'||e.key===' ')){
+      e.preventDefault();
+      if(!busy)advance();
+      return;
+    }
+    if(e.key!=='Tab')return;
+    const panel=!modal.hidden?modal:!card.hidden?card:invite;
+    const focusable=[...(!hit.hidden?[hit]:[]),...panel.querySelectorAll('button:not(:disabled):not([hidden]),[tabindex="0"]')].filter(el=>el.getClientRects().length);
+    if(!focusable.length)return;
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if(e.shiftKey&&(document.activeElement===first||document.activeElement===card)){
+      e.preventDefault();last.focus();
+    }else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===card)){
+      e.preventDefault();first.focus();
+    }
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!root.hidden){e.preventDefault();active?postpone():close();}});
+  window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(position,75)});
+  window.addEventListener('scroll',()=>{if(active)requestAnimationFrame(position)},true);
   document.addEventListener('ayat:splash-finished',()=>root.classList.remove('under-splash'));
-  const settingsTrigger=document.getElementById('ayat-tour-settings-button');
-  settingsTrigger?.addEventListener('click',chooser);
-  // Keep the initial logo intact and prepare the tour underneath its fade-out.
-  let initialized=false;
+  document.getElementById('ayat-tour-settings-button')?.addEventListener('click',chooser);
   function initialize(){
     if(initialized)return;
     initialized=true;
-    if(restoreActive())return;
-    if(PAGE==='index.html' && document.getElementById('ayat-guide') && !document.getElementById('ayat-guide').hidden){
-      document.addEventListener('ayat:guide-finished',()=>offer('general'),{once:true});
-      return;
+    const requested=new URLSearchParams(location.search).get('ayatHelp');
+    if(requested===kind){
+      try{
+        const url=new URL(location.href);url.searchParams.delete('ayatHelp');
+        history.replaceState(history.state,'',url.pathname+url.search+url.hash);
+      }catch(_){}
+      start(true);return;
     }
-    if(PAGE==='index.html')offer('general');
-    else if(PAGE==='quran.html')offer('quran');
-    else document.documentElement.classList.remove('ayat-tour-boot');
+    if(PAGE==='index.html'&&document.getElementById('ayat-guide')&&!document.getElementById('ayat-guide').hidden){
+      document.addEventListener('ayat:guide-finished',showInvite,{once:true});return;
+    }
+    showInvite();
   }
   if(PAGE==='index.html'){
     const splash=document.getElementById('ayat-welcome');
-    if(splash && (!splash.hidden || document.documentElement.classList.contains('ayat-splash-startup'))) {
+    if(splash&&(!splash.hidden||document.documentElement.classList.contains('ayat-splash-startup'))){
       document.addEventListener('ayat:splash-finished',initialize,{once:true});
-    } else initialize();
-  } else setTimeout(initialize,PAGE==='quran.html'?240:0);
-  // Capacitor replays the brand on Android resume. Re-offer only if the
-  // postponement has actually expired, without interrupting an open tour.
-  if(PAGE==='index.html') document.addEventListener('ayat:splash-leaving',()=>{
-    if(initialized && root.hidden && !active)offer('general');
-  });
+    }else initialize();
+  }else setTimeout(initialize,PAGE==='quran.html'?340:100);
 })();
