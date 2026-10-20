@@ -10,11 +10,10 @@
   const NAMES = {home:'الرئيسية', quran:'المصحف', recitations:'التلاوات', library:'مكتبتي', adhkar:'الأذكار'};
   const TOURS = {
     home: [
-      {selector:'.home-reading',mode:'tap',title:'أول محطة: مكان قراءتك 📖',body:'دي بطاقتك للعودة لآخر صفحة وصلت لها. المس الإطار الذهبي عشان تكتشفها، من غير ما نفتح المصحف دلوقتي.'},
-      {selector:'.home-verse-actions',mode:'tap',title:'آية تستحق الوقوف عندها ✨',body:'من هنا توصل للآية أو تفسيرها. جرّب تكتشف مكان الأزرار المنوّرة.'},
-      {selector:'.home-bottom-nav a[href="quran.html"]',mode:'tap',title:'باب المصحف',body:'الزر ده بيفتح المصحف وقت ما تحب. لمسه في الجولة مجرد تجربة، مش هينقلك بعيد.'},
-      {selector:'.home-bottom-nav',mode:'quiz',title:'اختبار صغير 🎯',body:'بص على شريط الصفحات تحت، وجاوب:',question:'لو عايز تسمع شيخك المفضل هتروح فين؟',choices:['المصحف','التلاوات','الأذكار'],correct:1},
-      {selector:'.home-bottom-nav a[href="adhkar.html"]',mode:'tap',title:'وأخيرًا: الأذكار 🌿',body:'هنا أذكار الصباح والمساء وغيرها. لكل قسم شرح لوحده لما تزوره لأول مرة.'}
+      {selector:'.home-reading',mode:'note',title:'متابعة القراءة',body:'هنا بتلاقي آخر سورة وصفحة وصلت لها، وتقدر تكمل قراءتك من نفس المكان بضغطة واحدة.'},
+      {selector:'.home-verse blockquote',fallback:'.home-verse',mode:'verse',title:'آية للتدبّر',body:'وقفة جديدة مع آية من القرآن كل يوم. اضغط على الآية المضيئة عشان تقراها بوضوح وتتأمل معناها.'},
+      {selector:'.home-verse-action.is-primary',mode:'note',title:'الذهاب للآية',body:'الزر ده بيفتح نفس الآية داخل المصحف، عشان تقراها في موضعها بين الآيات.'},
+      {selector:'.home-verse-action:not(.is-primary)',mode:'note',title:'التفسير',body:'ومن هنا بتفتح تفسير الآية مباشرة، عشان تعرف معناها وتتدبّرها بشكل أعمق.'}
     ],
     quran: [
       {selector:'#mushaf-page',mode:'swipe',title:'جرّب تقليب الصفحة 👆',body:'حرّك إصبعك فوق بطاقة التدريب يمينًا أو شمالًا. دي تجربة آمنة للحركة، ومش هنغيّر صفحتك الحقيقية.'},
@@ -67,7 +66,7 @@
   let active = null, modalOpen = false, busy = false, resizeTimer = 0, skillTimer = 0, skillStart = null, stepToken = 0, initialized = false;
   const root = document.createElement('div');
   root.id = 'ayat-tour-root';
-  root.className = 'ayat-tour-root';
+  root.className = 'ayat-tour-root' + (kind==='home' ? ' is-home' : '');
   root.hidden = true;
   root.setAttribute('aria-label','دليل آيات التفاعلي');
   root.innerHTML =
@@ -108,17 +107,25 @@
     rootOpen(false);clearLayers();save(LAST(kind),Date.now());
     const pending=Math.min(TOURS[kind].length-1,Math.max(0,Number(storageRead(STEP(kind))||0)));
     invite.hidden=false;
-    invite.innerHTML=
-      '<div class="ayat-tour-invite-icon" aria-hidden="true">✦</div>' +
-      '<div class="ayat-tour-invite-copy"><strong>'+ (pending?'نكمل اكتشاف '+NAMES[kind]+'؟':'تحب نكتشف '+NAMES[kind]+'؟') +
-      '</strong><span>تجارب خفيفة على الصفحة نفسها، من غير ما نخرج منها 🎮</span></div>' +
-      '<div class="ayat-tour-invite-actions"><button type="button" class="ayat-tour-main" data-tour-action="begin">يلا نجرّب</button><button type="button" class="ayat-tour-text" data-tour-action="later">لاحقًا</button><button type="button" class="ayat-tour-text ayat-tour-never" data-tour-action="never">متظهرش تاني</button></div>';
+    if(kind==='home'){
+      invite.innerHTML=
+        '<div class="ayat-tour-invite-icon" aria-hidden="true">✧</div>' +
+        '<div class="ayat-tour-invite-copy"><strong>'+(pending?'نكمل شرح الرئيسية؟':'جولة هادئة في الرئيسية')+
+        '</strong><span>أربع خطوات قصيرة تعرّفك على القراءة وآية التدبّر</span></div>'+
+        '<div class="ayat-tour-invite-actions"><button type="button" class="ayat-tour-main" data-tour-action="begin">ابدأ الشرح</button><button type="button" class="ayat-tour-text" data-tour-action="later">لاحقًا</button><button type="button" class="ayat-tour-text ayat-tour-never" data-tour-action="never">متظهرش تاني</button></div>';
+    }else{
+      invite.innerHTML=
+        '<div class="ayat-tour-invite-icon" aria-hidden="true">✦</div>' +
+        '<div class="ayat-tour-invite-copy"><strong>'+ (pending?'نكمل اكتشاف '+NAMES[kind]+'؟':'تحب نكتشف '+NAMES[kind]+'؟') +
+        '</strong><span>شرح سريع للصفحة، من غير ما نخرج منها</span></div>' +
+        '<div class="ayat-tour-invite-actions"><button type="button" class="ayat-tour-main" data-tour-action="begin">ابدأ الشرح</button><button type="button" class="ayat-tour-text" data-tour-action="later">لاحقًا</button><button type="button" class="ayat-tour-text ayat-tour-never" data-tour-action="never">متظهرش تاني</button></div>';
+    }
   }
   function chooser(){
     ++stepToken;clearLayers();rootOpen(false);modalOpen=true;
     modal.hidden=false;
     modal.innerHTML='<div class="ayat-tour-card" role="dialog" aria-modal="true" aria-label="اختيار شرح آيات" tabindex="-1">' +
-      '<div class="ayat-tour-top"><span>دليل آيات</span><span>✦ اختار مغامرتك</span></div>' +
+      '<div class="ayat-tour-top"><span>دليل آيات</span><span>اختر الصفحة</span></div>' +
       '<h2 class="ayat-tour-title">تحب تكتشف إيه؟</h2><p class="ayat-tour-body">كل صفحة ليها شرحها الخاص. تقدر تعيد أي شرح وقت ما تحب.</p>' +
       '<div class="ayat-tour-choices">' + Object.keys(PAGE_FOR).map(k=>'<button type="button" class="'+(k===kind?'ayat-tour-main':'ayat-tour-secondary')+'" data-tour-action="replay-'+k+'">'+html('شرح '+NAMES[k])+(k===kind?' · الصفحة الحالية':'')+'</button>').join('') +
       '<button type="button" class="ayat-tour-text" data-tour-action="dismiss">رجوع</button></div></div>';
@@ -152,7 +159,7 @@
     const toast=document.createElement('div');
     toast.className='ayat-tour-complete';
     toast.setAttribute('role','status');
-    toast.textContent='✨ برافو! اكتشفت '+NAMES[kind]+'، والباقي عليك';
+    toast.textContent=kind==='home'?'تم شرح الصفحة الرئيسية. يمكنك إعادة الشرح في أي وقت.':'اكتمل شرح '+NAMES[kind];
     document.body.appendChild(toast);
     setTimeout(()=>toast.remove(),3100);
   }
@@ -185,11 +192,13 @@
     const width=Math.max(12,Math.min(innerWidth-left-7,r.width+10));
     const height=Math.max(12,Math.min(innerHeight-top-7,r.height+10));
     spot.hidden=false;Object.assign(spot.style,{left:left+'px',top:top+'px',width:width+'px',height:height+'px'});
-    const tapping=s.mode==='tap';
+    spot.classList.toggle('is-verse',kind==='home'&&s.mode==='verse');
+    const tapping=s.mode==='tap'||s.mode==='verse';
     hit.hidden=!tapping;
     if(tapping){
       Object.assign(hit.style,{left:left+'px',top:top+'px',width:width+'px',height:height+'px'});
-      hit.setAttribute('aria-label',s.activate?'افتح العنصر المنوّر':'اكتشف '+s.title);
+      hit.classList.toggle('ayat-tour-verse-hit',s.mode==='verse');
+      hit.setAttribute('aria-label',s.mode==='verse'?'افتح آية التدبّر للقراءة':s.activate?'افتح العنصر المنوّر':'اكتشف '+s.title);
     }
     const cw=Math.min(380,innerWidth-24),ch=card.offsetHeight||220;
     const below=innerHeight-(top+height),above=top;
@@ -221,8 +230,62 @@
       await delay(190);
     }
   }
+    // Home tour: calm, guided explanations; interactive reading only where useful.
+  async function renderHome(){
+    if(!active)return;
+    const token=++stepToken;
+    const s=TOURS.home[active.step];
+    rootOpen(true);clearLayers();
+    shade.hidden=false;shade.style.background='transparent';
+    card.hidden=false;card.style.visibility='hidden';
+    const count=active.step+1;
+    const total=TOURS.home.length;
+    const last=count===total;
+    card.innerHTML=
+      '<div class="ayat-tour-home-top"><span class="ayat-tour-home-label">دليل آيات <span aria-hidden="true">/</span> الرئيسية</span><span class="ayat-tour-count">'+count+' من '+total+'</span></div>'+
+      '<div class="ayat-tour-progress" aria-hidden="true"><span style="width:'+(count/total*100)+'%"></span></div>'+
+      '<h2 class="ayat-tour-title">'+html(s.title)+'</h2>'+
+      '<p class="ayat-tour-body">'+html(s.body)+'</p>'+
+      (s.mode==='verse'?'<button class="ayat-tour-home-read" type="button" data-tour-action="verse-open"><span aria-hidden="true">◈</span> قراءة آية اليوم</button>':'')+
+      '<div class="ayat-tour-home-foot">'+
+      (count===1?'':'<button type="button" class="ayat-tour-secondary" data-tour-action="previous">السابق</button>')+
+      '<button class="ayat-tour-main" type="button" data-tour-action="home-next">'+(last?'إنهاء الشرح':'التالي')+' <span aria-hidden="true">←</span></button>'+
+      '<button class="ayat-tour-text" type="button" data-tour-action="pause">خروج</button></div>';
+    await prepare(s,token);
+    if(token!==stepToken||!active)return;
+    const target=targetFor(s);
+    if(target){
+      const r=target.getBoundingClientRect();
+      if(r.bottom>innerHeight-110||r.top<12){
+        target.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
+      }
+    }
+    await delay(90);
+    if(token!==stepToken||!active)return;
+    card.style.visibility='visible';
+    position();
+    card.focus({preventScroll:true});
+  }
+  function openHomeVerse(){
+    if(kind!=='home'||!active||TOURS.home[active.step].mode!=='verse')return;
+    const verse=document.querySelector('.home-verse blockquote')?.textContent?.trim();
+    const reference=document.querySelector('.home-verse-reference')?.textContent?.trim();
+    if(!verse)return;
+    modalOpen=true;
+    card.hidden=true;spot.hidden=true;hit.hidden=true;hand.hidden=true;
+    modal.hidden=false;
+    modal.innerHTML='<div class="ayat-tour-verse-sheet" role="dialog" aria-modal="true" aria-label="قراءة آية التدبّر" tabindex="-1">'+
+      '<div class="ayat-tour-verse-eyebrow"><span aria-hidden="true">✦</span> آية اليوم للتدبّر</div>'+
+      '<blockquote lang="ar">'+html(verse)+'</blockquote>'+
+      '<p class="ayat-tour-verse-reference">'+html(reference||'')+'</p>'+
+      '<div class="ayat-tour-verse-divider" aria-hidden="true"></div>'+
+      '<div class="ayat-tour-verse-actions"><button class="ayat-tour-secondary" type="button" data-tour-action="verse-back">العودة</button>'+
+      '<button class="ayat-tour-main" type="button" data-tour-action="verse-next">متابعة الشرح <span aria-hidden="true">←</span></button></div></div>';
+    modal.querySelector('[role="dialog"]')?.focus({preventScroll:true});
+  }
   async function render(){
     if(!active)return;
+    if(kind==='home')return renderHome();
     const token=++stepToken;
     const s=TOURS[kind][active.step];
     rootOpen(true);clearLayers();
@@ -267,6 +330,12 @@
   }
   function advance(){
     if(!active||busy)return;
+    if(kind==='home'){
+      const next=active.step+1;
+      if(next>=TOURS.home.length){finish();return;}
+      active.step=next;save(STEP(kind),next);render();
+      return;
+    }
     busy=true;
     const s=TOURS[kind][active.step];
     feedback('✨ أحسنت! نجحت في التحدي',true);
@@ -282,6 +351,7 @@
   hit.addEventListener('click',()=>{
     if(!active||busy)return;
     const s=TOURS[kind][active.step];
+    if(kind==='home'&&s.mode==='verse'){openHomeVerse();return;}
     if(s.mode!=='tap')return;
     if(s.activate){
       const target=targetFor(s);
@@ -308,6 +378,14 @@
     if(!button)return;
     const action=button.getAttribute('data-tour-action');
     if(action==='begin')start();
+    else if(action==='home-next'&&kind==='home')advance();
+    else if(action==='verse-open')openHomeVerse();
+    else if(action==='verse-back'&&modalOpen&&kind==='home'){
+      modalOpen=false;modal.hidden=true;card.hidden=false;position();card.focus({preventScroll:true});
+    }
+    else if(action==='verse-next'&&modalOpen&&kind==='home'){
+      modalOpen=false;modal.hidden=true;card.hidden=false;advance();
+    }
     else if(action==='later'||action==='pause')postpone();
     else if(action==='never')never();
     else if(action==='dismiss')close();
