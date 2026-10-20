@@ -1,7 +1,8 @@
 /* Ayat page-by-page interactive discovery. Each lesson lives and finishes on its own page. */
 (() => {
   'use strict';
-  const VERSION = 'v4';
+  const VERSION = 'v5';
+  const REOFFER_AFTER = 12 * 60 * 60 * 1000;
   const PAGE = location.pathname.split('/').pop() || 'index.html';
   const PAGES = { 'index.html':'home', 'quran.html':'quran', 'recitations.html':'recitations', 'library.html':'library', 'adhkar.html':'adhkar' };
   const PAGE_FOR = {home:'index.html', quran:'quran.html', recitations:'recitations.html', library:'library.html', adhkar:'adhkar.html'};
@@ -46,6 +47,8 @@
   const DONE = k => 'ayat-tour-done-' + k + '-' + VERSION;
   const STEP = k => 'ayat-tour-step-' + k + '-' + VERSION;
   const LATER = k => 'ayat-tour-remind-at-' + k + '-' + VERSION;
+  const LAST = k => 'ayat-tour-last-shown-' + k + '-' + VERSION;
+  const OPT_OUT = k => 'ayat-tour-optout-' + k + '-' + VERSION;
   const storageRead = key => {
     try {const v=localStorage.getItem(key);if(v!==null)return v;}catch(_){}
     try {return sessionStorage.getItem(key);}catch(_){return null;}
@@ -98,10 +101,10 @@
     shade.hidden=spot.hidden=hit.hidden=hand.hidden=true;
   }
   function showInvite(){
-    if(active||modalOpen||storageRead(DONE(kind))==='1'||Number(storageRead(LATER(kind))||0)>Date.now()){
+    if(active||modalOpen||storageRead(OPT_OUT(kind))==='1'||Number(storageRead(LATER(kind))||0)>Date.now()||Number(storageRead(LAST(kind))||0)+REOFFER_AFTER>Date.now()){
       document.documentElement.classList.remove('ayat-tour-boot');return;
     }
-    rootOpen(false);clearLayers();
+    rootOpen(false);clearLayers();save(LAST(kind),Date.now());
     const pending=Math.min(TOURS[kind].length-1,Math.max(0,Number(storageRead(STEP(kind))||0)));
     invite.hidden=false;
     invite.innerHTML=
@@ -122,7 +125,7 @@
   }
   function start(replay=false){
     ++stepToken;modalOpen=false;
-    remove(LATER(kind));remove(DONE(kind));
+    remove(LATER(kind));remove(DONE(kind));remove(OPT_OUT(kind));
     const saved=Number(storageRead(STEP(kind))||0);
     const index=!replay&&Number.isInteger(saved)?Math.min(Math.max(0,saved),TOURS[kind].length-1):0;
     active={kind,step:index};
@@ -133,7 +136,7 @@
   }
   function replay(k){
     if(!TOURS[k])return;
-    remove(DONE(k));remove(LATER(k));remove(STEP(k));
+    remove(DONE(k));remove(LATER(k));remove(STEP(k));remove(OPT_OUT(k));
     if(k!==kind){
       // This is an explicit choice from Settings, not a guided page hand-off.
       location.assign(PAGE_FOR[k]+'?ayatHelp='+encodeURIComponent(k));
@@ -142,7 +145,7 @@
     start(true);
   }
   function finish(){
-    save(DONE(kind),'1');remove(STEP(kind));remove(LATER(kind));
+    save(DONE(kind),'1');save(LAST(kind),Date.now());remove(STEP(kind));remove(LATER(kind));
     close();
     // A tiny, self-dismissed celebration rather than another blocking modal.
     const toast=document.createElement('div');
@@ -158,7 +161,7 @@
     close();
   }
   function never(){
-    save(DONE(kind),'1');remove(STEP(kind));remove(LATER(kind));close();
+    save(OPT_OUT(kind),'1');save(DONE(kind),'1');remove(STEP(kind));remove(LATER(kind));close();
   }
   function targetFor(step){
     let t=document.querySelector(step.selector);
@@ -359,7 +362,16 @@
   window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(position,75)});
   window.addEventListener('scroll',()=>{if(active)requestAnimationFrame(position)},true);
   document.addEventListener('ayat:splash-finished',()=>root.classList.remove('under-splash'));
-  document.getElementById('ayat-tour-settings-button')?.addEventListener('click',chooser);
+  // Delegation survives settings DOM re-creation and handles WebView click routing.
+  document.addEventListener('click',event=>{
+    if(event.target.closest('#ayat-tour-settings-button')){
+      event.preventDefault();
+      event.stopPropagation();
+      chooser();
+    }
+  },true);
+  // Explicit user entry point is independent of invitation and completion state.
+  window.ayatOpenTour = chooser;
   function initialize(){
     if(initialized)return;
     initialized=true;
