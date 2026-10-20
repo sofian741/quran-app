@@ -1,8 +1,7 @@
 /* Ayat page-by-page interactive discovery. Each lesson lives and finishes on its own page. */
 (() => {
   'use strict';
-  // Refresh only the redesigned home lesson; preserve saved progress on other pages.
-  const VERSION = (location.pathname.split('/').filter(Boolean).pop() || 'index').replace(/\.html$/,'') === 'index' ? 'v7' : 'v5';
+  // Local, independent tutorial revisions for each redesigned page.
   const REOFFER_AFTER = 12 * 60 * 60 * 1000;
   const routeName = (location.pathname.split('/').filter(Boolean).pop() || 'index').toLowerCase();
   const PAGE = routeName === 'index' ? 'index.html' : (routeName.endsWith('.html') ? routeName : routeName + '.html');
@@ -30,10 +29,13 @@
       {selector:'#open-settings',mode:'tap',title:'الإعدادات والشرح في أي وقت',body:'من هنا هتلاقي خيارات العرض والبحث والمحفوظات، وكمان تقدر تعيد أي شرح.'}
     ],
     recitations: [
-      {selector:'.catalog-heading',mode:'tap',title:'عالم من الأصوات 🎙️',body:'دي مكتبة القرّاء. جرّب تكتشف مكانها، وبعد الجولة اختار الصوت اللي ترتاح له.'},
-      {selector:'.controls-fields',mode:'quiz',title:'خلّينا نختار صح',body:'كل تسجيل له قارئ وسورة.',question:'عايز تغيّر السورة اللي بتسمعها. تستخدم إيه؟',choices:['قائمة السورة','زر التنزيل','مكتبتي'],correct:0},
-      {selector:'#download-current',mode:'tap',title:'التلاوة معاك بدون إنترنت',body:'ده زر تنزيل السورة الحالية. لمس الإطار في التدريب مش هيبدأ أي تحميل.'},
-      {selector:'.my-library-card',mode:'tap',title:'فين تلاواتك المحفوظة؟ 📚',body:'هنا «مكتبتي» لكل اللي نزلته. لما تزورها في وقتك هتلاقي ليها شرح مستقل.'}
+      {selector:'.intro',mode:'reveal',group:'ابدأ من هنا',title:'القرّاء موجودين تحت',body:'صفحة التلاوات فيها قرّاء كتير، لكن قائمتهم أسفل المشغّل. تابع حركة اليد لتعرف الاتجاه، وبعدها اضغط «اعرض القرّاء» عشان نوصل لهم مباشرة.'},
+      {selector:'#reciter-list',mode:'pick-reciter',group:'اختيار القارئ',title:'اختار القارئ اللي تحبه',body:'دي القائمة الكاملة للقرّاء. اضغط على أي قارئ بنفسك، وهيظهر اختياره في المشغّل فوق. تقدر تبحث باسمه كمان.',wait:'catalog'},
+      {selector:'#surah-select',mode:'note',group:'التلاوة',title:'اختيار السورة',body:'بعد اختيار القارئ، من القائمة دي تختار السورة اللي عايز تسمعها.'},
+      {selector:'#play-pause',mode:'play',group:'الاستماع',title:'تشغيل التلاوة',body:'ده زر التشغيل والإيقاف المؤقت. تقدر تضغط عليه دلوقتي وتسمع القارئ اللي اخترته، أو تكمل الشرح من غير تشغيل.'},
+      {selector:'#download-current',mode:'note',group:'التنزيل',title:'تنزيل سورة واحدة',body:'الزر ده بيحفظ السورة المختارة على جهازك عشان تسمعها لاحقًا بدون إنترنت. الشرح نفسه مش هيبدأ أي تنزيل.'},
+      {selector:'#download-all',mode:'note',group:'التنزيل',title:'تنزيل مصحف القارئ',body:'لو عايز سور القارئ المتاحة كلها، الزر ده بيبدأ تنزيلها دفعة واحدة، حسب المساحة المتاحة. مش هننزّل ملفات أثناء الشرح.'},
+      {selector:'.my-library-card',mode:'note',group:'ملفاتك المحفوظة',title:'مكتبتي',body:'أي سورة أو مصحف نزّلته هتلاقيه هنا مرتبًا حسب القارئ والسورة، وتقدر تشغّله من غير إنترنت.'}
     ],
     library: [
       {selector:'.tools',mode:'tap',title:'مكتبتك تحت السيطرة',body:'تقدر تبحث باسم قارئ أو سورة وتغيّر ترتيب التسجيلات. جرّب تكتشف أدوات التنظيم.'},
@@ -49,6 +51,7 @@
   };
   const kind = PAGES[PAGE];
   if (!kind) return;
+  const VERSION = kind==='home' ? 'v7' : kind==='recitations' ? 'v6' : 'v5';
   const DONE = k => 'ayat-tour-done-' + k + '-' + VERSION;
   const STEP = k => 'ayat-tour-step-' + k + '-' + VERSION;
   const LATER = k => 'ayat-tour-remind-at-' + k + '-' + VERSION;
@@ -71,9 +74,9 @@
   let active = null, modalOpen = false, busy = false, resizeTimer = 0, skillTimer = 0, skillStart = null, stepToken = 0, initialized = false;
   const root = document.createElement('div');
   root.id = 'ayat-tour-root';
-  root.className = 'ayat-tour-root' + (kind==='home' ? ' is-home' : '');
+  root.className = 'ayat-tour-root' + ((kind==='home'||kind==='recitations')?' is-editorial':'') + (kind==='home'?' is-home':'') + (kind==='recitations'?' is-recitations':'');
   root.hidden = true;
-  root.setAttribute('aria-label','دليل آيات التفاعلي');
+  root.setAttribute('aria-label','دليل استخدام آيات');
   root.innerHTML =
     '<div class="ayat-tour-shade" hidden></div><div class="ayat-tour-spot" hidden></div>' +
     '<button type="button" class="ayat-tour-hit" hidden aria-label="اكتشف العنصر المنوّر"></button>' +
@@ -97,7 +100,7 @@
   function close(){
     ++stepToken;clearTimeout(skillTimer);busy=false;modalOpen=false;active=null;
     root.hidden=true;
-    root.classList.remove('is-verse-focused');
+    root.classList.remove('is-verse-focused','is-choose-reciter');
     invite.hidden=shade.hidden=spot.hidden=hit.hidden=hand.hidden=modal.hidden=card.hidden=true;
     document.body.classList.remove('ayat-tour-on','ayat-tour-audio');
     document.documentElement.classList.remove('ayat-tour-boot');
@@ -107,17 +110,17 @@
     shade.hidden=spot.hidden=hit.hidden=hand.hidden=true;
   }
   function showInvite(){
-    if(active||modalOpen||storageRead(DONE(kind))==='1'||storageRead(OPT_OUT(kind))==='1'||Number(storageRead(LATER(kind))||0)>Date.now()||(kind!=='home' && Number(storageRead(LAST(kind))||0)+REOFFER_AFTER>Date.now())){
+    if(active||modalOpen||storageRead(DONE(kind))==='1'||storageRead(OPT_OUT(kind))==='1'||Number(storageRead(LATER(kind))||0)>Date.now()||(kind!=='home' && kind!=='recitations' && Number(storageRead(LAST(kind))||0)+REOFFER_AFTER>Date.now())){
       document.documentElement.classList.remove('ayat-tour-boot');return;
     }
     rootOpen(false);clearLayers();save(LAST(kind),Date.now());
     const pending=Math.min(TOURS[kind].length-1,Math.max(0,Number(storageRead(STEP(kind))||0)));
     invite.hidden=false;
-    if(kind==='home'){
+    if(kind==='home'||kind==='recitations'){
       invite.innerHTML=
         '<div class="ayat-tour-invite-icon" aria-hidden="true">✧</div>' +
-        '<div class="ayat-tour-invite-copy"><strong>'+(pending?'نكمل شرح الرئيسية؟':'جولة هادئة في الرئيسية')+
-        '</strong><span>جولة مختصرة للقراءة والتدبّر وأزرار التنقّل</span></div>'+
+        '<div class="ayat-tour-invite-copy"><strong>'+(kind==='home'?(pending?'نكمل شرح الرئيسية؟':'جولة هادئة في الرئيسية'):(pending?'نكمل شرح التلاوات؟':'اكتشف قائمة القرّاء'))+
+        '</strong><span>'+(kind==='home'?'جولة مختصرة للقراءة والتدبّر وأزرار التنقّل':'القرّاء موجودين أسفل المشغّل، والشرح هيوصلك لهم')+'</span></div>'+
         '<div class="ayat-tour-invite-actions"><button type="button" class="ayat-tour-main" data-tour-action="begin">ابدأ الشرح</button><button type="button" class="ayat-tour-text" data-tour-action="later">لاحقًا</button><button type="button" class="ayat-tour-text ayat-tour-never" data-tour-action="never">متظهرش تاني</button></div>';
     }else{
       invite.innerHTML=
@@ -161,8 +164,8 @@
   function finish(){
     save(DONE(kind),'1');save(LAST(kind),Date.now());remove(STEP(kind));remove(LATER(kind));
     close();
-    // Home guide finishes quietly without a completion banner.
-    if(kind==='home')return;
+    // The redesigned editorial guides end quietly without a completion banner.
+    if(kind==='home'||kind==='recitations')return;
     const toast=document.createElement('div');
     toast.className='ayat-tour-complete';
     toast.setAttribute('role','status');
@@ -200,7 +203,14 @@
     const height=Math.max(12,Math.min(innerHeight-top-7,r.height+10));
     spot.hidden=false;Object.assign(spot.style,{left:left+'px',top:top+'px',width:width+'px',height:height+'px'});
     spot.classList.toggle('is-verse',kind==='home'&&s.mode==='verse');
-    const tapping=s.mode==='tap'||s.mode==='verse';
+    if(kind==='recitations'&&s.mode==='pick-reciter'){
+      spot.hidden=true;hit.hidden=true;hand.hidden=true;
+      const cw=Math.min(380,innerWidth-24),ch=card.offsetHeight||220;
+      card.style.left=Math.max(12,(innerWidth-cw)/2)+'px';
+      card.style.top=Math.max(15,innerHeight-ch-88)+'px';
+      return;
+    }
+    const tapping=s.mode==='tap'||s.mode==='verse'||s.mode==='play';
     hit.hidden=!tapping;
     if(tapping){
       Object.assign(hit.style,{left:left+'px',top:top+'px',width:width+'px',height:height+'px'});
@@ -226,6 +236,12 @@
     }
   }
   async function prepare(s,token){
+    if(s.wait==='catalog'){
+      for(let i=0;i<32 && !document.querySelector('#reciter-list .reciter-card');i++){
+        if(token!==stepToken)return;
+        await delay(250);
+      }
+    }
     if(s.wait==='reader'){
       for(let i=0;i<15 && document.getElementById('reader')?.hidden;i++){
         if(token!==stepToken)return;
@@ -239,18 +255,19 @@
   }
     // Home tour: calm, guided explanations; interactive reading only where useful.
   // Home's editorial guide explains real controls without simulated quizzes.
-  async function renderHome(){
+  async function renderEditorial(){
     if(!active)return;
     const token=++stepToken;
-    const step=TOURS.home[active.step];
+    const step=TOURS[kind][active.step];
     rootOpen(true);clearLayers();
-    root.classList.toggle('is-verse-focused',step.mode==='verse');
+    root.classList.toggle('is-verse-focused',kind==='home'&&step.mode==='verse');
+    root.classList.toggle('is-choose-reciter',kind==='recitations'&&step.mode==='pick-reciter');
     shade.hidden=false;shade.style.background='transparent';
     card.hidden=false;card.style.visibility='hidden';
     const current=active.step+1;
-    const total=TOURS.home.length;
+    const total=TOURS[kind].length;
     const last=current===total;
-    const progress=TOURS.home.map((_,i)=>
+    const progress=TOURS[kind].map((_,i)=>
       '<span class="'+(i<current?'is-reached ':'')+(i===active.step?'is-active':'')+'"></span>'
     ).join('');
     card.innerHTML=
@@ -262,17 +279,21 @@
       '<h2 class="ayat-tour-title">'+html(step.title)+'</h2>'+
       '<p class="ayat-tour-body">'+html(step.body)+'</p>'+
       (step.mode==='verse'?'<button class="ayat-tour-home-read" type="button" data-tour-action="verse-open"><span aria-hidden="true">◈</span> اقرأ آية اليوم</button>':'')+
+      (step.mode==='reveal'?'<div class="ayat-tour-reciter-guide" aria-label="حركة توضيحية للأسفل">'+
+        '<div class="ayat-tour-reciter-guide-copy"><strong>كمّل لتحت</strong><small>هتلاقي القرّاء أسفل مشغّل التلاوة</small></div>'+
+        '<div class="ayat-tour-reciter-motion" aria-hidden="true"><svg viewBox="0 0 48 64"><path d="M17 59c-6-9-14-19-12-24 2-5 8-3 13 4V12c0-9 10-9 10 0v20c2-5 9-6 11-1 5 0 7 5 6 10l-3 17Z"/></svg><span class="ayat-tour-reciter-down">↓</span></div></div>':'')+
+      (step.mode==='pick-reciter'?'<div class="ayat-tour-picker-note">اضغط على أي اسم في القائمة. لو النت مش متاح، تقدر تكمّل الشرح بزر «التالي».</div>':'')+
       '<div class="ayat-tour-home-foot">'+
       (current===1?'':'<button type="button" class="ayat-tour-secondary" data-tour-action="previous">السابق</button>')+
-      '<button class="ayat-tour-main" type="button" data-tour-action="home-next">'+(last?'إنهاء الشرح':'التالي')+' <span aria-hidden="true">←</span></button>'+
+      '<button class="ayat-tour-main" type="button" data-tour-action="'+(step.mode==='reveal'?'recitations-reveal':'home-next')+'">'+(step.mode==='reveal'?'اعرض القرّاء':last?'إنهاء الشرح':'التالي')+' <span aria-hidden="true">'+(step.mode==='reveal'?'↓':'←')+'</span></button>'+
       '<button class="ayat-tour-text" type="button" data-tour-action="pause">خروج</button></div>';
     await prepare(step,token);
     if(token!==stepToken||!active)return;
     const target=targetFor(step);
-    if(target&&!step.selector.startsWith('.home-bottom-nav')){
+    if(target&&!step.selector.startsWith('.home-bottom-nav')&&step.mode!=='reveal'){
       const rect=target.getBoundingClientRect();
       if(rect.bottom>innerHeight-110||rect.top<12){
-        target.scrollIntoView({block:'center',inline:'nearest',behavior:'auto'});
+        target.scrollIntoView({block:step.mode==='pick-reciter'?'start':'center',inline:'nearest',behavior:'auto'});
       }
     }
     await delay(90);
@@ -306,7 +327,7 @@
   }
   async function render(){
     if(!active)return;
-    if(kind==='home')return renderHome();
+    if(kind==='home'||kind==='recitations')return renderEditorial();
     const token=++stepToken;
     const s=TOURS[kind][active.step];
     rootOpen(true);clearLayers();
@@ -351,9 +372,9 @@
   }
   function advance(){
     if(!active||busy)return;
-    if(kind==='home'){
+    if(kind==='home'||kind==='recitations'){
       const next=active.step+1;
-      if(next>=TOURS.home.length){finish();return;}
+      if(next>=TOURS[kind].length){finish();return;}
       active.step=next;save(STEP(kind),next);render();
       return;
     }
@@ -373,6 +394,11 @@
     if(!active||busy)return;
     const s=TOURS[kind][active.step];
     if(kind==='home'&&s.mode==='verse'){openHomeVerse();return;}
+    if(s.mode==='play'&&kind==='recitations'){
+      const player=targetFor(s);
+      if(player&&!player.disabled)player.click();
+      advance();return;
+    }
     if(s.mode!=='tap')return;
     if(s.activate){
       const target=targetFor(s);
@@ -399,7 +425,12 @@
     if(!button)return;
     const action=button.getAttribute('data-tour-action');
     if(action==='begin')start();
-    else if(action==='home-next'&&kind==='home')advance();
+    else if(action==='home-next'&&(kind==='home'||kind==='recitations'))advance();
+    else if(action==='recitations-reveal'&&kind==='recitations'){
+      const catalog=document.getElementById('catalog');
+      if(catalog){catalog.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});}
+      setTimeout(()=>{if(active&&kind==='recitations'&&TOURS[kind][active.step]?.mode==='reveal')advance();},500);
+    }
     else if(action==='verse-open')openHomeVerse();
     else if(action==='verse-back'&&kind==='home')closeHomeVerse();
     else if(action==='verse-next'&&modalOpen&&kind==='home'){
@@ -476,6 +507,11 @@
   // Explicit user entry point is independent of invitation and completion state.
   window.ayatOpenTour = chooser;
   window.ayatStartHomeTour = () => { if(kind==='home')start(true); };
+  document.addEventListener('ayat:reciter-chosen',()=>{
+    if(kind==='recitations'&&active&&TOURS[kind][active.step]?.mode==='pick-reciter'){
+      setTimeout(()=>{if(active&&TOURS[kind][active.step]?.mode==='pick-reciter')advance();},380);
+    }
+  });
   function initialize(){
     if(initialized)return;
     initialized=true;
