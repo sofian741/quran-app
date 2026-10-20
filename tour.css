@@ -37,7 +37,7 @@
 
 /* Expose normally auto-hidden reader controls while they are being taught. */
 .reader-page.ayat-tour-on .reader-overlay{opacity:1!important;visibility:visible!important;transform:translateY(0)!important}
-.reader-page.ayat-tour-on.ayat-tour-audio .mushaf-audio-player{opacity:1!important;visibility:visible!important;transform:translateY(0)!important}
+.reader-page.ayat-tour-on.ayat-tour-audio .mushaf-audio-player{opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:translateY(0)!important}
 @media(min-width:700px){.reader-page.ayat-tour-on.ayat-tour-audio .mushaf-audio-player{transform:translateX(50%)!important}}
 
 /* A horizontal finger sweep that shows the actual page-turn gesture. */
@@ -101,6 +101,23 @@
   80%,100%{transform:translate(-50%,-50%) scale(2.5);opacity:0}
 }
 @media(prefers-reduced-motion:reduce){.ayat-tour-hit::before,.ayat-tour-hit::after{animation:none}}
+
+/* Real Quran lessons leave the highlighted control or verse touchable. */
+.ayat-tour-root.is-quran-interactive .ayat-tour-shade{pointer-events:none}
+.mushaf-word.ayat-tour-verse-target{
+  position:relative;z-index:2;border-radius:.22em;
+  background:rgba(218,181,108,.16);
+  box-shadow:0 0 0 .08em rgba(214,177,95,.2),0 .08em .38em rgba(118,83,22,.16);
+  animation:ayat-tour-quran-verse 2.2s ease-in-out infinite;
+}
+.reader-page[data-theme='dark'] .mushaf-word.ayat-tour-verse-target{
+  background:rgba(234,202,132,.2);box-shadow:0 0 0 .08em rgba(243,214,150,.28),0 .08em .42em rgba(0,0,0,.24);
+}
+@keyframes ayat-tour-quran-verse{
+  0%,100%{background-color:rgba(218,181,108,.11)}
+  50%{background-color:rgba(218,181,108,.25)}
+}
+@media(prefers-reduced-motion:reduce){.mushaf-word.ayat-tour-verse-target{animation:none}}
 
 
 /* v46: lightweight, opt-in discovery invitations and playful challenges. */

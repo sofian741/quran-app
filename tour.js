@@ -20,13 +20,23 @@
       {selector:'.home-bottom-nav a[href="adhkar.html"]',mode:'note',group:'شريط التنقل',title:'الأذكار',body:'هنا أذكار الصباح والمساء والأدعية، متقسّمة لأبواب عشان توصل للي محتاجه بسهولة.'}
     ],
     quran: [
-      {selector:'#mushaf-page',mode:'swipe',title:'جرّب تقليب الصفحة 👆',body:'حرّك إصبعك فوق بطاقة التدريب يمينًا أو شمالًا. دي تجربة آمنة للحركة، ومش هنغيّر صفحتك الحقيقية.'},
-      {selector:'#quran-text',fallback:'#mushaf-page',mode:'hold',title:'سر الضغط المطوّل 🔍',body:'اضغط مطولًا على بطاقة التدريب لفتح خيارات الآية: التفسير والاستماع والمزيد.'},
-      {selector:'#open-index',mode:'tap',title:'الفهرس في متناول إيدك',body:'هنا توصل لأي سورة أو جزء بسرعة. اكتشف مكان الفهرس من غير ما نفتح أي نافذة.'},
-      {selector:'#toggle-page-marker',mode:'tap',title:'علّم الصفحة اللي بتحبها',body:'ده زر حفظ موضعك. التجربة هنا مش هتغيّر العلامة الحالية.'},
-      {selector:'#mushaf-audio-player',fallback:'#audio-quick-repeat',mode:'quiz',title:'تلاوة مع القراءة 🎧',body:'المصحف فيه مشغّل تلاوة وتحكم في التكرار.',question:'إيه اللي يساعدك تحفظ آية بالتكرار؟',choices:['تكرار التلاوة','تغيير لون المصحف','الفهرس'],correct:0},
-      {selector:'#audio-quick-repeat',mode:'tap',title:'ميزة الحفظ والمراجعة',body:'الزر ده بيفتح إعدادات تكرار الآيات. دلوقتي جرّب تكتشف مكانه بس.'},
-      {selector:'#open-settings',mode:'tap',title:'الإعدادات والشرح في أي وقت',body:'من هنا هتلاقي خيارات العرض والبحث والمحفوظات، وكمان تقدر تعيد أي شرح.'}
+      {selector:'@tour-verse',mode:'real-verse',group:'التعامل مع الآيات',title:'اضغط مطولًا على الآية المنوّرة',body:'اخترنا آية واضحة من الصفحة الحالية. اضغط بإصبعك على أي كلمة من الآية المنوّرة لمدة لحظة، وسيظهر شريط خيارات الآية الحقيقي.',gesture:'hold'},
+      {selector:'#verse-actions-sheet',mode:'note',group:'خيارات الآية',title:'كل ما تحتاجه للآية',body:'هذه هي قائمة الآية الحقيقية: التفسير، والاستماع، والمفضلة، والنسخ، والمشاركة كصورة، وفاصلة الآية.'},
+      {selector:'[data-verse-action="tafsir"]',mode:'note',group:'خيارات الآية',title:'التفسير الميسّر',body:'يفتح معنى الآية داخل المصحف، مع الانتقال للآية السابقة أو التالية من نافذة التفسير.'},
+      {selector:'[data-verse-action="listen"]',mode:'note',group:'خيارات الآية',title:'ابدأ الاستماع من هنا',body:'زر الاستماع يبدأ التلاوة من الآية المحددة. لو كان التسجيل لا يدعم البدء الدقيق، يختار التطبيق تسجيلًا متزامنًا مناسبًا بدل تظليل غير صحيح.'},
+      {selector:'.verse-actions-grid',mode:'note',group:'خيارات الآية',title:'حفظ ونسخ ومشاركة',body:'يمكنك إضافة الآية للمفضلة، نسخ نصها، مشاركتها كصورة، أو وضع فاصلة آية. الجولة تشرح هذه الأدوات من غير تغيير محفوظاتك.'},
+      {selector:'#open-index',mode:'real-open',opens:'#index-sheet',prepare:'close-verse',group:'الفهرس',title:'افتح الفهرس بنفسك',body:'اضغط زر الخطوط الحقيقي أعلى المصحف لفتح الفهرس.'},
+      {selector:'#index-sheet',mode:'note',group:'الفهرس',title:'السور والأجزاء والآيات',body:'بدّل بين تبويب السور والأجزاء، وافتح سهم السورة لعرض آياتها والبحث داخلها ثم الانتقال للموضع المطلوب. لن تغيّر الجولة موضع قراءتك.'},
+      {selector:'#toggle-page-marker',mode:'note',prepare:'close-index',group:'الفواصل',title:'فاصلة الصفحة',body:'هذا الزر يحفظ الصفحة الحالية لتعود إليها من المحفوظات. لن تضغطه الجولة حتى لا تستبدل فاصلتك الحالية.'},
+      {selector:'#open-settings',mode:'real-open',opens:'#settings-sheet',group:'إعدادات المصحف',title:'افتح الإعدادات بنفسك',body:'اضغط زر الإعدادات الحقيقي لنرى البحث والمحفوظات وخيارات المظهر.'},
+      {selector:'#open-saved',mode:'note',group:'إعدادات المصحف',title:'المحفوظات',body:'من هنا ترجع للمفضلة وفاصلة الآية وفاصلة الصفحة، وكل نوع موجود في تبويب مستقل.'},
+      {selector:'#open-quran-search',mode:'note',group:'إعدادات المصحف',title:'البحث عن آية',body:'البحث يعمل بالكلمة أو بجزء من الآية، ويتجاهل التشكيل، ثم ينقلك للموضع أو يفتح التفسير. وهو متاح دون إنترنت.'},
+      {selector:'#audio-open-options',mode:'real-open',opens:'#audio-options-sheet',prepare:'close-settings',audio:true,group:'التلاوة',title:'افتح خيارات التلاوة',body:'اضغط اسم القارئ الحقيقي أعلى المشغّل لفتح خيارات الاستماع.'},
+      {selector:'#audio-reciter-field',mode:'pick-quran-reciter',audio:true,group:'خيارات التلاوة',title:'غيّر القارئ بنفسك',body:'اضغط حقل القارئ واختر الصوت الذي تريده من القائمة. لن يبدأ تشغيل الصوت تلقائيًا.'},
+      {selector:'#audio-sync-note',fallback:'#audio-auto-follow',mode:'note',audio:true,group:'خيارات التلاوة',title:'تظليل الآية والكلمة',body:'التسجيلات المتزامنة تظلّل الآية أثناء القراءة، وتظلّل الكلمة عندما تتوفر توقيتات موثوقة. خيار المتابعة التلقائية ينقل الصفحة مع التلاوة ويمكنك إيقافه.'},
+      {selector:'#audio-surah-field',mode:'note',audio:true,group:'خيارات التلاوة',title:'السورة وآية البداية',body:'اختر السورة من هنا. وللبدء من آية محددة، افتح خيارات الآية واضغط «الاستماع» كما رأيت في بداية الجولة.'},
+      {selector:'.audio-download-actions',mode:'note',audio:true,group:'التحميل',title:'الاستماع دون إنترنت',body:'يمكنك تحميل السورة الحالية أو سور القارئ المتاحة. لا تبدأ الجولة أي تنزيل، ويعرض التطبيق المساحة وحالة التقدم قبل وأثناء الحفظ.'},
+      {selector:'#audio-download-list',fallback:'#audio-storage-info',mode:'note',audio:true,group:'التحميل',title:'إدارة الملفات المحمّلة',body:'تظهر التسجيلات المحفوظة هنا في مجلدات حسب القارئ، ويمكن حذفها أو فتح مكتبة القرّاء الكاملة لإدارة ما نزلته.'}
     ],
     recitations: [
       {selector:'.intro',mode:'reveal',group:'ابدأ من هنا',title:'القرّاء موجودين تحت',body:'صفحة التلاوات فيها قرّاء كتير، لكن قائمتهم أسفل المشغّل. تابع حركة اليد لتعرف الاتجاه، وبعدها اضغط «اعرض القرّاء» عشان نوصل لهم مباشرة.'},
@@ -55,12 +65,14 @@
   };
   const kind = PAGES[PAGE];
   if (!kind) return;
-  const VERSION = kind==='home' ? 'v7' : kind==='recitations' ? 'v6' : kind==='adhkar' ? 'v6' : 'v5';
-  const DONE = k => 'ayat-tour-done-' + k + '-' + VERSION;
-  const STEP = k => 'ayat-tour-step-' + k + '-' + VERSION;
-  const LATER = k => 'ayat-tour-remind-at-' + k + '-' + VERSION;
-  const LAST = k => 'ayat-tour-last-shown-' + k + '-' + VERSION;
-  const OPT_OUT = k => 'ayat-tour-optout-' + k + '-' + VERSION;
+  const VERSIONS = {home:'v7',quran:'v6',recitations:'v6',library:'v5',adhkar:'v6'};
+  const versionFor = k => VERSIONS[k] || 'v1';
+  const DONE = k => 'ayat-tour-done-' + k + '-' + versionFor(k);
+  const STEP = k => 'ayat-tour-step-' + k + '-' + versionFor(k);
+  const LATER = k => 'ayat-tour-remind-at-' + k + '-' + versionFor(k);
+  const LAST = k => 'ayat-tour-last-shown-' + k + '-' + versionFor(k);
+  const OPT_OUT = k => 'ayat-tour-optout-' + k + '-' + versionFor(k);
+  const REQUEST = 'ayat-tour-manual-request-v1';
   const storageRead = key => {
     try {const v=localStorage.getItem(key);if(v!==null)return v;}catch(_){}
     try {return sessionStorage.getItem(key);}catch(_){return null;}
@@ -75,7 +87,7 @@
   };
   const html = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const delay = ms => new Promise(done=>setTimeout(done,ms));
-  let active = null, modalOpen = false, busy = false, resizeTimer = 0, skillTimer = 0, skillStart = null, stepToken = 0, initialized = false;
+  let active = null, modalOpen = false, busy = false, resizeTimer = 0, skillTimer = 0, skillStart = null, stepToken = 0, initialized = false, tourVerseKey = '';
   const root = document.createElement('div');
   root.id = 'ayat-tour-root';
   root.className = 'ayat-tour-root' + ((kind==='home'||kind==='recitations'||kind==='adhkar')?' is-editorial':'') + (kind==='home'?' is-home':'') + (kind==='recitations'?' is-recitations':'') + (kind==='adhkar'?' is-adhkar':'');
@@ -95,6 +107,10 @@
   const modal = root.querySelector('.ayat-tour-dialog');
   const card = root.querySelector(':scope > .ayat-tour-card');
   const invite = root.querySelector('.ayat-tour-invite');
+  function clearTourVerse(){
+    document.querySelectorAll('.mushaf-word.ayat-tour-verse-target').forEach(word=>word.classList.remove('ayat-tour-verse-target'));
+    tourVerseKey='';
+  }
   function rootOpen(forLesson=false){
     root.hidden=false;
     root.classList.toggle('under-splash',!!document.getElementById('ayat-welcome')&&!document.getElementById('ayat-welcome').hidden);
@@ -103,8 +119,9 @@
   }
   function close(){
     ++stepToken;clearTimeout(skillTimer);busy=false;modalOpen=false;active=null;
+    clearTourVerse();
     root.hidden=true;
-    root.classList.remove('is-verse-focused','is-choose-reciter','is-real-swipe','is-opening-chapter');
+    root.classList.remove('is-verse-focused','is-choose-reciter','is-real-swipe','is-opening-chapter','is-quran-interactive');
     hand.classList.remove('is-adhkar-swipe');
     invite.hidden=shade.hidden=spot.hidden=hit.hidden=hand.hidden=modal.hidden=card.hidden=true;
     document.body.classList.remove('ayat-tour-on','ayat-tour-audio');
@@ -145,29 +162,57 @@
       '<button type="button" class="ayat-tour-text" data-tour-action="dismiss">رجوع</button></div></div>';
     modal.querySelector('[role="dialog"]')?.focus({preventScroll:true});
   }
+  function quranResumeStep(index){
+    if(kind!=='quran')return index;
+    if(index>=1&&index<=4)return 0;
+    if(index===6)return 5;
+    if(index===9||index===10)return 8;
+    if(index>=12)return 11;
+    return index;
+  }
+  function closeQuranPanels(){
+    if(kind!=='quran')return;
+    for(const [sheet,button] of [
+      ['#verse-actions-sheet.is-open','#close-verse-actions'],
+      ['#index-sheet.is-open','#close-index'],
+      ['#settings-sheet.is-open','#close-settings'],
+      ['#audio-options-sheet.is-open','#audio-close-options']
+    ]){
+      if(document.querySelector(sheet))document.querySelector(button)?.click();
+    }
+  }
   function start(replay=false){
     ++stepToken;modalOpen=false;
     remove(LATER(kind));remove(DONE(kind));remove(OPT_OUT(kind));
     const saved=Number(storageRead(STEP(kind))||0);
-    const index=!replay&&Number.isInteger(saved)?Math.min(Math.max(0,saved),TOURS[kind].length-1):0;
+    const restored=!replay&&Number.isInteger(saved)?Math.min(Math.max(0,saved),TOURS[kind].length-1):0;
+    const index=quranResumeStep(restored);
     active={kind,step:index};
     save(STEP(kind),index);
     document.getElementById('close-settings')?.click();
     clearLayers();rootOpen(true);
-    render();
+    return render();
   }
   function replay(k){
     if(!TOURS[k])return;
     remove(DONE(k));remove(LATER(k));remove(STEP(k));remove(OPT_OUT(k));
     if(k!==kind){
-      // This is an explicit choice from Settings, not a guided page hand-off.
-      location.assign(PAGE_FOR[k]+'?ayatHelp='+encodeURIComponent(k));
+      // Persist the explicit request as well as carrying it in the URL. This
+      // survives Android/WebView navigation and cannot be mistaken for an
+      // automatic invitation on the destination page.
+      const request={kind:k,token:Date.now().toString(36)+Math.random().toString(36).slice(2),at:Date.now()};
+      save(REQUEST,JSON.stringify(request));
+      const target=new URL(PAGE_FOR[k],location.href);
+      target.searchParams.set('ayatHelp',k);
+      target.searchParams.set('ayatRequest',request.token);
+      location.assign(target.href);
       return;
     }
     start(true);
   }
   function finish(){
     save(DONE(kind),'1');save(LAST(kind),Date.now());remove(STEP(kind));remove(LATER(kind));
+    closeQuranPanels();
     close();
     // The redesigned editorial guides end quietly without a completion banner.
     if(kind==='home'||kind==='recitations'||kind==='adhkar')return;
@@ -181,13 +226,43 @@
   function postpone(){
     if(active)save(STEP(kind),active.step);
     save(LATER(kind),Date.now()+24*60*60*1000);
+    closeQuranPanels();
     close();
   }
   function never(){
-    save(OPT_OUT(kind),'1');save(DONE(kind),'1');remove(STEP(kind));remove(LATER(kind));close();
+    save(OPT_OUT(kind),'1');save(DONE(kind),'1');remove(STEP(kind));remove(LATER(kind));closeQuranPanels();close();
+  }
+  function chooseTourVerse(){
+    if(kind!=='quran')return null;
+    if(tourVerseKey){
+      const existing=[...document.querySelectorAll('.mushaf-word[data-verse]')].filter(word=>word.dataset.verse===tourVerseKey);
+      if(existing.length)return existing[Math.floor(existing.length/2)];
+    }
+    clearTourVerse();
+    const page=document.getElementById('mushaf-page');
+    const pageRect=page?.getBoundingClientRect();
+    const groups=new Map();
+    document.querySelectorAll('#quran-text .mushaf-word[data-verse]').forEach(word=>{
+      const key=word.dataset.verse;
+      if(!key)return;
+      if(!groups.has(key))groups.set(key,[]);
+      groups.get(key).push(word);
+    });
+    const centerY=pageRect?pageRect.top+pageRect.height*.5:innerHeight*.5;
+    const candidates=[...groups.entries()].map(([key,words])=>{
+      const rects=words.map(word=>word.getBoundingClientRect()).filter(rect=>rect.width&&rect.height);
+      if(!rects.length)return null;
+      const middle=rects.reduce((sum,rect)=>sum+(rect.top+rect.bottom)/2,0)/rects.length;
+      return {key,words,middle,distance:Math.abs(middle-centerY)};
+    }).filter(Boolean).sort((a,b)=>a.distance-b.distance);
+    const chosen=candidates.find(item=>item.words.length>=3)||candidates[0];
+    if(!chosen)return null;
+    tourVerseKey=chosen.key;
+    chosen.words.forEach(word=>word.classList.add('ayat-tour-verse-target'));
+    return chosen.words[Math.floor(chosen.words.length/2)];
   }
   function targetFor(step){
-    let t=document.querySelector(step.selector);
+    let t=step.selector==='@tour-verse'?chooseTourVerse():document.querySelector(step.selector);
     const valid=el=>el&&!el.hidden&&el.getClientRects().length&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden';
     if(!valid(t))t=step.fallback?document.querySelector(step.fallback):null;
     return valid(t)?t:null;
@@ -243,25 +318,36 @@
     cy=Math.min(Math.max(9,cy),Math.max(9,innerHeight-ch-9));
     card.style.left=Math.max(12,(innerWidth-cw)/2)+'px';
     card.style.top=cy+'px';
-    const gesture=s.mode==='swipe'||s.mode==='hold';
+    const gesture=s.mode==='swipe'||s.mode==='hold'||s.gesture==='hold';
     hand.hidden=!gesture;
     if(gesture){
       hand.classList.toggle('is-swipe',s.mode==='swipe');
-      hand.classList.toggle('is-hold',s.mode==='hold');
+      hand.classList.toggle('is-hold',s.mode==='hold'||s.gesture==='hold');
       hand.style.left=Math.max(20,Math.min(innerWidth-55,left+width*.5))+'px';
       hand.style.top=Math.max(20,Math.min(innerHeight-75,top+height*.5))+'px';
     }
   }
   async function prepare(s,token){
+    if(kind==='quran'){
+      if(s.prepare==='close-verse')document.getElementById('close-verse-actions')?.click();
+      else if(s.prepare==='close-index')document.getElementById('close-index')?.click();
+      else if(s.prepare==='close-settings')document.getElementById('close-settings')?.click();
+      if(s.selector==='@tour-verse'){
+        for(let i=0;i<100&&!chooseTourVerse();i++){
+          if(token!==stepToken)return;
+          await delay(100);
+        }
+      }
+    }
     if(s.wait==='reader'){
       for(let i=0;i<15 && document.getElementById('reader')?.hidden;i++){
         if(token!==stepToken)return;
         await delay(220);
       }
     }
-    for(let i=0;i<9 && !targetFor(s);i++){
+    for(let i=0;i<60 && !targetFor(s);i++){
       if(token!==stepToken)return;
-      await delay(190);
+      await delay(100);
     }
   }
     // Home tour: calm, guided explanations; interactive reading only where useful.
@@ -351,14 +437,23 @@
     if(kind==='home'||kind==='recitations'||kind==='adhkar')return renderEditorial();
     const token=++stepToken;
     const s=TOURS[kind][active.step];
+    if(s.selector!=='@tour-verse')clearTourVerse();
     rootOpen(true);clearLayers();
-    document.body.classList.toggle('ayat-tour-audio',kind==='quran'&&(s.selector==='#mushaf-audio-player'||s.selector==='#audio-quick-repeat'));
+    const realInteraction=s.mode==='real-verse'||s.mode==='real-open'||s.mode==='pick-quran-reciter';
+    root.classList.toggle('is-quran-interactive',kind==='quran'&&realInteraction);
+    document.body.classList.toggle('ayat-tour-audio',kind==='quran'&&!!s.audio);
     shade.hidden=false;shade.style.background='transparent';
     card.hidden=false;card.style.visibility='hidden';
     const count=active.step+1;
     const total=TOURS[kind].length;
     const action=s.mode==='tap'
       ? '<p class="ayat-tour-mission">👆 '+(s.activate?'المس البطاقة الذهبية لفتحها':'المس الجزء المضيء لاكتشافه، من غير انتقال أو تغيير بيانات')+'</p>'
+      : s.mode==='real-verse'
+      ? '<p class="ayat-tour-mission">اضغط مطولًا على الآية المضيئة نفسها. الجولة لن تضغط بدلًا منك.</p>'
+      : s.mode==='real-open'
+      ? '<p class="ayat-tour-mission">اضغط على الزر المضيء الحقيقي للمتابعة.</p>'
+      : s.mode==='pick-quran-reciter'
+      ? '<p class="ayat-tour-mission">افتح قائمة القارئ واختر قارئًا بنفسك. لن يبدأ الصوت أثناء الشرح.</p>'
       : s.mode==='quiz'
       ? '<div class="ayat-tour-question">'+html(s.question)+'</div><div class="ayat-tour-quiz">'+s.choices.map((choice,i)=>'<button type="button" data-tour-answer="'+i+'">'+html(choice)+'</button>').join('')+'</div>'
       : (s.mode==='swipe'||s.mode==='hold')
@@ -369,6 +464,7 @@
       '<h2 class="ayat-tour-title">'+html(s.title)+'</h2><p class="ayat-tour-body">'+html(s.body)+'</p>'+
       action+'<p class="ayat-tour-feedback" aria-live="polite"></p>'+
       '<div class="ayat-tour-foot"><button class="ayat-tour-secondary" type="button" data-tour-action="previous" '+(count===1?'hidden':'')+'>السابق</button>'+
+      (s.mode==='note'?'<button class="ayat-tour-main" type="button" data-tour-action="quran-next">'+(count===total?'إنهاء الشرح':'التالي ←')+'</button>':'')+
       '<button class="ayat-tour-text" type="button" data-tour-action="assist">مش قادر؟ عدّي الخطوة</button>'+
       '<button class="ayat-tour-text" type="button" data-tour-action="pause">لاحقًا</button>'+
       '<button class="ayat-tour-text" type="button" data-tour-action="never">إنهاء الشرح</button></div>';
@@ -453,6 +549,7 @@
     const action=button.getAttribute('data-tour-action');
     if(action==='begin')start();
     else if(action==='home-next'&&(kind==='home'||kind==='recitations'||kind==='adhkar'))advance();
+    else if(action==='quran-next'&&kind==='quran')advance();
     else if(action==='adhkar-reveal'&&kind==='adhkar'){
       document.getElementById('library')?.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
       setTimeout(()=>{if(active&&kind==='adhkar'&&TOURS[kind][active.step]?.mode==='reveal')advance();},500);
@@ -539,6 +636,31 @@
   // Explicit user entry point is independent of invitation and completion state.
   window.ayatOpenTour = chooser;
   window.ayatStartHomeTour = () => { if(kind==='home')start(true); };
+  window.addEventListener('mushaf:verse-selected',event=>{
+    if(kind!=='quran'||!active||busy||TOURS.quran[active.step]?.mode!=='real-verse')return;
+    if(tourVerseKey&&event.detail?.verseKey!==tourVerseKey)return;
+    setTimeout(()=>{
+      if(active&&TOURS.quran[active.step]?.mode==='real-verse'&&document.getElementById('verse-actions-sheet')?.classList.contains('is-open'))advance();
+    },120);
+  });
+  document.addEventListener('click',event=>{
+    if(kind!=='quran'||!active||busy)return;
+    const step=TOURS.quran[active.step];
+    if(step?.mode!=='real-open'||!event.target.closest(step.selector))return;
+    let attempts=0;
+    const waitForPanel=()=>{
+      if(!active||TOURS.quran[active.step]!==step)return;
+      const panel=document.querySelector(step.opens);
+      if(panel&&(panel.classList.contains('is-open')||panel.getAttribute('aria-hidden')==='false')){advance();return;}
+      if(++attempts<20)setTimeout(waitForPanel,50);
+    };
+    setTimeout(waitForPanel,0);
+  },true);
+  window.addEventListener('mushaf:reciter-changed',()=>{
+    if(kind==='quran'&&active&&!busy&&TOURS.quran[active.step]?.mode==='pick-quran-reciter'){
+      setTimeout(()=>{if(active&&TOURS.quran[active.step]?.mode==='pick-quran-reciter')advance();},180);
+    }
+  });
   document.addEventListener('ayat:reciter-chosen',()=>{
     if(kind==='recitations'&&active&&TOURS[kind][active.step]?.mode==='pick-reciter'){
       setTimeout(()=>{if(active&&TOURS[kind][active.step]?.mode==='pick-reciter')advance();},380);
@@ -552,16 +674,24 @@
     // Keep the newly opened dhikr on screen after the genuine reader transition.
     setTimeout(()=>{if(active&&TOURS.adhkar[active.step]?.mode==='real-swipe')finish();},410);
   });
-  function initialize(){
+  async function initialize(){
     if(initialized)return;
     initialized=true;
-    const requested=new URLSearchParams(location.search).get('ayatHelp');
+    const params=new URLSearchParams(location.search);
+    let pending=null;
+    try{pending=JSON.parse(storageRead(REQUEST)||'null');}catch(_){pending=null;}
+    if(!pending||!TOURS[pending.kind]||!pending.token||Date.now()-Number(pending.at)>10*60*1000)pending=null;
+    const queryKind=params.get('ayatHelp');
+    const queryToken=params.get('ayatRequest');
+    const requested=TOURS[queryKind]&&(!queryToken||!pending||pending.token===queryToken)?queryKind:(pending?.kind===kind?pending.kind:null);
     if(requested===kind){
+      await start(true);
+      remove(REQUEST);
       try{
-        const url=new URL(location.href);url.searchParams.delete('ayatHelp');
+        const url=new URL(location.href);url.searchParams.delete('ayatHelp');url.searchParams.delete('ayatRequest');
         history.replaceState(history.state,'',url.pathname+url.search+url.hash);
       }catch(_){}
-      start(true);return;
+      return;
     }
     if(PAGE==='index.html'&&document.getElementById('ayat-guide')&&!document.getElementById('ayat-guide').hidden){
       document.addEventListener('ayat:guide-finished',showInvite,{once:true});return;

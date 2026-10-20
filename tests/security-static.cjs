@@ -19,7 +19,8 @@ for (const file of htmlFiles) {
     assert.match(html, /<script src="service-worker-register\.js"><\/script>/, `${file} must prepare offline use`);
     for (const script of html.matchAll(/<script\s+[^>]*src="([^"]+)"/gi)) {
         assert.equal(/^https?:/i.test(script[1]), false, `${file} loads remote JavaScript`);
-        assert.ok(fs.existsSync(path.join(root, script[1])), `${file} missing script ${script[1]}`);
+        const localScript = script[1].split(/[?#]/)[0];
+        assert.ok(fs.existsSync(path.join(root, localScript)), `${file} missing script ${script[1]}`);
     }
     for (const link of html.matchAll(/<a\s+[^>]*target="_blank"[^>]*>/gi)) {
         assert.match(link[0], /rel="[^"]*noopener[^"]*"/i, `${file} external tab lacks noopener`);
@@ -37,7 +38,7 @@ const shellMatch = sw.match(/const APP_SHELL = \[([\s\S]*?)\];/);
 assert.ok(shellMatch, 'service-worker shell list missing');
 const shellPaths = [...shellMatch[1].matchAll(/'\.\/([^']*)'/g)].map(match => match[1] || 'index.html');
 for (const item of shellPaths) {
-    const resolved = item === '' ? 'index.html' : item;
+    const resolved = item === '' ? 'index.html' : item.split(/[?#]/)[0];
     assert.ok(fs.existsSync(path.join(root, resolved)), `offline shell path missing: ${resolved}`);
 }
 assert.ok(shellPaths.includes('mushaf-layout-prewarm-worker.js'), 'layout worker must be available offline');
