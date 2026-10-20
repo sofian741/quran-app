@@ -258,6 +258,8 @@
     root.classList.toggle('is-choose-reciter',kind==='recitations'&&step.mode==='pick-reciter');
     shade.hidden=false;shade.style.background='transparent';
     card.hidden=false;card.style.visibility='hidden';
+    // Reciter choice intentionally lets the user interact with the real list behind the guide.
+    card.setAttribute('aria-modal',String(step.mode!=='pick-reciter'));
     const current=active.step+1;
     const total=TOURS[kind].length;
     const last=current===total;
@@ -284,6 +286,9 @@
     await prepare(step,token);
     if(token!==stepToken||!active)return;
     const target=targetFor(step);
+    if(kind==='recitations'&&step.mode==='reveal'&&window.scrollY>80){
+      window.scrollTo({top:0,behavior:'auto'});
+    }
     if(target&&!step.selector.startsWith('.home-bottom-nav')&&step.mode!=='reveal'){
       const rect=target.getBoundingClientRect();
       if(rect.bottom>innerHeight-110||rect.top<12){
@@ -471,6 +476,7 @@
       return;
     }
     if(e.key!=='Tab')return;
+    if(kind==='recitations'&&active&&TOURS[kind][active.step]?.mode==='pick-reciter')return;
     const panel=!modal.hidden?modal:!card.hidden?card:invite;
     const focusable=[...(!hit.hidden?[hit]:[]),...panel.querySelectorAll('button:not(:disabled):not([hidden]),[tabindex="0"]')].filter(el=>el.getClientRects().length);
     if(!focusable.length)return;
