@@ -13,7 +13,8 @@
 }
 .home-page[data-home-theme="dark"] .ayat-tour-root.is-editorial,
 body[data-theme="dark"] .ayat-tour-root.is-editorial,
-body.dark .ayat-tour-root.is-editorial {
+body.dark .ayat-tour-root.is-editorial,
+.reader-page[data-theme="dark"] .ayat-tour-root.is-editorial {
   --guide-paper:#202e26;
   --guide-ink:#edf4ec;
   --guide-muted:#adc3b4;
@@ -534,4 +535,69 @@ body.home-page[data-home-theme="dark"] .ayat-tour-complete {
   .ayat-tour-root.is-adhkar .ayat-tour-hit.is-open-chapter,
   .ayat-tour-root.is-adhkar .ayat-tour-hit.is-open-chapter::before,
   .ayat-tour-root.is-adhkar .ayat-tour-hit.is-open-chapter::after{animation:none;}
+}
+
+/* Quran tutorial uses the same approved Ayat editorial language as the home tour. */
+.ayat-tour-root.is-quran .ayat-tour-card{
+  width:min(372px,calc(100vw - 28px));
+  max-height:min(52dvh,430px);
+  padding:23px 22px 18px;
+  background:radial-gradient(circle at 6% 5%,rgba(43,135,107,.065),transparent 47%),var(--guide-paper);
+  border:1px solid var(--guide-line);
+  border-radius:25px;
+  box-shadow:0 22px 60px rgba(6,32,24,.28),0 4px 12px rgba(6,32,24,.065);
+}
+.ayat-tour-root.is-quran .ayat-tour-card::before{
+  content:"";position:absolute;top:0;right:22px;
+  width:59px;height:4px;border-radius:0 0 8px 8px;background:var(--guide-green);
+}
+.ayat-tour-root.is-quran .ayat-tour-home-progress{
+  grid-template-columns:repeat(17,minmax(0,1fr));gap:3px;
+}
+.ayat-tour-root.is-quran .ayat-tour-quran-hint{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 12px;margin:4px 0 17px;
+  border:1px solid var(--guide-line);border-radius:12px;
+  background:var(--guide-soft);color:var(--guide-green-deep);
+  font-size:12px;line-height:1.8;
+}
+.ayat-tour-root.is-quran .ayat-tour-quran-hint span{
+  display:grid;place-items:center;flex:0 0 24px;
+  width:24px;height:24px;border-radius:50%;
+  border:1px solid var(--guide-line);font-size:17px;
+  animation:ayat-quran-guide-pulse 2.4s ease-in-out infinite;
+}
+@keyframes ayat-quran-guide-pulse{
+  0%,100%{transform:scale(.92);opacity:.65}
+  50%{transform:scale(1.06);opacity:1}
+}
+.ayat-tour-root.is-quran .ayat-tour-home-foot{gap:7px;flex-wrap:wrap;}
+.ayat-tour-root.is-quran .ayat-tour-home-foot .ayat-tour-secondary{
+  color:var(--guide-green-deep);border-color:var(--guide-line);
+}
+.ayat-tour-root.is-quran .ayat-tour-home-foot .ayat-tour-text{color:var(--guide-muted);}
+.ayat-tour-root.is-quran .ayat-tour-home-foot .ayat-tour-main{
+  color:#fff;background:#176b63;
+}
+.ayat-tour-root.is-quran .ayat-tour-spot{
+  border-color:#88c8b5;
+  box-shadow:0 0 0 9999px rgba(6,22,18,.7),0 0 0 5px rgba(106,181,159,.17);
+}
+.ayat-tour-root.is-quran .ayat-tour-hit{
+  border-color:#81bfa9;background:rgba(55,135,102,.12);
+}
+.ayat-tour-root.is-quran .ayat-tour-hit::before{
+  background:#82c8ac;border-color:#eafff3;
+  box-shadow:0 0 0 5px rgba(85,181,145,.22);
+}
+.ayat-tour-root.is-quran .ayat-tour-hit::after{border-color:#83c6a9;}
+.ayat-tour-root.is-quran .ayat-tour-gesture{color:#82c8ac;}
+.ayat-tour-root.is-quran .ayat-tour-gesture svg{fill:#bce4d0;stroke:#307f63;}
+.ayat-tour-root.is-quran .ayat-tour-gesture::after{border-color:#79bfa3;}
+@media(max-width:370px){
+  .ayat-tour-root.is-quran .ayat-tour-card{padding:17px 17px 14px;}
+  .ayat-tour-root.is-quran .ayat-tour-home-progress{gap:2px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .ayat-tour-root.is-quran .ayat-tour-quran-hint span{animation:none;}
 }
