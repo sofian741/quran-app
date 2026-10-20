@@ -32,7 +32,8 @@
       const match = isGithubRelease ? /^qa-(\d+)$/.exec(payload.tag_name || '') : null;
       const info = isGithubRelease ? {
         versionCode: match ? Number(match[1]) : NaN,
-        apkUrl: payload.assets?.find(asset => asset.name === 'Noor-Al-Quran-debug.apk')?.browser_download_url
+        apkUrl: payload.assets?.find(asset => asset.name === 'Ayat.apk')?.browser_download_url
+          || payload.assets?.find(asset => asset.name === 'Noor-Al-Quran-debug.apk')?.browser_download_url
       } : payload;
       const latest = Number(info.versionCode);
       const apk = info.apkUrl;
