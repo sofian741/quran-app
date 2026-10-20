@@ -98,6 +98,7 @@ async function testIndependentPages(browser,origin){
   assert.equal(await lesson(page).locator('.ayat-tour-reciter-motion svg').isVisible(),true,'Vertical guide hand must be visible');
   assert.equal(await page.locator('.recitations-jump').isVisible(),true,'Permanent jump link must be discoverable');
   await lesson(page).locator('[data-tour-action="recitations-reveal"]').click();
+  await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent?.includes('اختار القارئ'));
   assert.match(await title(page),/اختار القارئ/);
   assert.equal(await page.locator('#ayat-tour-root').evaluate(el=>el.classList.contains('is-choose-reciter')),true,'Reader list must be touchable');
   if(await page.locator('#reciter-list .reciter-card').count()){
@@ -105,6 +106,7 @@ async function testIndependentPages(browser,origin){
   }else{
     await lesson(page).locator('[data-tour-action="home-next"]').click();
   }
+  await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent==='اختيار السورة');
   assert.match(await title(page),/اختيار السورة/);
   await lesson(page).locator('[data-tour-action="home-next"]').click();
   assert.match(await title(page),/تشغيل التلاوة/);
@@ -174,6 +176,7 @@ async function testOfflineNoHandoff(browser,origin){
   await invite(page).locator('[data-tour-action="begin"]').click();
   assert.match(await title(page),/القرّاء موجودين تحت/);
   await lesson(page).locator('[data-tour-action="recitations-reveal"]').click();
+  await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent?.includes('اختار القارئ'));
   assert.match(await title(page),/اختار القارئ/);
   assert.match(page.url(),/recitations\.html$/);
   await context.close();
