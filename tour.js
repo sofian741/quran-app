@@ -1,7 +1,8 @@
 /* Ayat page-by-page interactive discovery. Each lesson lives and finishes on its own page. */
 (() => {
   'use strict';
-  const VERSION = 'v5';
+  // Refresh only the redesigned home lesson; preserve saved progress on other pages.
+  const VERSION = (location.pathname.split('/').filter(Boolean).pop() || 'index').replace(/\.html$/,'') === 'index' ? 'v6' : 'v5';
   const REOFFER_AFTER = 12 * 60 * 60 * 1000;
   const routeName = (location.pathname.split('/').filter(Boolean).pop() || 'index').toLowerCase();
   const PAGE = routeName === 'index' ? 'index.html' : (routeName.endsWith('.html') ? routeName : routeName + '.html');
