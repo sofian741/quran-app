@@ -15,7 +15,7 @@
 
   button.addEventListener('click', async () => {
     if (!isNative) {
-      show('افتح تطبيق نور القرآن المثبّت على Android للتحقق من التحديثات.');
+      show('افتح تطبيق آيات المثبّت على Android للتحقق من التحديثات.');
       return;
     }
     if (!source) {
@@ -47,7 +47,7 @@
         return;
       }
       show('تحديث جديد متاح: 0.1.' + latest);
-      if (window.confirm('يتوفر تحديث جديد لنور القرآن (0.1.' + latest + '). هل تريد فتح تنزيل التحديث الآن؟')) {
+      if (window.confirm('يتوفر تحديث جديد لآيات (0.1.' + latest + '). هل تريد فتح تنزيل التحديث الآن؟')) {
         // Android requires user approval for APK installation.
         window.open(download.href, '_blank', 'noopener,noreferrer');
       }
