@@ -130,6 +130,52 @@ async function testIndependentPages(browser,origin){
   assert.match(await invite(page).textContent(),/الأذكار/);
   await context.close();
 }
+async function testAdhkarGuide(browser,origin){
+  const {context,page}=await preparePage(browser);
+  await begin(page,origin+'/adhkar.html','الأذكار');
+  assert.match(await title(page),/باقي الأذكار موجودة تحت/);
+  assert.equal(await page.locator('#filters [data-filter]').first().getAttribute('data-filter'),'saved','Favorites should be the first filter');
+  assert.equal(await page.locator('.adhkar-jump').isVisible(),true,'Chapter list has a direct jump');
+  assert.equal(await lesson(page).locator('.ayat-tour-reciter-motion svg').isVisible(),true,'Downward finger animation should be present');
+  await lesson(page).locator('[data-tour-action="adhkar-reveal"]').click();
+  await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent==='المفضلة أولًا');
+  assert.equal(await page.locator('#ayat-tour-root > .ayat-tour-spot').isVisible(),true,'Favorites are highlighted');
+  await lesson(page).locator('[data-tour-action="home-next"]').click();
+  assert.match(await title(page),/فهرس الأذكار/);
+  await lesson(page).locator('[data-tour-action="home-next"]').click();
+  assert.match(await title(page),/افتح أذكار الصباح/);
+  assert.equal(await page.locator('#ayat-tour-root > .ayat-tour-hit').isVisible(),true,'Real morning quick card is tappable');
+  await page.locator('#ayat-tour-root > .ayat-tour-hit').click();
+  await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent==='نص الذكر');
+  assert.equal(await page.locator('#reader').isVisible(),true,'The real Adhkar reader must open');
+  assert.ok((await page.locator('#dhikr-text').textContent()).trim().length>10,'Reader displays a real dhikr');
+  const startPosition=await page.locator('#reader-position').textContent();
+  const favoriteBefore=await page.locator('#reader-favorite').getAttribute('aria-pressed');
+  await lesson(page).locator('[data-tour-action="home-next"]').click();
+  assert.match(await title(page),/عداد التكرار/);
+  assert.equal(await page.locator('#tasbih-current').textContent(),'٠','Showing the counter must not increase it');
+  await lesson(page).locator('[data-tour-action="home-next"]').click();
+  assert.match(await title(page),/مرجع الذكر/);
+  await lesson(page).locator('[data-tour-action="home-next"]').click();
+  assert.match(await title(page),/القلب للمفضلة/);
+  assert.equal(await page.locator('#reader-favorite').getAttribute('aria-pressed'),favoriteBefore,'Guide does not change favorites');
+  await lesson(page).locator('[data-tour-action="home-next"]').click();
+  assert.match(await title(page),/قلّب الذكر بإيدك/);
+  assert.equal(await lesson(page).locator('[data-tour-action="home-next"]').count(),0,'Final step requires a real swipe, no Next button');
+  assert.equal(await page.locator('#ayat-tour-root .ayat-tour-gesture.is-adhkar-swipe').isVisible(),true,'Rightward finger hint should appear');
+  assert.equal(await page.locator('#ayat-tour-root .ayat-tour-shade').evaluate(el=>getComputedStyle(el).pointerEvents),'none','Reader must receive real pointer events');
+  const r=await page.locator('#reader-viewport').boundingBox();
+  const y=r.y+Math.min(130,r.height*.25);
+  await page.mouse.move(r.x+r.width*.23,y);
+  await page.mouse.down();
+  await page.mouse.move(r.x+r.width*.76,y,{steps:12});
+  await page.mouse.up();
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-adhkar-v6')==='1');
+  assert.equal(await page.locator('#reader').isVisible(),true,'Reader stays open at the next real dhikr');
+  assert.notEqual(await page.locator('#reader-position').textContent(),startPosition,'Real reader advances to the next item');
+  assert.equal(await page.locator('.ayat-tour-complete').count(),0,'Guide finishes without a toast');
+  await context.close();
+}
 async function testQuranFromSettings(browser,origin){
   const {context,page}=await preparePage(browser);
   await page.goto(origin+'/quran.html');
@@ -187,6 +233,7 @@ async function testOfflineNoHandoff(browser,origin){
   const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
   try{
     await testIndependentPages(browser,origin);
+    await testAdhkarGuide(browser,origin);
     await testQuranFromSettings(browser,origin);
     await testOfflineNoHandoff(browser,origin);
     console.log('Independent page discovery browser tests passed.');
