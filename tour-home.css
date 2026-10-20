@@ -1,0 +1,224 @@
+/* Home discovery visual system v1. Deliberately scoped: other pages keep their existing lessons. */
+.ayat-tour-root.is-home {
+  --guide-paper:#fffefa;
+  --guide-ink:#193d32;
+  --guide-muted:#65796e;
+  --guide-green:#176b63;
+  --guide-green-deep:#10554d;
+  --guide-line:#e0e9e1;
+  --guide-soft:#f0f5ef;
+  --guide-shadow:0 20px 60px rgba(5,30,23,.22);
+  color:var(--guide-ink);
+  font-family:Tahoma,Arial,sans-serif;
+}
+.home-page[data-home-theme="dark"] .ayat-tour-root.is-home {
+  --guide-paper:#202e26;
+  --guide-ink:#edf4ec;
+  --guide-muted:#adc3b4;
+  --guide-green:#a0ddc7;
+  --guide-green-deep:#d1efe0;
+  --guide-line:#43584b;
+  --guide-soft:#283c30;
+  --guide-shadow:0 20px 60px rgba(0,0,0,.52);
+}
+.ayat-tour-root.is-home .ayat-tour-spot {
+  border:2px solid #81bbab;
+  border-radius:21px;
+  box-shadow:0 0 0 9999px rgba(7,27,22,.69),0 0 0 5px rgba(125,193,174,.16);
+  transition:top .27s ease,left .27s ease,width .27s ease,height .27s ease;
+}
+.ayat-tour-root.is-home .ayat-tour-spot::after {display:none}
+.ayat-tour-root.is-home .ayat-tour-spot.is-verse {
+  border-color:#d0b47c;
+  box-shadow:0 0 0 9999px rgba(7,27,22,.69),0 0 0 5px rgba(208,180,124,.23),0 0 24px rgba(208,180,124,.32);
+}
+.ayat-tour-root.is-home .ayat-tour-card,
+.ayat-tour-root.is-home .ayat-tour-invite,
+.ayat-tour-root.is-home .ayat-tour-verse-sheet {
+  box-sizing:border-box;
+  color:var(--guide-ink);
+  background:var(--guide-paper);
+  border:1px solid var(--guide-line);
+  box-shadow:var(--guide-shadow);
+}
+.ayat-tour-root.is-home .ayat-tour-card {
+  width:min(372px,calc(100vw - 28px));
+  max-height:min(54dvh,420px);
+  border-radius:24px;
+  padding:21px 22px 19px;
+  overflow:auto;
+  scrollbar-width:thin;
+  animation:ayat-guide-card-appear .26s ease-out both;
+}
+.ayat-tour-root.is-home .ayat-tour-home-top {
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  margin-bottom:13px;
+}
+.ayat-tour-root.is-home .ayat-tour-home-label {
+  color:var(--guide-green);
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:0;
+}
+.ayat-tour-root.is-home .ayat-tour-home-label span {padding:0 5px;color:var(--guide-muted);font-weight:400}
+.ayat-tour-root.is-home .ayat-tour-count {font-size:11px;color:var(--guide-muted);direction:rtl}
+.ayat-tour-root.is-home .ayat-tour-progress {
+  height:3px;
+  background:var(--guide-soft);
+  border-radius:10px;
+  margin-bottom:18px;
+}
+.ayat-tour-root.is-home .ayat-tour-progress > span {
+  background:var(--guide-green);
+  border-radius:10px;
+}
+.ayat-tour-root.is-home .ayat-tour-title {
+  color:var(--guide-ink);
+  font-size:clamp(19px,5vw,23px);
+  line-height:1.5;
+  margin:0 0 8px;
+  font-weight:800;
+}
+.ayat-tour-root.is-home .ayat-tour-body {
+  color:var(--guide-muted);
+  font-size:14px;
+  line-height:1.95;
+  margin:0 0 17px;
+  font-weight:400;
+}
+.ayat-tour-root.is-home .ayat-tour-main {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  padding:11px 19px;
+  min-height:44px;
+  border:0;
+  border-radius:13px;
+  color:#fff;
+  background:#176b63;
+  font:800 13px Tahoma,Arial,sans-serif;
+  box-shadow:0 6px 16px rgba(23,107,99,.13);
+  transition:transform .18s ease,background .18s ease;
+  cursor:pointer;
+}
+.ayat-tour-root.is-home .ayat-tour-main:hover {background:#10564e}
+.ayat-tour-root.is-home .ayat-tour-main:active {transform:scale(.98)}
+.ayat-tour-root.is-home .ayat-tour-secondary {
+  min-height:43px;
+  padding:10px 13px;
+  color:var(--guide-green-deep);
+  border:1px solid var(--guide-line);
+  border-radius:12px;
+  background:var(--guide-soft);
+  font:700 12px Tahoma,Arial,sans-serif;
+  cursor:pointer;
+}
+.ayat-tour-root.is-home .ayat-tour-text {
+  min-height:38px;
+  color:var(--guide-muted);
+  font:600 12px Tahoma,Arial,sans-serif;
+  padding:7px 8px;
+  cursor:pointer;
+}
+.ayat-tour-root.is-home button:focus-visible {
+  outline:3px solid var(--guide-green);
+  outline-offset:3px;
+}
+.ayat-tour-root.is-home .ayat-tour-home-foot {
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding-top:13px;
+  border-top:1px solid var(--guide-line);
+}
+.ayat-tour-root.is-home .ayat-tour-home-foot .ayat-tour-text {margin-inline-start:auto}
+.ayat-tour-root.is-home .ayat-tour-home-read {
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;padding:12px 13px;margin:2px 0 16px;
+  border:1px solid rgba(187,151,83,.43);
+  border-radius:14px;
+  background:rgba(209,182,125,.12);
+  color:var(--guide-ink);
+  font:800 13px Tahoma,Arial,sans-serif;
+  cursor:pointer;
+}
+.ayat-tour-root.is-home .ayat-tour-home-read span {color:#b1935e;font-size:17px}
+.ayat-tour-root.is-home .ayat-tour-hit {background:transparent;animation:none}
+.ayat-tour-root.is-home .ayat-tour-hit::before,
+.ayat-tour-root.is-home .ayat-tour-hit::after {display:none}
+.ayat-tour-root.is-home .ayat-tour-hit.ayat-tour-verse-hit::before,
+.ayat-tour-root.is-home .ayat-tour-hit.ayat-tour-verse-hit::after {
+  display:block;top:auto;left:auto;right:14px;bottom:5px;
+  transform:none;
+}
+.ayat-tour-root.is-home .ayat-tour-hit.ayat-tour-verse-hit::before {
+  width:15px;height:15px;background:#d7bb85;border:2px solid #fff6e7;
+  box-shadow:0 0 0 4px rgba(211,180,119,.22);
+  animation:ayat-guide-verse-pulse 2.5s ease-in-out infinite;
+}
+.ayat-tour-root.is-home .ayat-tour-hit.ayat-tour-verse-hit::after {
+  width:19px;height:19px;border:1.5px solid #d3b477;
+  animation:ayat-guide-verse-ring 2.5s ease-out infinite;
+}
+.ayat-tour-root.is-home .ayat-tour-invite {
+  width:min(410px,calc(100vw - 28px));
+  padding:15px 16px;
+  gap:9px 12px;
+  border-radius:20px;
+}
+.ayat-tour-root.is-home .ayat-tour-invite-icon {
+  background:var(--guide-soft);
+  color:var(--guide-green);
+  border-radius:12px;
+}
+.ayat-tour-root.is-home .ayat-tour-invite-copy strong {color:var(--guide-ink);font-size:14px}
+.ayat-tour-root.is-home .ayat-tour-invite-copy span {color:var(--guide-muted);font-size:12px}
+.ayat-tour-root.is-home .ayat-tour-invite-actions {gap:8px}
+.ayat-tour-root.is-home .ayat-tour-invite .ayat-tour-main {min-height:39px}
+.ayat-tour-root.is-home .ayat-tour-invite .ayat-tour-text {min-height:37px}
+.ayat-tour-root.is-home .ayat-tour-invite .ayat-tour-never {color:var(--guide-muted)}
+.ayat-tour-root.is-home .ayat-tour-dialog {
+  background:rgba(5,24,18,.83);
+  padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));
+}
+.ayat-tour-root.is-home .ayat-tour-dialog .ayat-tour-card {max-height:80dvh}
+.ayat-tour-root.is-home .ayat-tour-verse-sheet {
+  width:min(450px,100%);max-height:min(90dvh,770px);
+  overflow:auto;
+  border-radius:28px;padding:25px 22px 19px;
+  text-align:center;
+  animation:ayat-guide-card-appear .3s ease both;
+}
+.ayat-tour-root.is-home .ayat-tour-verse-sheet:focus {outline:0}
+.ayat-tour-root.is-home .ayat-tour-verse-eyebrow {
+  display:flex;justify-content:center;align-items:center;gap:8px;
+  color:var(--guide-green);font:800 13px Tahoma,Arial,sans-serif;
+}
+.ayat-tour-root.is-home .ayat-tour-verse-eyebrow span {color:#bb995b}
+.ayat-tour-root.is-home .ayat-tour-verse-sheet blockquote {
+  font-family:'Amiri Quran',serif;
+  font-size:clamp(25px,6.3vw,35px);
+  color:var(--guide-ink);
+  line-height:2.05;
+  margin:19px 0 13px;
+  max-height:48dvh;
+  overflow-y:auto;
+  overflow-wrap:anywhere;
+  direction:rtl;
+}
+.ayat-tour-root.is-home .ayat-tour-verse-reference {margin:0;color:var(--guide-muted);font:500 12px/1.8 Tahoma,Arial,sans-serif}
+.ayat-tour-root.is-home .ayat-tour-verse-divider {height:1px;background:var(--guide-line);margin:22px 0 16px}
+.ayat-tour-root.is-home .ayat-tour-verse-actions {display:flex;gap:10px;justify-content:center;align-items:center}
+.ayat-tour-root.is-home .ayat-tour-complete {background:var(--guide-paper);color:var(--guide-ink);border-color:var(--guide-line)}
+@keyframes ayat-guide-card-appear {from {opacity:0;transform:translateY(8px)}to {opacity:1;transform:translateY(0)}}
+@keyframes ayat-guide-verse-pulse {0%,100%{opacity:.5;transform:scale(.84)}50%{opacity:1;transform:scale(1.05)}}
+@keyframes ayat-guide-verse-ring {0%{opacity:.55;transform:scale(.6)}85%,100%{opacity:0;transform:scale(2)}}
+@media(max-height:650px) {
+  .ayat-tour-root.is-home .ayat-tour-card {max-height:67dvh;padding:15px 18px}
+  .ayat-tour-root.is-home .ayat-tour-verse-sheet blockquote {max-height:42dvh}
+}
+@media(prefers-reduced-motion:reduce) {
+  .ayat-tour-root.is-home .ayat-tour-card,
+  .ayat-tour-root.is-home .ayat-tour-verse-sheet {animation:none}
+  .ayat-tour-root.is-home .ayat-tour-hit.ayat-tour-verse-hit::before,
+  .ayat-tour-root.is-home .ayat-tour-hit.ayat-tour-verse-hit::after {animation:none}
+}
