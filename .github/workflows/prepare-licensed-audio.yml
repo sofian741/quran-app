@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/prepare-licensed-audio.yml
       - scripts/build-licensed-huthaifi.py
+      - tests/licensed-huthaifi.test.cjs
       - data/qud/ali_al_huthaifi_mp3quran.catalog.json
   workflow_dispatch:
 
