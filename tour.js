@@ -692,8 +692,15 @@
     // Never advance until the real morning reader has opened. This avoids
     // explaining missing controls if the user tapped Next before loading.
     const reader=document.getElementById('reader');
-    const title=String(event.detail?.chapterTitle||'').trim();
-    if(!reader||reader.hidden||!title.includes('أذكار الصباح'))return;
+    // Hisn Al-Muslim stores vocalized chapter titles, e.g. "أَذْكَارُ الصَّبَاحِ".
+    // Compare the normalized real title instead of an unvocalized substring.
+    const title=String(event.detail?.chapterTitle||'')
+      .normalize('NFKD')
+      .replace(/[\u064B-\u065F\u0670\u0640]/g,'')
+      .replace(/[إأآٱ]/g,'ا')
+      .replace(/\s+/g,' ')
+      .trim();
+    if(!reader||reader.hidden||!title.includes('اذكار الصباح'))return;
     active.step++;
     save(STEP(kind),active.step);
     render();
