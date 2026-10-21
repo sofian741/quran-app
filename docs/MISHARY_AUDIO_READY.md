@@ -23,3 +23,10 @@ download fixes on main. Validate installation over the preceding QA version on d
 ## QA update verification (2026-10-21)
 
 Build a fresh Ayat.apk from the latest main commit. Verify direct upgrade from an older installed QA build to this newest version, retaining user settings and offline audio. The latest GitHub Release must expose the stable asset name Ayat.apk.
+
+## حقوق النشر: بناء QA آمن افتراضيًا — 2026-10-21
+
+- لا تعني هذه الوصلة أن استخدام تسجيلات EveryAyah مرخص؛ الحزمة موقوفة افتراضيًا في بناء Android الجديد.
+- هذا التحديث يشغّل بناء APK لا يحتوي صوت EveryAyah ضمن الحزمة ما لم يوثق المالك إذنًا خطيًا ثم يضبط متغير الموافقة صراحة.
+- تظل تلاوة مشاري المباشرة ومزامنة Quran Foundation متاحة عند وجود الإنترنت، وتنزيل MP3Quran المباشر متاح وفق شروط مزوده.
+- أبقِ الإصدارات السابقة في مراجعة منفصلة لأنها لا تتأثر بهذا التعديل.
