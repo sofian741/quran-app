@@ -42,7 +42,7 @@ async function setup(valid = true) {
     SURAH_NAMES: Array.from({length:114},(_,i) => 'سورة '+String(i+1))
   };
   const context = {
-    window: { QuranDownloads: api, QuranAudio: core, dispatchEvent(){} },
+    window: { QuranDownloads: api, QuranAudio: core, Capacitor: {isNativePlatform: () => true}, dispatchEvent(){} },
     location: { href: 'https://localhost/quran.html' },
     document: { createElement: () => ({canPlayType: () => 'probably'}) },
     fetch: async url => {
