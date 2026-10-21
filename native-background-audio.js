@@ -116,8 +116,11 @@
   api.DownloadManager.prototype.remove = async function(url) {
     const item = this.list().find(item => item.url === url);
     if (item?.nativeId) {
+      // Android DownloadManager can forget a completed job after updates.
+      // Delete the app-owned file independently, then update our index.
       try { await plugin.remove({ id: item.nativeId }); }
-      finally { await plugin.removeLocal({ path: item.nativePath }); }
+      catch (error) { console.warn('Android download record already expired', error); }
+      await plugin.removeLocal({ path: item.nativePath });
       localStorage.setItem(api.INDEX_KEY, JSON.stringify(this.list().filter(row => row.url !== url)));
       this.emit({ status: 'removed', url });
       return true;
@@ -126,7 +129,10 @@
   };
   api.DownloadManager.prototype.clear = async function() {
     for (const item of this.list().filter(row => row.nativeId)) {
-      try { await plugin.remove({ id: item.nativeId }); } catch (error) { console.warn(error); }
+      try { await plugin.remove({ id: item.nativeId }); }
+      catch (error) { console.warn('Expired Android download id', error); }
+      try { await plugin.removeLocal({ path: item.nativePath }); }
+      catch (error) { console.warn('Cannot remove local recording', error); }
     }
     for (const job of pending()) {
       try { await plugin.remove({ id: job.id }); } catch (error) { console.warn(error); }
