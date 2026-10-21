@@ -61,6 +61,16 @@ jobs:
           node --check scripts/prepare-android-web.mjs
           node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs
 
+      - name: Gate Android release on Quran, adhkar, security and offline checks
+        run: |
+          node tests/content.cjs
+          node tests/reflection.cjs
+          node tests/adhkar-data.cjs
+          node tests/data-integrity.cjs
+          node tests/security-static.cjs
+          node tests/quran-features.cjs
+          node tests/offline-browser.cjs
+
       - name: Embed installed build number and update endpoint
         env:
           QA_BUILD_NUMBER: ${{ github.run_number }}
