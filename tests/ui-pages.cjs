@@ -15,7 +15,7 @@ for(const id of ['recitation-audio','reciter-list','moshaf-select','surah-select
 for(const id of ['library-content','library-search','sort-mode','library-player','library-audio'])assert(text['library.html'].includes(`id="${id}"`),`Missing My Library target: ${id}`);
 for(const id of ['open-index','index-sheet','reader','reader-viewport','dhikr-slide','tasbih','reader-report','report-benefits'])assert(text['adhkar.html'].includes(`id="${id}"`),`Missing Adhkar session target: ${id}`);
 const adhkarJs=fs.readFileSync('adhkar.js','utf8'),libraryJs=fs.readFileSync('library.js','utf8'),recitationsJs=fs.readFileSync('recitations.js','utf8');
-assert(/if\(dx>0\)goItem\(itemIndex\+1/.test(adhkarJs),'Right swipe must advance to the next dhikr');
+assert(/swipeTo\(dx>0\?1:-1\)/.test(adhkarJs),'Right swipe must advance to the next dhikr via the genuine finger/mouse swipe handler');
 assert(/BENEFITS=\[/.test(adhkarJs),'Adhkar completion report must have sourced-benefit rules');
 assert(/source:matched\.reference\|\|rule\.source/.test(adhkarJs),'Adhkar benefit cards must bind to the completed dhikr corpus reference');
 assert(/moshaf-block/.test(libraryJs),'My Library must group a reader by moshaf/recording before tracks');
