@@ -5,4 +5,4 @@ Recording: MP3Quran server9/hthfi (https://www.mp3quran.net/ar/privacy).
 Audio bundle: assets-huthaifi-mp3quran-word-v1 / huthaifi-licensed-word-v1.zip.
 Avoid replacing the recording or QUD timing independently.
 
-Validated at UTC: 2026-10-21T21:17:08+00:00
+Validated at UTC: 2026-10-21T21:22:26+00:00
