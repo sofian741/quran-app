@@ -73,7 +73,7 @@ const pages = [
                     // when the browser closes a page after navigation. Only
                     // fail on essential entry-page/style/script/font assets.
                     if (url.hostname === 'lan.quran.test' &&
-                        /\\.(?:html|css|js|woff2)$/.test(url.pathname)) {
+                        /\.(?:html|css|js|woff2)$/.test(url.pathname)) {
                         failed.push(`${request.url()} ${request.failure()?.errorText || ''}`);
                     }
                 });
