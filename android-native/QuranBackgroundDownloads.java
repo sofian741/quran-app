@@ -4,6 +4,7 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import java.net.URLDecoder;
 import android.os.Environment;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -17,7 +18,17 @@ public class QuranBackgroundDownloads extends Plugin {
     @PluginMethod
     public void enqueue(PluginCall call) {
         String url = call.getString("url");
-        if (url == null || !url.startsWith("https://")) { call.reject("HTTPS URL required"); return; }
+        Uri source = url == null ? null : Uri.parse(url);
+        String host = source == null ? null : source.getHost();
+        String path = source == null ? null : source.getPath();
+        if (source == null || !"https".equalsIgnoreCase(source.getScheme()) ||
+            host == null || !(host.equals("mp3quran.net") || host.endsWith(".mp3quran.net")) ||
+            source.getUserInfo() != null || source.getQuery() != null ||
+            source.getFragment() != null || path == null ||
+            !path.matches("/(?:[^/]+/)+[0-9]{3}\\.mp3")) {
+            call.reject("Only approved MP3Quran recording URLs may be downloaded");
+            return;
+        }
         try {
             File directory = getContext().getExternalFilesDir(Environment.DIRECTORY_MUSIC);
             if (directory == null) { call.reject("Music directory unavailable"); return; }
@@ -34,6 +45,38 @@ public class QuranBackgroundDownloads extends Plugin {
             result.put("path", new File(directory, name).getAbsolutePath());
             call.resolve(result);
         } catch (Exception error) { call.reject("Could not start download", error); }
+    }
+
+    private File ownedAudio(String rawPath) throws Exception {
+        File base = getContext().getExternalFilesDir(Environment.DIRECTORY_MUSIC);
+        if (base == null || rawPath == null) throw new IllegalArgumentException("Invalid file");
+        File file = new File(rawPath).getCanonicalFile();
+        if (!file.getParentFile().equals(base.getCanonicalFile()) ||
+            !file.getName().matches("quran-[0-9]+-[0-9]+\\.mp3")) {
+            throw new SecurityException("Path outside owned recitation storage");
+        }
+        return file;
+    }
+
+    @PluginMethod
+    public void exists(PluginCall call) {
+        try {
+            File file = ownedAudio(call.getString("path"));
+            JSObject result = new JSObject();
+            result.put("exists", file.isFile() && file.length() > 0);
+            call.resolve(result);
+        } catch (Exception error) { call.reject("Cannot validate saved audio", error); }
+    }
+
+    @PluginMethod
+    public void removeLocal(PluginCall call) {
+        try {
+            File file = ownedAudio(call.getString("path"));
+            if (file.exists() && !file.delete()) {
+                call.reject("Cannot delete saved audio"); return;
+            }
+            call.resolve();
+        } catch (Exception error) { call.reject("Cannot delete saved audio", error); }
     }
 
     @PluginMethod
