@@ -60,6 +60,16 @@
     let downloadBatch = false;
     let cancelRequested = false;
     const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
+    let brandNewAudioState = false;
+    try { brandNewAudioState = !localStorage.getItem(core.STATE_KEY); }
+    catch (_) { /* Private mode should not block the reader. */ }
+
+    function canDownloadCurrentReciter(state) {
+        if (state.provider === 'mp3quran') return true;
+        const source = window.QuranQud?.reciters?.find(
+            item => Number(item.id) === Number(state.reciterId));
+        return !!source && source.channel === 'mp3quran';
+    }
 
     window.quranAudioEngine = engine;
 
@@ -312,6 +322,13 @@
             ui.surah.value = String(state.surah);
             fillReciters(state);
             ui.speedLabel.textContent = `${state.speed}×`;
+            const downloadable = canDownloadCurrentReciter(state);
+            ui.download.hidden = !downloadable;
+            ui.downloadAll.hidden = !downloadable;
+            if (!downloadable && !downloadBatch) {
+                ui.downloadProgress.textContent =
+                    'هذا القارئ متاح للاستماع المباشر، لكن مصدر تسجيله لا يدعم التنزيل الدائم حاليًا.';
+            }
             ui.downloadAll.textContent = state.availableSurahs.length === 114
                 ? 'تحميل المصحف الصوتي كاملًا'
                 : `تحميل كل التلاوات المتاحة (${core.arabicDigits(state.availableSurahs.length)} سورة)`;
@@ -777,6 +794,11 @@
     async function downloadRecitation(all = false) {
         if (downloadBatch) return;
         const state = engine.snapshot();
+        if (!canDownloadCurrentReciter(state)) {
+            ui.downloadProgress.textContent =
+                'تنزيل هذا المصدر غير متاح. اختر تسجيل MP3Quran أو قارئًا متزامنًا من نفس المصدر.';
+            return;
+        }
         const surahs = all ? [...state.availableSurahs] : [state.surah];
         if (all) {
             const count = `${surahs.length} ملف سورة`;
@@ -1057,6 +1079,20 @@
     }
 
     applyState(engine.snapshot(), true);
+    // On a clean installation only: prefer the complete, locally licensed
+    // word-synchronized Huthaifi reader if the verified bundle is present.
+    // Never override an existing reciter, progress or user selection.
+    if (brandNewAudioState && window.QuranLicensedHuthaifi?.ready) {
+        window.QuranLicensedHuthaifi.ready.then(async available => {
+            if (!available || !brandNewAudioState || engine.status !== 'idle' ||
+                Number(engine.state.reciterId) !== 7 || !engine.audio.paused) return;
+            brandNewAudioState = false;
+            lastAlignedId = 9004;
+            await engine.selectAligned(9004, {
+                surah: engine.state.surah, ayah: engine.state.ayah, autoplay: false
+            });
+        }).catch(error => console.warn('Default offline reader unavailable', error));
+    }
     loadCatalog();
     if (!window.QudAudioRegistry?.reciters?.length) {
         loadAlignedReciters();
