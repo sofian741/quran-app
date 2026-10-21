@@ -1022,7 +1022,7 @@
                     try {
                         const result = await fetch(
                             `${core.QURAN_API}/chapter_recitations/${item.id}/1?segments=true`,
-                            { cache: 'force-cache' });
+                            { cache: 'no-store' });
                         if (!result.ok || !hasWordTimings(await result.json())) continue;
                         if (addAlignedReciter(item)) {
                             confirmed++;
