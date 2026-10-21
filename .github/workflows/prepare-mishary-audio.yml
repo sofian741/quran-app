@@ -20,6 +20,9 @@ permissions:
 
 jobs:
   audio-only:
+    # Also protect the separate release that republishes a ZIP of all 114 surahs.
+    # Default OFF pending an explicit recorded redistribution grant for EveryAyah.
+    if: ${{ vars.AYAT_EVERYAYAH_REDISTRIBUTION_APPROVED == 'true' }}
     name: Prepare 114 surahs without building an APK
     runs-on: ubuntu-latest
     timeout-minutes: 120
