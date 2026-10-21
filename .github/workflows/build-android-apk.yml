@@ -48,14 +48,20 @@ jobs:
       - name: Install Capacitor dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Install browser verification dependencies
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq chromium
+          npm install --no-save --no-package-lock playwright@1.56.1
+
       - name: Check JavaScript syntax and offline audio tests
+        env:
+          QURAN_BROWSER_PATH: /usr/bin/chromium
         run: |
           node --check audio-core.js
           node --check audio-downloads.js
           node --check offline-mishary.js
           node --check offline-mishary-sync.js
           node --check offline-licensed-reciter.js
-          node --check native-background-audio.js
           node --check native-background-audio.js
           node --check qud-audio.js
           node --check library.js
@@ -65,6 +71,8 @@ jobs:
           node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs tests/licensed-huthaifi.test.cjs tests/mp3quran-ayah-sync.test.cjs
 
       - name: Gate Android release on Quran, adhkar, security and offline checks
+        env:
+          QURAN_BROWSER_PATH: /usr/bin/chromium
         run: |
           node tests/content.cjs
           node tests/reflection.cjs
