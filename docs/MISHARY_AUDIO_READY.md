@@ -19,3 +19,7 @@ pass validation and the audio-only GitHub Release upload succeeds.
 The bundled Mishary audio receipt above is unchanged. Rebuild Android once with the
 latest portrait/zoom, ornate-header, page-fit, synchronized-reciter, and resumable
 download fixes on main. Validate installation over the preceding QA version on device.
+
+## QA update verification (2026-10-21)
+
+Build a fresh Ayat.apk from the latest main commit. Verify direct upgrade from an older installed QA build to this newest version, retaining user settings and offline audio. The latest GitHub Release must expose the stable asset name Ayat.apk.
