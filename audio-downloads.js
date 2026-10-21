@@ -4,6 +4,40 @@
     const CACHE_NAME = 'quran-recitation-audio-v1';
     const INDEX_KEY = 'quranAudioDownloadsV1';
 
+    // MP3Quran explicitly permits developers to copy and use material from its
+    // own domain. QUD's word-timing license alone never licenses third-party audio.
+    function canDownloadTrack(track) {
+        if (!track || !['mp3quran', 'quran-foundation'].includes(track.provider)) return false;
+        try {
+            const url = new URL(track.url);
+            return url.protocol === 'https:' && !url.username && !url.password &&
+                !url.search && !url.hash && /^\/[^?#]+\/\d{3}\.mp3$/i.test(url.pathname) &&
+                (url.hostname === 'mp3quran.net' || url.hostname.endsWith('.mp3quran.net'));
+        } catch (_) { return false; }
+    }
+
+    // Never mistake the 7-day Quran Foundation *API timing* limit for an expiry
+    // on user-downloaded MP3Quran recordings. User audio is never aged out.
+    const METADATA_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+    const METADATA_CACHE = 'quran-recitation-metadata-v1';
+    async function cleanStaleFoundationMetadata() {
+        if (typeof caches === 'undefined') return;
+        try {
+            const cache = await caches.open(METADATA_CACHE);
+            for (const key of await cache.keys()) {
+                const response = await cache.match(key);
+                if (!response) continue;
+                let savedAt = Number(response.headers.get('x-ayat-saved-at')) || 0;
+                if (!savedAt) {
+                    try { savedAt = Number((await response.clone().json()).savedAt) || 0; }
+                    catch (_) { savedAt = 0; }
+                }
+                if (!Number.isSafeInteger(savedAt) || savedAt > Date.now() ||
+                    Date.now() - savedAt >= METADATA_MAX_AGE_MS) await cache.delete(key);
+            }
+        } catch (error) { console.warn('Timing metadata cleanup failed', error); }
+    }
+
     function readIndex() {
         try {
             const data = JSON.parse(localStorage.getItem(INDEX_KEY) || '[]');
@@ -54,7 +88,8 @@
         async downloadTrack(track) {
             if (!this.supported()) throw new Error('التنزيل غير مدعوم في هذا المتصفح.');
             if (this.active) throw new Error('يوجد تنزيل آخر قيد التنفيذ.');
-            if (!track?.url || !/^https:\/\//.test(track.url)) throw new Error('رابط التسجيل غير صالح.');
+            if (!canDownloadTrack(track)) throw new Error(
+                'هذا المصدر لا يسمح لنا بتنزيله دائمًا. الاستماع المباشر متاح، وتنزيلات MP3Quran تظل محفوظة.');
             this.active = true;
             this.emit({ status: 'starting', track, progress: 0 });
             try {
@@ -148,7 +183,8 @@
         if (owner.__savedMedia?.originalUrl === originalUrl) return owner.__savedMedia.mediaUrl;
         releaseMedia(owner);
         let mediaUrl = originalUrl;
-        if (typeof caches !== 'undefined' && typeof URL.createObjectURL === 'function') {
+        if (!isQuranFoundationAudio(originalUrl) && typeof caches !== 'undefined' &&
+            typeof URL.createObjectURL === 'function') {
             try {
                 const response = await (await caches.open(CACHE_NAME))
                     .match(originalUrl, { ignoreVary: true });
@@ -171,7 +207,18 @@
         if (owner) owner.__savedMedia = null;
     }
 
-    const api = { CACHE_NAME, INDEX_KEY, DownloadManager, humanSize, mediaFor, releaseMedia };
+    function isQuranFoundationAudio(url) {
+        try {
+            const host = new URL(url).hostname;
+            return host === 'download.quranicaudio.com' || host === 'verses.quran.com' ||
+                host === 'quran.com' || host.endsWith('.quran.com') ||
+                host === 'qurancdn.com' || host.endsWith('.qurancdn.com');
+        } catch (_) { return false; }
+    }
+
+    if (typeof window !== 'undefined') void cleanStaleFoundationMetadata();
+    const api = { CACHE_NAME, INDEX_KEY, DownloadManager, humanSize, mediaFor,
+        releaseMedia, canDownloadTrack };
     if (typeof window !== 'undefined') window.QuranDownloads = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
@@ -197,8 +244,19 @@
     const originalHandleEnded = proto.handleEnded;
     const originalPreloadUpcomingVerse = proto.preloadUpcomingVerse;
     const originalDestroy = proto.destroy;
-    const METADATA_CACHE = 'quran-recitation-metadata-v1';
     const chapterCache = new Map();
+
+    async function recentChapterCache(cache, url) {
+        const response = await cache.match(url);
+        if (!response) return null;
+        const saved = Number(response.headers.get('x-ayat-saved-at'));
+        if (!Number.isSafeInteger(saved) || saved > Date.now() ||
+            Date.now() - saved >= METADATA_MAX_AGE_MS) {
+            await cache.delete(url);
+            return null;
+        }
+        return response;
+    }
     const boundElements = new WeakSet();
 
     function isTrustedAudioUrl(value) {
@@ -277,17 +335,21 @@
             const url = `${core.QURAN_API}/chapter_recitations/${Number(reciterId)}/${Number(surah)}?segments=true`;
             let response = null;
             if (navigator.onLine === false && typeof caches !== 'undefined') {
-                response = await (await caches.open(METADATA_CACHE)).match(url);
+                response = await recentChapterCache(await caches.open(METADATA_CACHE), url);
             }
             try {
-                if (!response) response = await fetch(url, { cache: 'no-cache' });
+                if (!response) response = await fetch(url, { cache: 'no-store' });
                 if (response.ok && typeof caches !== 'undefined') {
+                    const body = await response.clone().text();
                     const cache = await caches.open(METADATA_CACHE);
-                    await cache.put(url, response.clone());
+                    await cache.put(url, new Response(body, {
+                        headers: { 'Content-Type': 'application/json',
+                            'X-Ayat-Saved-At': String(Date.now()) }
+                    }));
                 }
             } catch (_) {
                 if (typeof caches !== 'undefined') {
-                    response = await (await caches.open(METADATA_CACHE)).match(url);
+                    response = await recentChapterCache(await caches.open(METADATA_CACHE), url);
                 }
             }
             if (!response?.ok) throw new Error(`Quran chapter audio HTTP ${response?.status || 'offline'}`);
