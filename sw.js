@@ -9,7 +9,7 @@ const APP_SHELL = [
     './service-worker-register.js', './home-settings.js?v=54', './android-build-info.js', './app-update.js', './app.js', './reader-enhancements.js', './reader-layout-polish.js',
     './mushaf-layout-prewarm-worker.js',
     './verse-actions.js', './tafsir.js', './quran-search.js', './verse-tools.js',
-    './audio-core.js', './audio-downloads.js', './data/qud/registry.js', './qud-audio.js', './offline-reciter-catalog.js',
+    './audio-core.js', './audio-downloads.js', './data/qud/registry.js', './qud-audio.js', './offline-licensed-reciter.js', './offline-reciter-catalog.js',
     './audio-bulk-download.js', './mushaf-audio.js', './recitations.js', './recitations-library-link.js', './library.js', './adhkar.js',
     './data/quran-uthmani.txt', './data/mushaf-layout.json', './data/adhkar.json', './data/adhkar-source.json',
     './scripts/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2'
@@ -37,6 +37,17 @@ self.addEventListener('fetch', event => {
     if (request.method !== 'GET') return;
     const isAudio = request.destination === 'audio' || /\.mp3(?:$|\?)/i.test(request.url);
     if (isAudio) {
+        // Quran Foundation API recordings cannot be kept in this permanent
+        // audio cache. MP3Quran user downloads remain untouched.
+        try {
+            const host = new URL(request.url).hostname;
+            if (host === 'verses.quran.com' || host === 'download.quranicaudio.com' ||
+                host === 'quran.com' || host.endsWith('.quran.com') ||
+                host === 'qurancdn.com' || host.endsWith('.qurancdn.com')) {
+                event.respondWith(fetch(request));
+                return;
+            }
+        } catch (_) { /* Invalid URLs are handled by the fetch below. */ }
         event.respondWith(caches.open(AUDIO_CACHE).then(async cache => {
             const saved = await cache.match(request.url, { ignoreVary: true });
             if (saved) {
