@@ -49,4 +49,15 @@ for (const file of fs.readdirSync(root).filter(name => name.endsWith('.js'))) {
     assert.equal(/\beval\s*\(|new\s+Function\s*\(/.test(code), false, `${file} uses dynamic code execution`);
 }
 
-console.log(`PASS: ${htmlFiles.length} entry pages use local scripts, CSP, safe external tabs, and a complete offline shell.`);
+const androidWorkflow = fs.readFileSync(path.join(root, '.github/workflows/build-android-apk.yml'), 'utf8');
+const audioWorkflow = fs.readFileSync(path.join(root, '.github/workflows/prepare-mishary-audio.yml'), 'utf8');
+assert.match(androidWorkflow, /AYAT_EVERYAYAH_REDISTRIBUTION_APPROVED == 'true'/,
+    'APK must require explicit audio rights approval before bundling EveryAyah');
+assert.match(androidWorkflow, /rm -rf www\/offline\/mishary/,
+    'normal QA APK must exclude unapproved EveryAyah assets');
+assert.match(audioWorkflow, /AYAT_EVERYAYAH_REDISTRIBUTION_APPROVED == 'true'/,
+    'audio-only public release must require explicit rights approval');
+const audioDownloads = fs.readFileSync(path.join(root, 'audio-downloads.js'), 'utf8');
+assert.match(audioDownloads, /isMp3QuranUrl\(track\.url\)/,
+    'only approved MP3Quran recordings can be downloaded');
+console.log(`PASS: ${htmlFiles.length} entry pages, security and audio copyright release gates verified.`);
