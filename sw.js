@@ -17,7 +17,16 @@ const APP_SHELL = [
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(APP_CACHE).then(async cache => {
-        await cache.addAll(APP_SHELL);
+        // The web checkout stores tafsir under scripts/, while the Android
+        // bundle copies it to data/. Require at least one valid local copy,
+        // rather than failing the entire offline shell on the other path.
+        await cache.addAll(APP_SHELL.filter(path => path !== './scripts/tafsir_muyassar.json'));
+        let tafsirReady = false;
+        for (const path of ['./data/tafsir_muyassar.json', './scripts/tafsir_muyassar.json']) {
+            try { await cache.add(path); tafsirReady = true; break; }
+            catch (_) { /* Try the alternate app layout. */ }
+        }
+        if (!tafsirReady) throw new Error('Offline tafsir corpus is missing.');
         await self.skipWaiting();
     }));
 });
