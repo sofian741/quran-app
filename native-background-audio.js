@@ -39,7 +39,9 @@
   }
   api.DownloadManager.prototype.downloadTrack = async function(track) {
     if (this.active) throw new Error('يوجد تنزيل آخر قيد التنفيذ.');
-    if (!track?.url?.startsWith('https://')) return original.call(this, track);
+    if (!api.canDownloadTrack(track)) {
+      throw new Error('تنزيل هذا المصدر غير مصرح به. يمكنك الاستماع مباشرة أو اختيار تلاوة من MP3Quran.');
+    }
     if (this.list().some(item => item.url === track.url)) return false;
     const existing = pending().find(item => item.track.url === track.url);
     // Reattach to the Android DownloadManager job after a lost connection
@@ -100,13 +102,22 @@
     } finally { this.active = false; }
   };
   api.DownloadManager.prototype.has = async function(url) {
-    if (this.list().some(item => item.url === url && item.nativePath)) return true;
+    const saved = this.list().find(item => item.url === url && item.nativePath);
+    if (saved) {
+      try {
+        const result = await plugin.exists({ path: saved.nativePath });
+        if (result.exists) return true;
+      } catch (error) { console.warn('Saved Android audio validation failed', error); }
+      localStorage.setItem(api.INDEX_KEY, JSON.stringify(this.list().filter(row => row.url !== url)));
+      emitChange();
+    }
     return originalHas.call(this, url);
   };
   api.DownloadManager.prototype.remove = async function(url) {
     const item = this.list().find(item => item.url === url);
     if (item?.nativeId) {
-      await plugin.remove({ id: item.nativeId });
+      try { await plugin.remove({ id: item.nativeId }); }
+      finally { await plugin.removeLocal({ path: item.nativePath }); }
       localStorage.setItem(api.INDEX_KEY, JSON.stringify(this.list().filter(row => row.url !== url)));
       this.emit({ status: 'removed', url });
       return true;
@@ -125,7 +136,7 @@
   };
   api.mediaFor = async function(owner, url) {
     const item = new api.DownloadManager().list().find(row => row.url === url);
-    if (item?.nativePath) {
+    if (item?.nativePath && (await plugin.exists({ path: item.nativePath })).exists) {
       api.releaseMedia(owner);
       const mediaUrl = capacitor.convertFileSrc(item.nativePath);
       owner.__savedMedia = { originalUrl: url, mediaUrl };
