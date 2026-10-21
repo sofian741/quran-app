@@ -6,7 +6,9 @@
   // This module is a no-op for web builds or when the pack is absent.
   const api = window.QuranDownloads;
   const core = window.QuranAudio;
-  if (!api || !core) return;
+  // The packaged 114-surah corpus lives only inside an installed Android
+  // binary. Don't request nonexistent manifests from the website/PWA.
+  if (!api || !core || !window.Capacitor?.isNativePlatform?.()) return;
   const base = new URL('./offline/huthaifi/', location.href);
   const files = new Map();
   let bundled = [];
