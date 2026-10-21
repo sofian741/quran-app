@@ -167,7 +167,13 @@
     async function loadData() {
         if (!dataPromise) {
             dataPromise = (async () => {
-                const response = await fetch(DATA_URL, { cache: 'force-cache' });
+                // Android builds copy the dataset into data/, while the web
+                // checkout retains the original scripts/ source. Both are
+                // local, verifiable and available without an external API.
+                let response = await fetch(DATA_URL, { cache: 'force-cache' });
+                if (!response.ok) {
+                    response = await fetch('./scripts/tafsir_muyassar.json', { cache: 'force-cache' });
+                }
                 if (!response.ok) throw new Error('Tafsir file unavailable: ' + response.status);
                 const data = await response.json();
                 if (data.api_key !== 'arabic_moyassar' ||
