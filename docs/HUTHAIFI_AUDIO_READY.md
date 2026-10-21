@@ -6,3 +6,7 @@ Audio bundle: assets-huthaifi-mp3quran-word-v1 / huthaifi-licensed-word-v1.zip.
 Avoid replacing the recording or QUD timing independently.
 
 Validated at UTC: 2026-10-21T21:22:26+00:00
+
+## Ayat Android QA regression build
+
+The licensed audio archive above has been verified and is published. Build the Ayat.apk now from the complete source-rights integration, with permanent MP3Quran downloads, native file existence checks, an offline Huthaifi word-synced reader, web UI regression fixes, and Quran/adhkar integrity tests. This receipt update triggers the existing Android QA workflow; keep the archive and alignment fingerprints immutable.
