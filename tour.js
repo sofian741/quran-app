@@ -388,7 +388,7 @@
       (step.mode==='real-swipe'?'<div class="ayat-tour-swipe-note" aria-live="polite"><span aria-hidden="true">← <strong>اسحب</strong> →</span> مرّر إصبعك على الذكر ناحية اليمين. مفيش زر «التالي» هنا.</div>':'')+
       '<div class="ayat-tour-home-foot">'+
       (current===1?'':'<button type="button" class="ayat-tour-secondary" data-tour-action="previous">السابق</button>')+
-      (step.mode==='real-swipe'?'':'<button class="ayat-tour-main" type="button" data-tour-action="'+(step.mode==='reveal'?(kind==='adhkar'?'adhkar-reveal':'recitations-reveal'):'home-next')+'">'+(step.mode==='reveal'?(kind==='adhkar'?'اعرض الأبواب':'اعرض القرّاء'):last?'إنهاء الشرح':'التالي')+' <span aria-hidden="true">'+(step.mode==='reveal'?'↓':'←')+'</span></button>')+
+      (step.mode==='real-swipe'||step.mode==='open-chapter'?'':'<button class="ayat-tour-main" type="button" data-tour-action="'+(step.mode==='reveal'?(kind==='adhkar'?'adhkar-reveal':'recitations-reveal'):'home-next')+'">'+(step.mode==='reveal'?(kind==='adhkar'?'اعرض الأبواب':'اعرض القرّاء'):last?'إنهاء الشرح':'التالي')+' <span aria-hidden="true">'+(step.mode==='reveal'?'↓':'←')+'</span></button>')+
       '<button class="ayat-tour-text" type="button" data-tour-action="pause">خروج</button></div>';
     await prepare(step,token);
     if(token!==stepToken||!active)return;
@@ -511,7 +511,7 @@
   function advance(){
     if(!active||busy)return;
     if(kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='library'){
-      if(kind==='adhkar'&&TOURS[kind][active.step]?.mode==='real-swipe')return;
+      if(kind==='adhkar'&&['real-swipe','open-chapter'].includes(TOURS[kind][active.step]?.mode))return;
       const next=active.step+1;
       if(next>=TOURS[kind].length){finish();return;}
       active.step=next;save(STEP(kind),next);render();
@@ -687,8 +687,16 @@
       setTimeout(()=>{if(active&&TOURS[kind][active.step]?.mode==='pick-reciter')advance();},380);
     }
   });
-  document.addEventListener('ayat:dhikr-opened',()=>{
-    if(kind==='adhkar'&&active&&TOURS.adhkar[active.step]?.mode==='open-chapter')advance();
+  document.addEventListener('ayat:dhikr-opened',event=>{
+    if(kind!=='adhkar'||!active||TOURS.adhkar[active.step]?.mode!=='open-chapter')return;
+    // Never advance until the real morning reader has opened. This avoids
+    // explaining missing controls if the user tapped Next before loading.
+    const reader=document.getElementById('reader');
+    const title=String(event.detail?.chapterTitle||'').trim();
+    if(!reader||reader.hidden||!title.includes('أذكار الصباح'))return;
+    active.step++;
+    save(STEP(kind),active.step);
+    render();
   });
   document.addEventListener('ayat:dhikr-swiped',event=>{
     if(kind!=='adhkar'||!active||TOURS.adhkar[active.step]?.mode!=='real-swipe'||event.detail?.direction!=='next')return;
