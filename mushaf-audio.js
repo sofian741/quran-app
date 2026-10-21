@@ -279,11 +279,21 @@
             : '<path class="audio-play-glyph" d="m8 5 11 7-11 7V5Z"/>';
     }
 
+    function hasOfficialMp3AyahTiming(state) {
+        return state.provider === 'mp3quran' &&
+            state.timing?.source === 'MP3Quran Ayah Timing';
+    }
+
+    function canHighlightVerse(state) {
+        return state.provider === 'quran-foundation' ||
+            hasOfficialMp3AyahTiming(state);
+    }
+
     function statusText(state) {
         if (state.error) return state.error;
         if (state.loading) return 'جاري تحميل التلاوة…';
         if (state.playing) {
-            return state.provider === 'quran-foundation'
+            return canHighlightVerse(state)
                 ? `سورة ${core.SURAH_NAMES[state.surah - 1]} • الآية ${core.arabicDigits(state.ayah)}`
                 : `سورة ${core.SURAH_NAMES[state.surah - 1]}`;
         }
@@ -336,10 +346,12 @@
             ui.repeatHint.textContent = state.provider === 'mp3quran'
                 ? 'تكرار الآية أو نطاق الآيات يحتاج نسخة متزامنة من القارئ نفسه؛ لن يتم تبديل الشيخ تلقائيًا.'
                 : 'تكرار الآية يعيد الآية الحالية، وتكرار النطاق يعيد الآيات من البداية للنهاية بعدد المرات المحدد.';
-            ui.syncNote.classList.toggle('is-unavailable', state.provider !== 'quran-foundation');
+            ui.syncNote.classList.toggle('is-unavailable', !canHighlightVerse(state));
             ui.syncNote.textContent = state.provider === 'quran-foundation'
                 ? alignedDiscoveryStatus
-                : 'القارئ الحالي من مكتبة التلاوات غير المتزامنة: يبدأ التسجيل من بدايته، ولا يدعم تظليل الكلمات أو التشغيل من آية محددة. عند الضغط على «الاستماع» لآية، سيتحول التطبيق تلقائيًا إلى مشاري العفاسي مع تنبيه واضح.';
+                : hasOfficialMp3AyahTiming(state)
+                ? 'توقيتات MP3Quran الأصلية تطابق هذا التسجيل؛ يتظلل نطاق الآية تلقائيًا. تظليل الكلمات يتطلب تسجيلًا متزامنًا يدعم توقيت كل كلمة.'
+                : 'يبدأ التسجيل من بداية السورة. يبحث آيات عن توقيتات الآيات الرسمية المطابقة لنفس نسخة التسجيل، وحين تتوفر يعرض تظليل الآية فقط، من غير تخمين لتوقيت الكلمات.';
         }
         applyingState = false;
     }
@@ -407,7 +419,7 @@
     }
 
     function syncHighlight(state) {
-        if (!state.playing || state.provider !== 'quran-foundation' || !state.timing) {
+        if (!state.playing || !canHighlightVerse(state) || !state.timing) {
             if (renderedVerse || activeWordElement) clearHighlights();
             return;
         }
@@ -490,16 +502,20 @@
     // queries and verse geometry run only when the verse itself changes.
     function startWordTracking() {
         if (highlightFrame || engine.audio.paused ||
-            engine.state.provider !== 'quran-foundation') return;
+            !canHighlightVerse(engine.snapshot())) return;
         const tick = () => {
             highlightFrame = 0;
-            if (engine.audio.paused || engine.state.provider !== 'quran-foundation') {
+            if (engine.audio.paused || !canHighlightVerse(engine.snapshot())) {
                 syncHighlight(engine.snapshot());
                 return;
             }
-            // Advance the continuous recording's verse state at the actual
-            // boundary, rather than waiting for the next timeupdate event.
-            engine.__syncContinuousChapter?.();
+            // Always use timings from the very same audio edition. No word
+            // cues are synthesized from an MP3Quran verse-only timing sheet.
+            if (engine.state.provider === 'quran-foundation') {
+                engine.__syncContinuousChapter?.();
+            } else {
+                engine.__syncMp3QuranAyah?.();
+            }
             syncHighlight(engine.snapshot());
             if (!highlightFrame) highlightFrame = requestAnimationFrame(tick);
         };
@@ -507,7 +523,7 @@
     }
 
     function followVerse(state) {
-        if (!state.playing || !state.autoFollow || state.provider !== 'quran-foundation') return;
+        if (!state.playing || !state.autoFollow || !canHighlightVerse(state)) return;
         const reader = window.mushafReader;
         const page = reader?.findVersePage(state.surah, state.ayah);
         if (page && reader.getCurrentPage() !== page) reader.goToVerse(state.surah, state.ayah, page);
