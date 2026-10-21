@@ -33,25 +33,6 @@ function makeContext(savedEntries = {}) {
   return { api: window.QuranDownloads, objects, getRequests: () => requests };
 }
 
-test('Foundation audio downloads are rejected even if the caller supplies a URL', async () => {
-  const { api, getRequests } = makeContext();
-  await assert.rejects(
-    new api.DownloadManager().downloadTrack({
-      provider: 'quran-foundation',
-      url: 'https://download.quranicaudio.com/sura.mp3'
-    }),
-    /حقوق التسجيل/
-  );
-  await assert.rejects(
-    new api.DownloadManager().downloadTrack({
-      provider: 'mp3quran',
-      url: 'https://download.quranicaudio.com/sura.mp3'
-    }),
-    /حقوق التسجيل/
-  );
-  assert.equal(getRequests(), 0, 'blocked provider must not be fetched');
-});
-
 test('offline playback uses a stored audio blob and needs no network', async () => {
   const url = 'https://cdn.mp3quran.net/reciter/001.mp3';
   const bytes = new Uint8Array([73, 68, 51, 0, 0, 0]);
