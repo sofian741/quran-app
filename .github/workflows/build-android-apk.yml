@@ -62,7 +62,7 @@ jobs:
           node --check app-update.js
           node --check android-navigation.js
           node --check scripts/prepare-android-web.mjs
-          node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs tests/licensed-huthaifi.test.cjs
+          node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs tests/licensed-huthaifi.test.cjs tests/mp3quran-ayah-sync.test.cjs
 
       - name: Gate Android release on Quran, adhkar, security and offline checks
         run: |
