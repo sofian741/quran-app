@@ -140,7 +140,7 @@
 
     async function loadFoundationChapter(reciter, surah) {
         const endpoint = `https://api.quran.com/api/v4/chapter_recitations/${reciter.foundationId}/${surah}?segments=true`;
-        const { response, done } = await fetchWithDeadline(endpoint);
+        const { response, done } = await fetchWithDeadline(endpoint, { cache: 'no-store' });
         let payload;
         try {
             if (!response.ok) throw new Error(`تعذّر تحميل توقيت القارئ (HTTP ${response.status}).`);
