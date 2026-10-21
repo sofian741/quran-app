@@ -35,7 +35,26 @@
             const before = readIndex();
             const after = before.filter(item => item.provider !== 'quran-foundation' &&
                 !isFoundationUrl(item.url));
-            if (before.length !== after.length) writeIndex(after);
+            if (before.length !== after.length) {
+                writeIndex(after);
+                if (typeof window !== 'undefined') window.dispatchEvent(new Event('quran-downloads:change'));
+            }
+            // Older installs saved Foundation timing responses without a date.
+            // Prune those legacy entries and any expired dated responses.
+            const metadata = await caches.open('quran-recitation-metadata-v1');
+            for (const request of await metadata.keys()) {
+                const response = await metadata.match(request);
+                if (!response) continue;
+                let savedAt = Number(response.headers.get('x-ayat-saved-at')) || 0;
+                if (!savedAt) {
+                    try { savedAt = Number((await response.clone().json()).savedAt) || 0; }
+                    catch (_) { savedAt = 0; }
+                }
+                if (!Number.isSafeInteger(savedAt) || savedAt > Date.now() ||
+                    Date.now() - savedAt >= 7 * 24 * 60 * 60 * 1000) {
+                    await metadata.delete(request);
+                }
+            }
         } catch (error) { console.warn('Could not clean old Foundation audio downloads', error); }
     }
 
