@@ -315,7 +315,7 @@
                 catch (_) { /* The exact ayah may still be available. */ }
                 if (chapter?.has(ayah)) return chapter.get(ayah);
                 const url = `${QURAN_API}/recitations/${recitationId}/by_ayah/${surah}:${ayah}?segments=true`;
-                const response = await this.fetcher(url, { cache: 'force-cache' });
+                const response = await this.fetcher(url, { cache: 'no-store' });
                 if (!response.ok) throw new Error(`Quran ayah audio HTTP ${response.status}`);
                 const timing = this.parseAudioFiles(await response.json(), surah).get(ayah);
                 if (!timing) throw new Error('التسجيل الصوتي لهذه الآية غير متاح.');
