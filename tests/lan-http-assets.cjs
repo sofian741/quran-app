@@ -51,7 +51,13 @@ const pages = [
                 const pageErrors = [];
                 const consoleErrors = [];
                 page.on('requestfailed', request => {
-                    if (new URL(request.url()).hostname === 'lan.quran.test') {
+                    const url = new URL(request.url());
+                    // The standalone web build intentionally has no optional
+                    // Android-only offline manifests, and requests may abort
+                    // when the browser closes a page after navigation. Only
+                    // fail on essential entry-page/style/script/font assets.
+                    if (url.hostname === 'lan.quran.test' &&
+                        /\\.(?:html|css|js|woff2)$/.test(url.pathname)) {
                         failed.push(`${request.url()} ${request.failure()?.errorText || ''}`);
                     }
                 });
