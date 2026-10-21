@@ -20,6 +20,8 @@ jobs:
           for file in *.js tests/*.cjs scripts/*.cjs; do node --check "$file"; done
       - name: Test continuous reciter verse synchronization
         run: node tests/continuous-sync-regression.cjs
+      - name: Regression tests for downloads and synchronized audio
+        run: node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs
       - name: Verify Quran, tafsir, adhkar and timing data
         run: |
           node tests/content.cjs
