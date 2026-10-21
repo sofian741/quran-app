@@ -145,6 +145,9 @@ async function testAdhkarGuide(browser,origin){
   await lesson(page).locator('[data-tour-action="home-next"]').click();
   assert.match(await title(page),/افتح أذكار الصباح/);
   assert.equal(await page.locator('#ayat-tour-root > .ayat-tour-hit').isVisible(),true,'Real morning quick card is tappable');
+  assert.equal(await lesson(page).locator('[data-tour-action="home-next"]').count(),0,'Opening morning adhkar must not offer Next');
+  await page.evaluate(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card')?.dispatchEvent(new MouseEvent('click',{bubbles:true})));
+  assert.match(await title(page),/افتح أذكار الصباح/,'Random clicks must not bypass opening morning adhkar');
   await page.locator('#ayat-tour-root > .ayat-tour-hit').click();
   await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent==='نص الذكر');
   assert.equal(await page.locator('#reader').isVisible(),true,'The real Adhkar reader must open');
