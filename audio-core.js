@@ -186,12 +186,6 @@
                 const response = await cache.match(this.offlineKey(recitationId, surah));
                 if (!response) return null;
                 const payload = await response.json();
-                const savedAt = Number(payload.savedAt);
-                if (!Number.isSafeInteger(savedAt) || savedAt > Date.now() ||
-                    Date.now() - savedAt >= 7 * 24 * 60 * 60 * 1000) {
-                    await cache.delete(this.offlineKey(recitationId, surah));
-                    return null;
-                }
                 if (payload.recitationId !== recitationId || payload.surah !== surah ||
                     !Array.isArray(payload.verses) || payload.verses.length !== VERSE_COUNTS[surah - 1]) return null;
                 const verses = new Map(payload.verses.map(item => [item.ayah, item]));
@@ -209,7 +203,7 @@
                 const cache = await caches.open('quran-recitation-metadata-v1');
                 await cache.put(this.offlineKey(recitationId, surah),
                     new Response(JSON.stringify({
-                        recitationId, surah, savedAt: Date.now(), verses: [...verses.values()]
+                        recitationId, surah, verses: [...verses.values()]
                     }), { headers: { 'Content-Type': 'application/json' } }));
             } catch (_) { /* Cache quota is best-effort; streaming still works online. */ }
         }
@@ -275,7 +269,7 @@
             // first page (otherwise "Read from here" fails later in a surah).
             while (page <= totalVerses) {
                 const url = `${QURAN_API}/recitations/${recitationId}/by_chapter/${surah}?segments=true&per_page=50&page=${page}`;
-                const response = await this.fetcher(url, { cache: 'no-store' });
+                const response = await this.fetcher(url, { cache: 'force-cache' });
                 if (!response.ok) throw new Error(`Quran audio HTTP ${response.status}`);
                 const payload = await response.json();
                 const current = this.parseAudioFiles(payload, surah);
@@ -315,7 +309,7 @@
                 catch (_) { /* The exact ayah may still be available. */ }
                 if (chapter?.has(ayah)) return chapter.get(ayah);
                 const url = `${QURAN_API}/recitations/${recitationId}/by_ayah/${surah}:${ayah}?segments=true`;
-                const response = await this.fetcher(url, { cache: 'no-store' });
+                const response = await this.fetcher(url, { cache: 'force-cache' });
                 if (!response.ok) throw new Error(`Quran ayah audio HTTP ${response.status}`);
                 const timing = this.parseAudioFiles(await response.json(), surah).get(ayah);
                 if (!timing) throw new Error('التسجيل الصوتي لهذه الآية غير متاح.');
