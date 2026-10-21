@@ -26,6 +26,22 @@ const pages = [
     const server = http.createServer((request, response) => {
         const url = new URL(request.url, 'http://lan.quran.test');
         if (url.pathname === '/favicon.ico') { response.statusCode = 204; response.end(); return; }
+        // Match the Android preparation step: tafsir is copied from scripts/
+        // into www/data/, but this browser test serves the checkout root.
+        if (url.pathname === '/data/tafsir_muyassar.json') {
+            response.setHeader('Content-Type', 'application/json; charset=utf-8');
+            response.end(fs.readFileSync(path.join(root, 'scripts/tafsir_muyassar.json')));
+            return;
+        }
+        // Web preview intentionally has no native bundled-audio manifest.
+        // Return a valid disabled manifest instead of an artificial 404;
+        // actual Android QA verifies the complete 114-track pack separately.
+        if (url.pathname === '/offline/mishary/manifest.json' ||
+            url.pathname === '/offline/huthaifi/manifest.json') {
+            response.setHeader('Content-Type', 'application/json; charset=utf-8');
+            response.end('{"schemaVersion":0}');
+            return;
+        }
         const pathname = url.pathname === '/' ? '/index.html' : url.pathname;
         const filename = path.join(root, decodeURIComponent(pathname));
         try {
