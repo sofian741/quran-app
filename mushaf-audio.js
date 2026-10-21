@@ -312,14 +312,6 @@
             ui.surah.value = String(state.surah);
             fillReciters(state);
             ui.speedLabel.textContent = `${state.speed}×`;
-            // Only MP3Quran's recordings currently have a confirmed download grant.
-            // Other synced readers stay playable online, without an offline button.
-            const canDownload = state.provider === 'mp3quran';
-            ui.download.hidden = !canDownload;
-            ui.downloadAll.hidden = !canDownload;
-            if (!canDownload && !downloadBatch) {
-                ui.downloadProgress.textContent = 'الاستماع والتظليل متاحان. تنزيل هذا المصدر متوقف لحماية حقوق التسجيلات.';
-            }
             ui.downloadAll.textContent = state.availableSurahs.length === 114
                 ? 'تحميل المصحف الصوتي كاملًا'
                 : `تحميل كل التلاوات المتاحة (${core.arabicDigits(state.availableSurahs.length)} سورة)`;
@@ -785,10 +777,6 @@
     async function downloadRecitation(all = false) {
         if (downloadBatch) return;
         const state = engine.snapshot();
-        if (state.provider !== 'mp3quran') {
-            ui.downloadProgress.textContent = 'التنزيل متاح حاليًا لتسجيلات MP3Quran فقط. يمكنك الاستماع لهذا القارئ مباشرة.';
-            return;
-        }
         const surahs = all ? [...state.availableSurahs] : [state.surah];
         if (all) {
             const count = `${surahs.length} ملف سورة`;
@@ -1022,7 +1010,7 @@
                     try {
                         const result = await fetch(
                             `${core.QURAN_API}/chapter_recitations/${item.id}/1?segments=true`,
-                            { cache: 'no-store' });
+                            { cache: 'force-cache' });
                         if (!result.ok || !hasWordTimings(await result.json())) continue;
                         if (addAlignedReciter(item)) {
                             confirmed++;
