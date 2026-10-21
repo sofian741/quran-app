@@ -2,15 +2,6 @@
 
 const APP_CACHE = 'quran-reader-shell-v62';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
-
-function isFoundationAudio(url) {
-    try {
-        const host = new URL(url).hostname;
-        return host === 'download.quranicaudio.com' || host === 'verses.quran.com' ||
-            host === 'quran.com' || host.endsWith('.quran.com') ||
-            host === 'qurancdn.com' || host.endsWith('.qurancdn.com');
-    } catch (_) { return false; }
-}
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',
     './style.css', './home.css', './home.js', './welcome.css', './welcome-boot.js', './welcome.js', './tour.css?v=57', './tour-home.css?v=59', './tour.js?v=62', './onboarding.css', './onboarding.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
@@ -46,11 +37,6 @@ self.addEventListener('fetch', event => {
     if (request.method !== 'GET') return;
     const isAudio = request.destination === 'audio' || /\.mp3(?:$|\?)/i.test(request.url);
     if (isAudio) {
-        // Never serve indefinitely stored Quran Foundation audio.
-        if (isFoundationAudio(request.url)) {
-            event.respondWith(fetch(request));
-            return;
-        }
         event.respondWith(caches.open(AUDIO_CACHE).then(async cache => {
             const saved = await cache.match(request.url, { ignoreVary: true });
             if (saved) {
