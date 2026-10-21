@@ -33,9 +33,9 @@
       {selector:'#open-quran-search',mode:'note',group:'إعدادات المصحف',title:'البحث عن آية',body:'البحث يعمل بالكلمة أو بجزء من الآية، ويتجاهل التشكيل، ثم ينقلك للموضع أو يفتح التفسير. وهو متاح دون إنترنت.'},
       {selector:'#audio-open-options',mode:'real-open',opens:'#audio-options-sheet',prepare:'close-settings',audio:true,group:'التلاوة',title:'افتح خيارات التلاوة',body:'اضغط اسم القارئ الحقيقي أعلى المشغّل لفتح خيارات الاستماع.'},
       {selector:'#audio-reciter-field',mode:'pick-quran-reciter',audio:true,group:'خيارات التلاوة',title:'غيّر القارئ بنفسك',body:'اضغط حقل القارئ واختر الصوت الذي تريده من القائمة. لن يبدأ تشغيل الصوت تلقائيًا.'},
-      {selector:'#audio-sync-note',fallback:'#audio-auto-follow',mode:'note',audio:true,group:'خيارات التلاوة',title:'تظليل الآية والكلمة',body:'التسجيلات المتزامنة تظلّل الآية أثناء القراءة، وتظلّل الكلمة عندما تتوفر توقيتات موثوقة. خيار المتابعة التلقائية ينقل الصفحة مع التلاوة ويمكنك إيقافه.'},
+      {selector:'#audio-sync-note',fallback:'#audio-auto-follow',mode:'note',audio:true,group:'خيارات التلاوة',title:'تظليل الآية والكلمة',body:'التسجيلات المتزامنة تظلّل الآية والكلمة حسب توقيتات موثوقة لنفس التسجيل. بعض تلاوات MP3Quran تدعم تظليل الآية فقط. خيار المتابعة التلقائية ينقل الصفحة مع التلاوة ويمكنك إيقافه.'},
       {selector:'#audio-surah-field',mode:'note',audio:true,group:'خيارات التلاوة',title:'السورة وآية البداية',body:'اختر السورة من هنا. وللبدء من آية محددة، افتح خيارات الآية واضغط «الاستماع» كما رأيت في بداية الجولة.'},
-      {selector:'.audio-download-actions',mode:'note',audio:true,group:'التحميل',title:'الاستماع دون إنترنت',body:'يمكنك تحميل السورة الحالية أو سور القارئ المتاحة. لا تبدأ الجولة أي تنزيل، ويعرض التطبيق المساحة وحالة التقدم قبل وأثناء الحفظ.'},
+      {selector:'.audio-download-actions',mode:'note',audio:true,group:'التحميل',title:'الاستماع دون إنترنت',body:'يمكنك تحميل السور من MP3Quran وحفظها دون مدة انتهاء. التسجيلات المتاحة للاستماع فقط لا يظهر لها زر تنزيل. لا تبدأ الجولة أي تنزيل، ويعرض التطبيق المساحة وحالة التقدم.'},
       {selector:'#audio-download-list',fallback:'#audio-storage-info',mode:'note',audio:true,group:'التحميل',title:'إدارة الملفات المحمّلة',body:'تظهر التسجيلات المحفوظة هنا في مجلدات حسب القارئ، ويمكن حذفها أو فتح مكتبة القرّاء الكاملة لإدارة ما نزلته.'}
     ],
     recitations: [
