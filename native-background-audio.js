@@ -136,11 +136,19 @@
   };
   api.mediaFor = async function(owner, url) {
     const item = new api.DownloadManager().list().find(row => row.url === url);
-    if (item?.nativePath && (await plugin.exists({ path: item.nativePath })).exists) {
-      api.releaseMedia(owner);
-      const mediaUrl = capacitor.convertFileSrc(item.nativePath);
-      owner.__savedMedia = { originalUrl: url, mediaUrl };
-      return mediaUrl;
+    if (item?.nativePath) {
+      try {
+        if ((await plugin.exists({ path: item.nativePath })).exists) {
+          api.releaseMedia(owner);
+          const mediaUrl = capacitor.convertFileSrc(item.nativePath);
+          owner.__savedMedia = { originalUrl: url, mediaUrl };
+          return mediaUrl;
+        }
+      } catch (error) {
+        console.warn('Existing local audio cannot be validated; using normal playback', error);
+      }
+      // Never strand playback if Android storage is removed or inaccessible.
+      // The catalog/download manager will reconcile the lost file separately.
     }
     return originalMedia(owner, url);
   };
