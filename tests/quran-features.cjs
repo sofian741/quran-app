@@ -13,8 +13,22 @@ const root = path.join(__dirname, '..');
     const server = http.createServer((request, response) => {
         const pathname = new URL(request.url, 'http://localhost').pathname === '/'
             ? '/index.html' : new URL(request.url, 'http://localhost').pathname;
-        try { response.end(fs.readFileSync(path.join(root, decodeURIComponent(pathname)))); }
-        catch (_) { response.statusCode = 404; response.end(); }
+        // The installed Android app gets this file from android:prepare.
+        // The checkout keeps the canonical dataset under scripts/.
+        const mapped = pathname === '/data/tafsir_muyassar.json'
+            ? '/scripts/tafsir_muyassar.json' : pathname;
+        const file = path.join(root, decodeURIComponent(mapped));
+        try {
+            const ext = path.extname(file);
+            const mime = {'.json':'application/json; charset=utf-8',
+                '.js':'application/javascript; charset=utf-8',
+                '.css':'text/css; charset=utf-8',
+                '.html':'text/html; charset=utf-8',
+                '.txt':'text/plain; charset=utf-8',
+                '.woff2':'font/woff2'}[ext];
+            if (mime) response.setHeader('Content-Type', mime);
+            response.end(fs.readFileSync(file));
+        } catch (_) { response.statusCode = 404; response.end(); }
     });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const browser = await chromium.launch({
