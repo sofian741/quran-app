@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - docs/MISHARY_AUDIO_READY.md
+      - docs/HUTHAIFI_AUDIO_READY.md
 
 concurrency:
   group: qa-apk-main
@@ -53,13 +54,15 @@ jobs:
           node --check audio-downloads.js
           node --check offline-mishary.js
           node --check offline-mishary-sync.js
+          node --check offline-licensed-reciter.js
+          node --check native-background-audio.js
           node --check native-background-audio.js
           node --check qud-audio.js
           node --check library.js
           node --check app-update.js
           node --check android-navigation.js
           node --check scripts/prepare-android-web.mjs
-          node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs
+          node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs tests/licensed-huthaifi.test.cjs
 
       - name: Gate Android release on Quran, adhkar, security and offline checks
         run: |
@@ -136,6 +139,36 @@ jobs:
           test ! -e www/offline/mishary/manifest.json
           echo "Safe audio mode: bundled EveryAyah tracks excluded."
           echo "Mishary and the other aligned voices remain streamable online."
+
+      - name: Bundle licensed, word-synchronized Ali al-Huthaifi for offline use
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p www/offline/huthaifi
+          if gh release download assets-huthaifi-mp3quran-word-v1 --pattern huthaifi-licensed-word-v1.zip --dir /tmp; then
+            unzip -q /tmp/huthaifi-licensed-word-v1.zip -d www/offline/huthaifi
+            echo "Restored fully verified MP3Quran Huthaifi audio."
+          else
+            echo "License-backed Huthaifi release not yet ready. Building from exact QUD source."
+            python3 scripts/build-licensed-huthaifi.py --output www/offline/huthaifi --jobs 2 --bitrate 32k
+          fi
+          python3 - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          base=Path('www/offline/huthaifi')
+          data=json.loads((base/'manifest.json').read_text(encoding='utf-8'))
+          assert data['source']=='MP3Quran / ali_al_huthaifi_mp3quran'
+          assert data['reciter']['id']==9004 and data['syncLevel']=='word'
+          assert data['timingSlug']=='ali_al_huthaifi_mp3quran'
+          assert len(data['tracks'])==114 and {t['surah'] for t in data['tracks']}==set(range(1,115))
+          for track in data['tracks']:
+              file=base/track['file']
+              assert file.is_file() and file.stat().st_size==track['bytes']
+              assert hashlib.sha256(file.read_bytes()).hexdigest()==track['sha256']
+              assert track['url']==f"https://server9.mp3quran.net/hthfi/{track['surah']:03}.mp3"
+          assert (Path('www/data/qud/ali_al_huthaifi_mp3quran.word.json.gz')).is_file()
+          print('Licensed bundled reader verified: 114 sourahs with source-matched QUD word timings')
+          PY
 
       - name: Create Android project
         run: npx cap add android
