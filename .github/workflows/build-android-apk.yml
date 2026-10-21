@@ -84,7 +84,12 @@ jobs:
       - name: Install audio verification and encoding tools
         run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
 
+      # EveryAyah hosts the recordings but has not published a verified grant
+      # covering redistribution of the converted 114-surah audio in this APK.
+      # A missing approval variable MUST produce a streaming-only build.
+      # Set the repository variable only after retaining written rights evidence.
       - name: Bundle all Mishary audio before Android packaging
+        if: ${{ vars.AYAT_EVERYAYAH_REDISTRIBUTION_APPROVED == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -121,6 +126,16 @@ jobs:
           assert count == 6236, count
           print('114 compact WebM/Opus surahs / 6236 ayahs and matching word alignment hashes verified')
           PY
+
+      - name: Enforce audio redistribution safety for normal QA builds
+        if: ${{ vars.AYAT_EVERYAYAH_REDISTRIBUTION_APPROVED != 'true' }}
+        run: |
+          # Do not ship the unlicensed EveryAyah re-encoded audio, even if
+          # a future prepare step accidentally copies an offline directory.
+          rm -rf www/offline/mishary
+          test ! -e www/offline/mishary/manifest.json
+          echo "Safe audio mode: bundled EveryAyah tracks excluded."
+          echo "Mishary and the other aligned voices remain streamable online."
 
       - name: Create Android project
         run: npx cap add android
