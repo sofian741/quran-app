@@ -151,6 +151,9 @@ async function testAdhkarGuide(browser,origin){
   await page.locator('#ayat-tour-root > .ayat-tour-hit').click();
   await page.waitForFunction(()=>document.querySelector('#ayat-tour-root > .ayat-tour-card .ayat-tour-title')?.textContent==='نص الذكر');
   assert.equal(await page.locator('#reader').isVisible(),true,'The real Adhkar reader must open');
+  const actualChapterTitle=await page.locator('#reader-title').textContent();
+  assert.match(actualChapterTitle,/أَذْكَارُ الصَّبَاحِ/,'The source chapter title is fully vocalized; the tour must still advance');
+  assert.equal(await page.locator('#ayat-tour-root').evaluate(el=>el.classList.contains('is-opening-chapter')),false,'The stuck opening-chapter state must be cleared');
   assert.ok((await page.locator('#dhikr-text').textContent()).trim().length>10,'Reader displays a real dhikr');
   const startPosition=await page.locator('#reader-position').textContent();
   const favoriteBefore=await page.locator('#reader-favorite').getAttribute('aria-pressed');
