@@ -1,0 +1,96 @@
+name: Prepare licensed Huthaifi synchronized audio
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/prepare-licensed-audio.yml
+      - scripts/build-licensed-huthaifi.py
+      - data/qud/ali_al_huthaifi_mp3quran.catalog.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prepare-licensed-huthaifi
+  cancel-in-progress: false
+
+jobs:
+  audio-only:
+    name: Build and verify 114 licensed MP3Quran chapters
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install media tools
+        run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+      - name: Validate script and source metadata
+        run: |
+          python3 -m py_compile scripts/build-licensed-huthaifi.py
+          node --test tests/licensed-huthaifi.test.cjs
+      - name: Reuse source recordings across retry runs
+        uses: actions/cache@v4
+        with:
+          path: .build-cache/huthaifi-mp3quran
+          key: huthaifi-original-mp3-${{ github.run_id }}
+          restore-keys: |
+            huthaifi-original-mp3-
+      - name: Build word-matched MP3Quran Ali al-Huthaifi
+        run: python3 scripts/build-licensed-huthaifi.py --output dist/huthaifi --jobs 2 --bitrate 32k
+      - name: Verify exact corpus before publishing
+        run: |
+          python3 - <<'PY'
+          import json, hashlib
+          from pathlib import Path
+          base = Path('dist/huthaifi')
+          manifest = json.loads((base/'manifest.json').read_text(encoding='utf-8'))
+          assert manifest['source'] == 'MP3Quran / ali_al_huthaifi_mp3quran'
+          assert manifest['syncLevel'] == 'word'
+          assert manifest['timingSlug'] == 'ali_al_huthaifi_mp3quran'
+          assert len(manifest['tracks']) == 114
+          assert {t['surah'] for t in manifest['tracks']} == set(range(1,115))
+          for t in manifest['tracks']:
+              file = base/t['file']
+              assert file.is_file() and file.stat().st_size == t['bytes']
+              assert hashlib.sha256(file.read_bytes()).hexdigest() == t['sha256']
+              assert t['url'] == f"https://server9.mp3quran.net/hthfi/{t['surah']:03}.mp3"
+          print('114/114, source-locked, every file hash and word-alignment origin checked')
+          PY
+          cd dist/huthaifi
+          zip -q -0 ../../huthaifi-licensed-word-v1.zip manifest.json *.webm
+          cd ../..
+          sha256sum huthaifi-licensed-word-v1.zip
+      - name: Upload licensed reader ZIP release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="assets-huthaifi-mp3quran-word-v1"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --title "Ali Al-Huthaifi | MP3Quran + QUD word-timed offline corpus" \
+              --notes "Original audio: MP3Quran (https://www.mp3quran.net/ar/privacy). Word timings: QUD v3.2.0 (CC BY 4.0). Re-encoded same source to Opus without swapping the recording edition; 114 chapters. For integration into Ayat app only." \
+              --prerelease --latest=false
+          fi
+          gh release upload "$tag" huthaifi-licensed-word-v1.zip --clobber
+      - name: Trigger QA Android build after verified asset release
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import datetime
+          doc = Path('docs/HUTHAIFI_AUDIO_READY.md')
+          now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')
+          doc.write_text(
+              '# Licensed offline Ali Al-Huthaifi corpus\n\n'
+              'Verified 114/114 chapters and matching QUD v3.2.0 word timing source.\n'
+              'Recording: MP3Quran server9/hthfi (https://www.mp3quran.net/ar/privacy).\n'
+              'Audio bundle: assets-huthaifi-mp3quran-word-v1 / huthaifi-licensed-word-v1.zip.\n'
+              'Avoid replacing the recording or QUD timing independently.\n\n'
+              f'Validated at UTC: {now}\n',encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/HUTHAIFI_AUDIO_READY.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Record licensed 114-surah Huthaifi audio asset validation"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
