@@ -14,3 +14,7 @@ The licensed audio archive above has been verified and is published. Build the A
 ## Build verification retry
 
 The original Android QA run detected missing Playwright/Chromium setup before packaging; dependencies have now been added and the offline-shell regression uses current v63. This documentation update schedules a new build with the repaired browser verification gate.
+
+## Offline tafsir regression build
+
+Retry QA Android APK with fixed root/Android tafsir paths, service-worker cache fallback and a strict browser test for the actual tafsir. Source recordings and the already verified 114-chapter Huthaifi bundle remain unchanged.
