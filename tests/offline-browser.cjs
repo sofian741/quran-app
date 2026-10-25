@@ -40,7 +40,7 @@ const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
         await page.reload();
         await page.waitForFunction(() => !!navigator.serviceWorker.controller);
         const cached = await page.evaluate(async () => {
-            const cache = await caches.open('quran-reader-shell-v65');
+            const cache = await caches.open('quran-reader-shell-v66');
             return Promise.all([
                 cache.match('./quran.html').then(Boolean),
                 cache.match('./data/quran-uthmani.txt').then(Boolean),
