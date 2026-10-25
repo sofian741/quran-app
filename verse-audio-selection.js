@@ -45,8 +45,11 @@
 
         async function availableTracks(surah) {
             const tracks = downloads.list().filter(item =>
-                item.provider === 'mp3quran' && Number(item.surah) === surah &&
-                !item.bundled && typeof item.url === 'string');
+                Number(item.surah) === surah && !item.bundled &&
+                typeof item.url === 'string' &&
+                // Older versions indexed some QUD/MP3Quran downloads with
+                // provider=quran-foundation; their URL is still MP3Quran.
+                downloadsApi.canDownloadTrack({...item,provider:'mp3quran'}));
             const available = [];
             for (const track of tracks) {
                 if (await downloads.has(track.url)) available.push(track);
