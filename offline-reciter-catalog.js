@@ -6,7 +6,7 @@ const cached=c.CatalogService.prototype.cached;
 const load=c.CatalogService.prototype.load;
 function merge(list){
  const result=[...list],groups=new Map();
- new d.DownloadManager().list().filter(t=>t.provider==='mp3quran').forEach(t=>{
+ new d.DownloadManager().list().filter(t=>d.canDownloadTrack({...t,provider:'mp3quran'})).forEach(t=>{
   const m=/^(https:\/\/[^?#]+\/)(\d{3})\.mp3(?:[?#].*)?$/i.exec(t.url);
   if(!m||Number(m[2])!==Number(t.surah))return;
   const id=Number(t.reciterId),surah=Number(t.surah);
