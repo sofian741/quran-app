@@ -177,7 +177,13 @@
                 };
             }
 
-            if (navigator.onLine === false) return {
+            // A WebView may say "online" while airplane mode is enabled.
+            // Check real connectivity before fetching any uncached recitation.
+            const offline = window.QuranAudioConnectivity
+                ? await window.QuranAudioConnectivity.isOffline()
+                : navigator.onLine === false;
+            if (!stillCurrent()) return {ok:false,cancelled:true};
+            if (offline) return {
                 ok:false, offline:true,
                 message:saved.length ? OFFLINE_UNALIGNED : OFFLINE_EMPTY
             };
@@ -188,7 +194,8 @@
                 const played = await playAligned(original.reciterId,surah,ayah,true,stillCurrent);
                 return played
                     ? {ok:true,name:original.reciterName,kind:'stream',downloaded:false,switched:false}
-                    : {ok:false,message:engine.error || 'تعذّر الاتصال بخادم التلاوة. تحقق من الإنترنت وحاول مرة أخرى.'};
+                    : {ok:false,message:window.QuranAudioConnectivity?.safeError(engine.error)
+                        || 'تعذّر الاتصال بخادم التلاوة. تحقق من الإنترنت وحاول مرة أخرى.'};
             }
             if (selectedUrl) {
                 const result = await attemptTrack({
