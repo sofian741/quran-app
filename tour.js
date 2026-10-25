@@ -631,6 +631,22 @@
     const el=card.querySelector('.ayat-tour-feedback');
     if(el){el.textContent=message;el.classList.toggle('is-success',!!success);}
   }
+  async function openTourMorning(){
+    if(kind!=='adhkar'||!active||TOURS.adhkar[active.step]?.mode!=='open-chapter')return;
+    const token=stepToken;
+    const button=document.querySelector('.quick-card.morning');
+    for(let i=0;i<100;i++){
+      if(token!==stepToken||!active||TOURS.adhkar[active.step]?.mode!=='open-chapter')return;
+      if(document.querySelector('#chapter-list .chapter')){
+        button?.click();return; // Real reader-open event owns advancement.
+      }
+      await delay(100);
+    }
+    if(token===stepToken&&active){
+      const hint=card.querySelector('.ayat-tour-picker-note');
+      if(hint)hint.textContent='الأذكار لسه ما اتحمّلتش. تأكد من جاهزية الصفحة وحاول مرة تانية.';
+    }
+  }
   function advance(){
     if(!active||busy)return;
     if(kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='library'){
@@ -657,8 +673,7 @@
     const s=TOURS[kind][active.step];
     if(kind==='home'&&s.mode==='verse'){openHomeVerse();return;}
     if(s.mode==='open-chapter'&&kind==='adhkar'){
-      const target=targetFor(s);
-      if(target)target.click();
+      openTourMorning();
       return;
     }
     if(s.mode==='play'&&kind==='recitations'){
@@ -716,7 +731,7 @@
       if(kind==='adhkar'&&step?.mode==='open-chapter'){
         // Skipping the gesture must open the *real* reader. The existing
         // ayat:dhikr-opened event advances only after it actually appears.
-        document.querySelector('.quick-card.morning')?.click();
+        openTourMorning();
       }else if(kind==='adhkar'&&step?.mode==='real-swipe'){
         // Skipping the gesture ends the tour without changing the dhikr.
         finish();
