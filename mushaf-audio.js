@@ -627,7 +627,7 @@
     });
     ui.reciter.addEventListener('change', async () => {
         const value = ui.reciter.value;
-        const wasPlaying = !engine.audio.paused;
+        const wasPlaying = !engine.audio.paused || engine.intentToPlay;
         if (value.startsWith('aligned:')) {
             const id = Number(value.slice('aligned:'.length));
             if (!alignedReciters.some(reciter => reciter.id === id)) return;
