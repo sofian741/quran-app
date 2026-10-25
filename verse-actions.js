@@ -204,6 +204,17 @@
 
     // The stable surah/ayah key will be used to load tafsir later.
     window.mushafVerseActions = {
+        openForTour(verse) {
+            // The guide may skip the long-press demonstration. Open the real
+            // actions sheet for a visible ayah, never a fabricated UI panel.
+            const surah = Number(verse?.surah);
+            const ayah = Number(verse?.ayah);
+            if (!Number.isInteger(surah) || !Number.isInteger(ayah) ||
+                !text.querySelector('.mushaf-word[data-verse="' + surah + ':' + ayah + '"]')) return false;
+            if (!isOpen()) openVerseActions({surah, ayah, verseKey:surah + ':' + ayah},
+                {id:0,type:'touch'});
+            return isOpen();
+        },
         getSelectedVerse() {
             return selectedVerse ? { ...selectedVerse } : null;
         },
