@@ -286,7 +286,7 @@
     }
 
     function statusText(state) {
-        if (state.error) return state.error;
+        if (state.error) return window.QuranAudioConnectivity?.safeError(state.error) || state.error;
         if (state.loading) return 'جاري تحميل التلاوة…';
         if (state.playing) {
             return canHighlightVerse(state)
