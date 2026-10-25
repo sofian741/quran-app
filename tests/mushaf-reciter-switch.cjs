@@ -86,7 +86,7 @@ const catalog = { reciters: [
         assert.equal(groupInfo.mp3Options, 2);
         assert.equal(groupInfo.alignedOptions, 23);
         assert.match(groupInfo.labels[0], /المتزامنون/);
-        assert.match(groupInfo.labels[1], /غير متزامنة/);
+        assert.match(groupInfo.labels[1], /تظليل الآيات حسب التسجيل/);
 
         // The Quran page can keep its reader loading overlay visible while
         // unrelated remote Quran text loads. Exercise the audio controls
@@ -97,7 +97,7 @@ const catalog = { reciters: [
         });
         await page.waitForFunction(() => !!document.querySelector('.audio-picker-group-heading'));
         assert.equal(await page.locator('.audio-picker-group-heading').count(), 2);
-        assert.match(await page.locator('.audio-picker-group-caption').textContent(), /التحويل تلقائيًا/);
+        assert.match(await page.locator('.audio-picker-group-caption').textContent(), /لن يتغير القارئ تلقائيًا/);
         await page.evaluate(() => {
             const select = document.getElementById('audio-reciter');
             select.value = 'mp3:123';
@@ -106,8 +106,11 @@ const catalog = { reciters: [
         await page.waitForFunction(() => window.quranAudioEngine.state.provider === 'mp3quran');
         assert.equal(await page.evaluate(() => window.quranAudioEngine.state.reciterName),
             'قارئ تجريبي غير متزامن');
-        assert.match(await page.locator('#audio-sync-note').textContent(), /سيتحول التطبيق تلقائيًا/);
+        assert.match(await page.locator('#audio-sync-note').textContent(), /دون تحويل عشوائي/);
+        // No saved recording + no internet: show a clear offline message,
+        // keep the selected sheikh, and never force Mishary.
         await page.evaluate(() => {
+            Object.defineProperty(navigator, 'onLine', { configurable:true, get:()=>false });
             window.mushafVerseActions = {
                 getSelectedVerse: () => ({ surah: 1, ayah: 3, verseKey: '1:3' }),
                 close() {}
@@ -115,24 +118,38 @@ const catalog = { reciters: [
             document.querySelector('[data-verse-action="listen"]').click();
         });
         await page.waitForFunction(() =>
+            !document.getElementById('audio-switch-notice').hidden &&
+            /غير متصل بالإنترنت/.test(
+                document.getElementById('audio-switch-notice-message').textContent));
+        assert.equal(await page.evaluate(() => window.quranAudioEngine.state.reciterId), 123);
+        assert.equal(await page.evaluate(() => window.quranAudioEngine.state.provider), 'mp3quran');
+        assert.match(await page.locator('#audio-switch-notice-message').textContent(), /حمّل/);
+        await page.evaluate(() => document.getElementById('audio-switch-notice-dismiss').click());
+
+        // The user has now downloaded the exact Huthaifi MP3Quran recording.
+        // QUD locally supplies word timings for the same recording URL.
+        await page.evaluate(() => {
+            const dm = window.QuranDownloads.DownloadManager.prototype;
+            dm.list = () => [{
+                url:'https://server9.mp3quran.net/hthfi/001.mp3',
+                provider:'mp3quran',reciterId:9004,reciterName:'علي بن عبد الرحمن الحذيفي',
+                surah:1,moshafId:9004,moshafName:'حفص',savedAt:100
+            }];
+            dm.has = async url => url === 'https://server9.mp3quran.net/hthfi/001.mp3';
+            document.querySelector('[data-verse-action="listen"]').click();
+        });
+        await page.waitForFunction(() =>
             window.quranAudioEngine.state.provider === 'quran-foundation' &&
-            window.quranAudioEngine.state.reciterId === 7 &&
-            window.quranAudioEngine.state.ayah === 3 &&
-            !document.getElementById('audio-switch-notice').hidden);
-        assert.equal(await page.locator('#audio-reader-name').textContent(), 'مشاري راشد العفاسي');
-        await page.waitForFunction(() => /تم التحويل|تعذّر تشغيل/.test(
-            document.getElementById('audio-switch-notice-title').textContent), { timeout: 30000 });
-        assert.match(await page.locator('#audio-switch-notice-title').textContent(), /تم التحويل/);
-        const message = await page.locator('#audio-switch-notice-message').textContent();
-        assert.match(message, /قارئ تجريبي غير متزامن/);
-        assert.match(message, /مشاري/);
-        assert.match(message, /ليس عطلًا/);
-        assert.match(message, /٣/);
+            window.quranAudioEngine.state.reciterId === 9004 &&
+            window.quranAudioEngine.state.ayah === 3, { timeout: 30000 });
+        assert.match(await page.locator('#audio-reader-name').textContent(), /الحذيفي/);
+        assert.match(await page.locator('#audio-switch-notice-message').textContent(), /المحفوظ عندك/);
+        assert.equal(await page.evaluate(() => window.quranAudioEngine.state.reciterId === 7),false);
         await page.evaluate(() => document.getElementById('audio-switch-notice-dismiss').click());
         assert.equal(await page.locator('#audio-switch-notice').isHidden(), true);
         assert.deepEqual(errors, [], 'no browser errors');
         await page.close();
-        console.log('PASS: 23 synchronized + full MP3Quran library groups, explicit automatic Mishary verse playback notice');
+        console.log('PASS: 23 synchronized + MP3Quran library, explicit offline notice, saved QUD word-timed verse playback, no forced Mishary');
     } finally {
         await browser.close();
     }
