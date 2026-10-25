@@ -384,7 +384,10 @@
             if (!audio) throw new Error('Audio element is required');
             this.audio = audio;
             this.timing = options.timingProvider || new TimingProvider(options.fetcher);
-            this.state = sanitizeState(readJson(STATE_KEY));
+            this.stateKey = options.stateKey || STATE_KEY;
+            const legacy = readJson(STATE_KEY);
+            this.state = sanitizeState(readJson(this.stateKey) ||
+                (options.stateKey && legacy?.provider === 'mp3quran' ? legacy : null));
             this.alignedReciters = new Map(ALIGNED_RECITERS.map(reciter => [reciter.id, reciter]));
             this.chapter = null;
             this.currentTiming = null;
@@ -431,7 +434,7 @@
         persist() {
             this.state.position = Number(this.audio.currentTime) || 0;
             this.state.updatedAt = Date.now();
-            writeJson(STATE_KEY, this.state);
+            writeJson(this.stateKey, this.state);
         }
 
         bindChannel() {
