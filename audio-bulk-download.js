@@ -19,6 +19,8 @@ async function start(){
  }
  if(!missing.length){ui.status.textContent='كل سور هذا التسجيل محفوظة بالفعل.';return;}
  if(!confirm('تنزيل '+c.arabicDigits(missing.length)+' سورة بصوت '+s.reciterName+'؟\nقد يستهلك مساحة كبيرة وباقة إنترنت. يُفضّل Wi-Fi. يمكن الإيقاف بعد السورة الحالية.'))return;
+ const lock=window.AyatDownloadLock;
+ if(lock&&!lock.acquire('bulk')){ui.status.textContent='يوجد تنزيل آخر قيد التنفيذ. انتظر حتى ينتهي.';return;}
  active=true;stop=false;total=missing.length;done=0;
  ui.batch.hidden=false;ui.all.disabled=true;ui.current.disabled=true;ui.cancel.disabled=false;
  try{
@@ -35,11 +37,12 @@ async function start(){
  }catch(err){
   ui.status.textContent=(err.message||'تعذّر التنزيل')+' • المحفوظ: '+c.arabicDigits(done)+' سورة. يمكنك استكمال الباقي.';
  }finally{
-  active=false;ui.batch.hidden=true;ui.all.disabled=false;
+  active=false;ui.batch.hidden=true;lock?.release('bulk');ui.all.disabled=false;
   // The regular download button checks its cache state when the audio engine emits.
   e.emit();window.dispatchEvent(new Event('quran-downloads:change'));
  }
 }
 ui.all.addEventListener('click',start);
 ui.cancel.addEventListener('click',()=>{stop=true;ui.cancel.disabled=true;ui.label.textContent='سيتم الإيقاف بعد السورة الحالية…';});
+window.addEventListener('ayat:download-lock',()=>{if(!active)ui.all.disabled=!!window.AyatDownloadLock?.owner;});
 })();
