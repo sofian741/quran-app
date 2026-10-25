@@ -68,7 +68,7 @@
   };
   const kind = PAGES[PAGE];
   if (!kind) return;
-  const VERSIONS = {home:'v7',quran:'v7',recitations:'v6',library:'v6',adhkar:'v6'};
+  const VERSIONS = {home:'v8',quran:'v7',recitations:'v7',library:'v7',adhkar:'v7'};
   const versionFor = k => VERSIONS[k] || 'v1';
   const DONE = k => 'ayat-tour-done-' + k + '-' + versionFor(k);
   const STEP = k => 'ayat-tour-step-' + k + '-' + versionFor(k);
@@ -170,6 +170,17 @@
     // can resume exactly where the user stopped.
     return index;
   }
+  function closeEditorialPanels(){
+    if(kind==='adhkar'){
+      if(!document.getElementById('reader')?.hidden)document.getElementById('close-reader')?.click();
+      if(document.getElementById('index-sheet')?.getAttribute('aria-hidden')==='false')
+        document.getElementById('close-index')?.click();
+    }
+    if(kind==='home'){
+      modalOpen=false;
+      modal.hidden=true;
+    }
+  }
   function closeQuranPanels(){
     if(kind!=='quran')return;
     for(const [sheet,button] of [
@@ -265,6 +276,10 @@
     remove(STEP(kind));
     remove(LATER(kind));
     closeQuranPanels();
+    // The adhkar reader is a genuine reading surface. Keep it open after a
+    // real swipe; otherwise close tour-owned sheets on early exits.
+    if(!(kind==='adhkar'&&!document.getElementById('reader')?.hidden))
+      closeEditorialPanels();
     close();
     // The guide closes quietly. No congratulations or completion toast.
   }
@@ -272,10 +287,11 @@
     if(active)save(STEP(kind),active.step);
     save(LATER(kind),Date.now()+24*60*60*1000);
     closeQuranPanels();
+    closeEditorialPanels();
     close();
   }
   function never(){
-    save(OPT_OUT(kind),'1');save(DONE(kind),'1');remove(STEP(kind));remove(LATER(kind));closeQuranPanels();close();
+    save(OPT_OUT(kind),'1');save(DONE(kind),'1');remove(STEP(kind));remove(LATER(kind));closeQuranPanels();closeEditorialPanels();close();
   }
   function chooseTourVerse(){
     if(kind!=='quran')return null;
@@ -372,7 +388,65 @@
       hand.style.top=Math.max(20,Math.min(innerHeight-75,top+height*.5))+'px';
     }
   }
+  // Editorial tours have real UI state too: a dhikr reader, chapter index,
+  // reciter list, and the home verse preview. Reconcile them on every render
+  // so Previous, Next, resume and Skip never explain a missing surface.
+  async function syncEditorialStep(index,token){
+    if(kind==='home'){
+      if(modalOpen){modalOpen=false;modal.hidden=true;}
+      return true;
+    }
+    if(kind==='adhkar'){
+      if(document.getElementById('index-sheet')?.getAttribute('aria-hidden')==='false')
+        document.getElementById('close-index')?.click();
+      const reader=document.getElementById('reader');
+      if(index<=3){
+        if(reader&&!reader.hidden)document.getElementById('close-reader')?.click();
+        return true;
+      }
+      const isMorning=()=>{
+        const title=(document.getElementById('reader-title')?.textContent||'')
+          .normalize('NFKD').replace(/[\u064B-\u065F\u0670\u0640]/g,'')
+          .replace(/[إأآٱ]/g,'ا').trim();
+        return title.includes('اذكار الصباح');
+      };
+      if(reader&&!reader.hidden&&!isMorning())
+        document.getElementById('close-reader')?.click();
+      if(reader&&!reader.hidden&&isMorning())return true;
+      const button=document.querySelector('.quick-card.morning');
+      // The local adhkar dataset can finish loading after the tour opens.
+      // Only click the real morning card once its actual chapter exists.
+      for(let i=0;i<100;i++){
+        if(token!==stepToken||!active||active.step!==index)return false;
+        if(reader&&!reader.hidden&&isMorning())return true;
+        if(button&&!document.getElementById('chapter-list')?.querySelector('.chapter')){
+          await delay(100);continue;
+        }
+        if(button){button.click();await delay(70);}
+        if(reader&&!reader.hidden&&isMorning())return true;
+        await delay(100);
+      }
+      // Never show a lesson about a missing dhikr reader.
+      if(token===stepToken&&active&&active.step===index){
+        active.step=3;save(STEP(kind),3);
+        render();
+      }
+      return false;
+    }
+    if(kind==='recitations'&&index===1){
+      // The reciter catalog is the real surface; keep it visible when
+      // returning from the player, even if offline catalog is empty.
+      const list=document.getElementById('reciter-list');
+      if(list&&list.getBoundingClientRect().top<0)
+        document.getElementById('catalog')?.scrollIntoView({block:'start',behavior:'auto'});
+    }
+    return true;
+  }
   async function prepare(s,token){
+    if(kind!=='quran'){
+      if(!(await syncEditorialStep(active.step,token)))return;
+      if(token!==stepToken||!active)return;
+    }
     if(kind==='quran'){
       await syncQuranStep(active.step,token);
       if(token!==stepToken)return;
@@ -437,9 +511,10 @@
       '<div class="ayat-tour-home-foot">'+
       (current===1?'':'<button type="button" class="ayat-tour-secondary" data-tour-action="previous">السابق</button>')+
       (step.mode==='real-swipe'||step.mode==='open-chapter'?'':'<button class="ayat-tour-main" type="button" data-tour-action="'+(step.mode==='reveal'?(kind==='adhkar'?'adhkar-reveal':'recitations-reveal'):'home-next')+'">'+(step.mode==='reveal'?(kind==='adhkar'?'اعرض الأبواب':'اعرض القرّاء'):last?'إنهاء الشرح':'التالي')+' <span aria-hidden="true">'+(step.mode==='reveal'?'↓':'←')+'</span></button>')+
+      ((step.mode==='open-chapter'||step.mode==='real-swipe')?'<button class="ayat-tour-secondary" type="button" data-tour-action="assist">'+(step.mode==='real-swipe'?'إنهاء بدون تقليب':'تخطي الخطوة')+'</button>':'')+
       '<button class="ayat-tour-text" type="button" data-tour-action="pause">خروج</button></div>';
     await prepare(step,token);
-    if(token!==stepToken||!active)return;
+    if(token!==stepToken||!active||active.step!==TOURS[kind].indexOf(step))return;
     const target=targetFor(step);
     if(kind==='recitations'&&step.mode==='reveal'&&window.scrollY>80){
       window.scrollTo({top:0,behavior:'auto'});
@@ -636,7 +711,17 @@
     else if(action==='later'||action==='pause')postpone();
     else if(action==='never')never();
     else if(action==='dismiss')close();
-    else if(action==='assist')advance();
+    else if(action==='assist'){
+      const step=active&&TOURS[kind][active.step];
+      if(kind==='adhkar'&&step?.mode==='open-chapter'){
+        // Skipping the gesture must open the *real* reader. The existing
+        // ayat:dhikr-opened event advances only after it actually appears.
+        document.querySelector('.quick-card.morning')?.click();
+      }else if(kind==='adhkar'&&step?.mode==='real-swipe'){
+        // Skipping the gesture ends the tour without changing the dhikr.
+        finish();
+      }else advance();
+    }
     else if(action==='previous'&&active&&!busy&&active.step>0){active.step--;save(STEP(kind),active.step);render();}
     else if(action.startsWith('replay-'))replay(action.slice(7));
   });
