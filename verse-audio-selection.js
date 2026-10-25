@@ -1,0 +1,206 @@
+(() => {
+    'use strict';
+
+    // "Listen to this ayah" is a precise seek request, never a request to
+    // silently replace the chosen sheikh with a hard-coded default.
+    // Only the exact audio URL may be paired with a timing document.
+    const core = window.QuranAudio;
+    const downloadsApi = window.QuranDownloads;
+    if (!core || !downloadsApi) return;
+
+    const OFFLINE_EMPTY = 'أنت غير متصل بالإنترنت، ولا توجد تلاوة محمّلة لهذه السورة على جهازك. شغّل الإنترنت للاستماع، أو نزّل السورة من «التلاوات» لتعمل بدون إنترنت.';
+    const OFFLINE_UNALIGNED = 'السورة موجودة ضمن تحميلاتك، لكن التسجيل المحمّل لا تتوفر له توقيتات دقيقة للبدء من هذه الآية بدون إنترنت. شغّل الإنترنت لجلب التوقيتات، أو حمّل تسجيلًا متزامنًا من MP3Quran.';
+    const ONLINE_UNALIGNED = 'التسجيل المختار لا تتوفر له توقيتات مطابقة تسمح بالبدء من هذه الآية بدقة. اختر قارئًا متزامنًا، أو قارئًا من MP3Quran له توقيتات آيات رسمية. لن نبدّل الشيخ من غير سبب.';
+    const validVerse = (surah, ayah) =>
+        Number.isInteger(surah) && surah >= 1 && surah <= 114 &&
+        Number.isInteger(ayah) && ayah >= 1 && ayah <= core.VERSE_COUNTS[surah - 1];
+
+    function trackUrl(state, surah) {
+        if (state.provider !== 'mp3quran') return '';
+        return core.mp3Url({server:state.server, surahs:state.availableSurahs}, surah) || '';
+    }
+
+    function mp3ReciterForTrack(track, catalog) {
+        let url;
+        try { url = new URL(track.url); }
+        catch (_) { return null; }
+        if (url.protocol !== 'https:' || !url.pathname.endsWith('.mp3')) return null;
+        const server = url.href.slice(0, url.href.lastIndexOf('/') + 1);
+        const reciter = catalog.find(row => row.moshaf?.some(item => item.server === server)) ||
+            (Number.isSafeInteger(Number(track.reciterId)) && Number(track.reciterId) > 0
+                ? {id:Number(track.reciterId), name:track.reciterName || 'القارئ', moshaf:[]} : null);
+        if (!reciter) return null;
+        const moshaf = reciter.moshaf.find(item => item.server === server) || {
+            id: Number(track.moshafId) || Number(track.reciterId),
+            name: track.moshafName || 'تلاوة محفوظة',
+            server, surahs:[Number(track.surah)], complete:false
+        };
+        if (!core.mp3Url(moshaf, Number(track.surah)) ||
+            core.mp3Url(moshaf, Number(track.surah)) !== track.url) return null;
+        return {reciter,moshaf,server};
+    }
+
+    function create({engine, downloads, getCatalog = () => []}) {
+        let requestNumber = 0;
+
+        async function availableTracks(surah) {
+            const tracks = downloads.list().filter(item =>
+                item.provider === 'mp3quran' && Number(item.surah) === surah &&
+                !item.bundled && typeof item.url === 'string');
+            const available = [];
+            for (const track of tracks) {
+                if (await downloads.has(track.url)) available.push(track);
+            }
+            return available;
+        }
+
+        async function playAligned(id, surah, ayah, isCurrent, stillCurrent) {
+            if (!stillCurrent()) return false;
+            const success = isCurrent
+                ? await engine.goTo(surah, ayah, {autoplay:true})
+                : await engine.selectAligned(id, {surah,ayah,autoplay:true});
+            return !!success;
+        }
+
+        async function playMp3Track(track, chapter, ayah, stillCurrent) {
+            if (!stillCurrent()) return false;
+            const found = mp3ReciterForTrack(track, getCatalog());
+            if (!found) return false;
+            const timing = chapter?.verses?.find(row => Number(row.ayah) === ayah);
+            if (!timing || !Number.isFinite(timing.timestampFrom)) return false;
+            const seconds = timing.timestampFrom / 1000;
+            const oldState = engine.snapshot();
+            const same = trackUrl(oldState, Number(track.surah)) === track.url;
+            const ready = same
+                ? await engine.goTo(Number(track.surah), 1, {autoplay:false,position:seconds})
+                : await engine.selectMp3(found.reciter, found.moshaf, {
+                    surah:Number(track.surah),autoplay:false,position:seconds
+                });
+            if (!ready || !stillCurrent()) return false;
+            const version = engine.prepareVersion;
+            const audio = engine.audio;
+            engine.__mp3AyahChapter = {
+                server: window.QuranMp3AyahTiming.normalizedFolder(found.server),
+                surah:Number(track.surah), verses:chapter.verses
+            };
+            engine.state.ayah = ayah;
+            engine.currentTiming = timing;
+            engine.state.position = seconds;
+            engine.persist();
+            const seek = () => {
+                if (!stillCurrent() || version !== engine.prepareVersion ||
+                    engine.audio !== audio || engine.trackUrl !== track.url) return;
+                try { audio.currentTime = seconds; }
+                catch (_) { /* Browser may defer seeking until metadata. */ }
+            };
+            if (audio.readyState >= 1) seek();
+            else audio.addEventListener('loadedmetadata', seek, {once:true});
+            const played = await engine.play();
+            if (played) engine.__syncMp3QuranAyah?.();
+            return !!played;
+        }
+
+        async function attemptTrack(track, surah, ayah, stillCurrent) {
+            if (!stillCurrent()) return null;
+            const qud = window.QuranQud;
+            // QUD's local metadata gives *word-level* highlighting for the
+            // exact MP3Quran edition, without any internet requirement.
+            try {
+                const reciter = await qud?.matchMp3Track?.(track.url, surah);
+                if (reciter && stillCurrent()) {
+                    const same = engine.state.provider === 'quran-foundation' &&
+                        Number(engine.state.reciterId) === Number(reciter.id);
+                    if (await playAligned(reciter.id,surah,ayah,same,stillCurrent)) {
+                        return {ok:true, name:reciter.name, kind:'word'};
+                    }
+                }
+            } catch (error) {
+                console.warn('Exact QUD chapter unavailable; checking verse timing',error);
+            }
+            if (!stillCurrent()) return null;
+            const mp3Timing = window.QuranMp3AyahTiming;
+            const folder = track.url.slice(0,track.url.lastIndexOf('/')+1);
+            try {
+                const chapter = await mp3Timing?.chapterForRecording?.(folder,surah);
+                if (chapter && await playMp3Track(track,chapter,ayah,stillCurrent)) {
+                    return {ok:true,name:track.reciterName || 'القارئ',kind:'ayah'};
+                }
+            } catch (error) {
+                console.info('No exact MP3Quran ayah timing for this edition',error);
+            }
+            return null;
+        }
+
+        async function listen(surah, ayah) {
+            surah = Number(surah); ayah = Number(ayah);
+            if (!validVerse(surah,ayah)) return {ok:false,message:'الآية المحددة غير صالحة.'};
+            const token = ++requestNumber;
+            const stillCurrent = () => token === requestNumber;
+            const original = engine.snapshot();
+            const selectedUrl = trackUrl(original,surah);
+            const saved = await availableTracks(surah);
+            if (!stillCurrent()) return {ok:false,cancelled:true};
+            // If the user selected an aligned MP3Quran/QUD reciter and saved
+            // this exact recording, do not switch reciters unnecessarily.
+            if (original.provider === 'quran-foundation' && window.QuranQud) {
+                const chosen = window.QuranQud.reciters.find(item =>
+                    Number(item.id) === Number(original.reciterId) &&
+                    item.channel === 'mp3quran');
+                if (chosen) {
+                    try {
+                        const chapter = await window.QuranQud.loadChapter(chosen,surah);
+                        if (saved.some(track => track.url === chapter.audioUrl) &&
+                            await playAligned(chosen.id,surah,ayah,true,stillCurrent)) {
+                            return {ok:true,name:chosen.name,kind:'word',downloaded:true,switched:false};
+                        }
+                    } catch (error) { console.warn('Saved selected QUD recording unavailable',error); }
+                }
+            }
+            // Selected saved sheikh first; otherwise another downloaded
+            // recording with exact timing. Never pick a random online reader.
+            const prioritized = [...saved].sort((a,b) =>
+                Number(b.url === selectedUrl) - Number(a.url === selectedUrl) ||
+                Number(b.savedAt || 0) - Number(a.savedAt || 0));
+            for (const track of prioritized) {
+                const result = await attemptTrack(track,surah,ayah,stillCurrent);
+                if (!stillCurrent()) return {ok:false,cancelled:true};
+                if (result?.ok) return {
+                    ...result,downloaded:true,
+                    switched: result.name !== original.reciterName,
+                    selected: original.reciterName
+                };
+            }
+
+            if (navigator.onLine === false) return {
+                ok:false, offline:true,
+                message:saved.length ? OFFLINE_UNALIGNED : OFFLINE_EMPTY
+            };
+
+            // No suitable download: stream the *selected* reader online,
+            // using precise timings only. The app never silently picks Mishary.
+            if (original.provider === 'quran-foundation') {
+                const played = await playAligned(original.reciterId,surah,ayah,true,stillCurrent);
+                return played
+                    ? {ok:true,name:original.reciterName,kind:'stream',downloaded:false,switched:false}
+                    : {ok:false,message:engine.error || 'تعذّر الاتصال بخادم التلاوة. تحقق من الإنترنت وحاول مرة أخرى.'};
+            }
+            if (selectedUrl) {
+                const result = await attemptTrack({
+                    url:selectedUrl, surah, reciterId:original.reciterId,
+                    reciterName:original.reciterName, moshafId:original.moshafId,
+                    moshafName:original.moshafName
+                },surah,ayah,stillCurrent);
+                if (result?.ok) return {
+                    ...result,downloaded:false,
+                    switched:result.name !== original.reciterName,
+                    selected:original.reciterName
+                };
+            }
+            return {ok:false,message:ONLINE_UNALIGNED};
+        }
+
+        return Object.freeze({listen});
+    }
+
+    window.QuranVerseListen = Object.freeze({create,OFFLINE_EMPTY,OFFLINE_UNALIGNED});
+})();
