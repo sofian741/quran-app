@@ -22,7 +22,7 @@ jobs:
         run: node tests/continuous-sync-regression.cjs
       - name: Verify safe permanent downloads and new MP3Quran highlighting
         run: |
-          node --test tests/offline-audio.test.cjs tests/mp3quran-ayah-sync.test.cjs tests/verse-audio-selection.test.cjs
+          node --test tests/offline-audio.test.cjs tests/mp3quran-ayah-sync.test.cjs tests/verse-audio-selection.test.cjs tests/no-bundled-audio.test.cjs
       - name: Verify Quran, tafsir, adhkar and timing data
         run: |
           node tests/content.cjs
