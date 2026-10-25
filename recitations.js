@@ -47,7 +47,7 @@ engine.addEventListener('state',e=>applyState(e.detail,true));engine.addEventLis
     ?core.mp3Url({server:s.server,surahs:s.availableSurahs},s.surah):'');
   let saved=false;
   try{if(url)saved=await downloads.has(url);}catch(_){}
-  if(!saved&&engine.audio.readyState<3&&(window.QuranAudioConnectivity
+  if(!saved&&(window.QuranAudioConnectivity
     ?await window.QuranAudioConnectivity.isOffline():navigator.onLine===false)){
     offlineNoticeUntil=Date.now()+12000;
     ui.status.textContent=window.QuranAudioConnectivity?.OFFLINE_MESSAGE||
