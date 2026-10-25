@@ -58,6 +58,8 @@ jobs:
         env:
           QURAN_BROWSER_PATH: /usr/bin/chromium
         run: |
+          node --check audio-connectivity.js
+          node --check tour.js
           node --check audio-core.js
           node --check audio-downloads.js
           node --check verse-audio-selection.js
@@ -69,7 +71,7 @@ jobs:
           node --check app-update.js
           node --check android-navigation.js
           node --check scripts/prepare-android-web.mjs
-          node --test tests/offline-audio.test.cjs tests/mp3quran-ayah-sync.test.cjs tests/verse-audio-selection.test.cjs tests/no-bundled-audio.test.cjs
+          node --test tests/offline-audio.test.cjs tests/mp3quran-ayah-sync.test.cjs tests/verse-audio-selection.test.cjs tests/no-bundled-audio.test.cjs tests/audio-connectivity.test.cjs
 
       - name: Gate Android release on Quran, adhkar, security and offline checks
         env:
@@ -82,6 +84,7 @@ jobs:
           node tests/security-static.cjs
           node tests/quran-features.cjs
           node tests/offline-browser.cjs
+          CHROMIUM_PATH=/usr/bin/chromium node tests/tour-navigation-browser.cjs
 
       - name: Embed installed build number and update endpoint
         env:
