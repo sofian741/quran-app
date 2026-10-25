@@ -11,7 +11,7 @@ test('all three entry pages exclude legacy audio-bundle adapters',()=>{
     }
     const mushaf=read('quran.html');
     assert.match(mushaf,/<script src="verse-audio-selection\.js"><\/script>/);
-    assert.match(mushaf,/لا يضم تسجيلات صوتية مسبقًا/);
+    assert.doesNotMatch(mushaf,/audio-download-explanation/);
     assert.doesNotMatch(mushaf,/الحذيفي المدمج/);
 });
 
