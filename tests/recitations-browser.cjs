@@ -60,7 +60,7 @@ const catalog = {
   assert.equal(await page.locator('#surah-select option').count(), 2, 'partial recordings must keep their real chapter list');
   const savedPosition = await page.evaluate(() => {
     window.quranAudioEngine.seek(42);
-    return JSON.parse(localStorage.getItem('quranRecitationsStateV1')).position;
+    return JSON.parse(localStorage.getItem('quranAudioStateV2')).position;
   });
   assert.equal(savedPosition, 42, 'listening position must be persisted');
   await page.click('#play-pause');

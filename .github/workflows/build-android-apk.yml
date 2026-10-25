@@ -66,7 +66,6 @@ jobs:
           node --check mp3quran-ayah-sync.js
           node --check mushaf-audio.js
           node --check native-background-audio.js
-          node --check floating-recitation.js
           node --check qud-audio.js
           node --check library.js
           node --check app-update.js
@@ -163,7 +162,7 @@ jobs:
           assert 'android:screenOrientation="portrait"' in manifest.read_text(encoding='utf-8')
           PY
 
-      - name: Register native audio download and persistent playback support
+      - name: Register native audio download support
         run: python3 scripts/register-background-downloads.py
 
       - name: Restore stable QA signing key

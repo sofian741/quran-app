@@ -30,13 +30,8 @@
       if (close) { close.click(); return; }
     }
     if (!isHome) {
-      const goBack = () => {
-        if (history.length > 1 && document.referrer && new URL(document.referrer).origin === location.origin) history.back();
-        else location.assign('index.html');
-      };
-      if (location.pathname.endsWith('/recitations.html') && window.QuranFloatingRecitation?.supported) {
-        window.QuranFloatingRecitation.handoff().finally(goBack);
-      } else goBack();
+      if (history.length > 1 && document.referrer && new URL(document.referrer).origin === location.origin) history.back();
+      else location.assign('index.html');
       return;
     }
     const now = Date.now();

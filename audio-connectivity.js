@@ -3,7 +3,7 @@
     // Android WebView can report navigator.onLine=true even when the phone
     // cannot reach the internet. Probe only when a network-only action needs
     // confirmation, so cached/offline playback never depends on this probe.
-    const OFFLINE_MESSAGE = 'لا يوجد اتصال بالإنترنت.';
+    const OFFLINE_MESSAGE = 'لا يوجد اتصال بالإنترنت. شغّل الواي فاي أو بيانات الهاتف، أو حمّل تلاوة السورة من «التلاوات» للاستماع بدون إنترنت.';
     const PROBES = [
         'https://mp3quran.net/api/v3/reciters?language=ar',
         'https://api.quran.com/api/v4/chapters/1'
