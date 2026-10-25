@@ -462,7 +462,10 @@ async function testEditorialBackSkipAndResume(browser,origin){
     assert.equal(await page.locator('#reader').isVisible(),true);
     await lesson(page).locator('[data-tour-action="pause"]').click();
     assert.equal(await page.locator('#reader').isVisible(),false,'Exit closes tour reader');
-    await page.evaluate(()=>localStorage.removeItem('ayat-tour-remind-at-adhkar-v7'));
+    await page.evaluate(()=>{
+      localStorage.removeItem('ayat-tour-remind-at-adhkar-v7');
+      sessionStorage.removeItem('ayat-tour-remind-at-adhkar-v7');
+    });
     await page.reload();
     await invite(page).waitFor({state:'visible'});
     await invite(page).locator('[data-tour-action="begin"]').click();
