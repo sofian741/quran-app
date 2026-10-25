@@ -722,3 +722,9 @@
 
 .audio-download-chip .audio-bundled-mark { border-radius:6px; padding:2px 5px; font-size:9px; color:#16654a; background:rgba(40,140,97,.12); }
 .reader-page[data-theme='dark'] .audio-download-chip .audio-bundled-mark { color:#b8edc9; background:rgba(90,186,124,.16); }
+
+/* Verse listening is online-only. Download controls live in the recitations library. */
+.reader-page .audio-download-actions[hidden],
+.reader-page .audio-download-progress[hidden],
+.reader-page .audio-download-list[hidden],
+.reader-page .audio-storage-info[hidden]{display:none!important}
