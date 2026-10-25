@@ -115,6 +115,21 @@
         return promise;
     }
 
+    // A saved MP3Quran recording can seek to a particular ayah only when
+    // official timings match its exact recording folder. Offline use works
+    // with previously cached timing data; never guess missing boundaries.
+    async function chapterForRecording(server, surah) {
+        const folder = normalizedFolder(server);
+        if (!folder || !Number.isInteger(Number(surah)) ||
+            Number(surah) < 1 || Number(surah) > 114) return null;
+        const reads = await availableReads();
+        const read = reads.find(row => row.folder === folder);
+        if (!read) return null;
+        const verses = await chapterTiming(read.id, Number(surah));
+        return verses?.length === core.VERSE_COUNTS[Number(surah)-1]
+            ? {server:folder,surah:Number(surah),verses} : null;
+    }
+
     const proto = core.AudioEngine.prototype;
     const oldPrepare = proto.prepare;
     const oldBind = proto.bindAudio;
@@ -189,5 +204,5 @@
         return result;
     };
 
-    window.QuranMp3AyahTiming = Object.freeze({normalizedFolder,validateChapter});
+    window.QuranMp3AyahTiming = Object.freeze({normalizedFolder,validateChapter,chapterForRecording});
 })();
