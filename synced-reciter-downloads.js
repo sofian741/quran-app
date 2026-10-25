@@ -85,6 +85,7 @@
     ui.all.disabled = blocked;
     ui.surah.disabled = active;
     ui.cancel.hidden = !active;
+    ui.cancel.disabled = !active || stop;
   }
 
   for (let surah = 1; surah <= 114; surah++) {
