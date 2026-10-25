@@ -69,7 +69,7 @@ jobs:
           node --check app-update.js
           node --check android-navigation.js
           node --check scripts/prepare-android-web.mjs
-          node --test tests/offline-audio.test.cjs tests/mp3quran-ayah-sync.test.cjs tests/verse-audio-selection.test.cjs
+          node --test tests/offline-audio.test.cjs tests/mp3quran-ayah-sync.test.cjs tests/verse-audio-selection.test.cjs tests/no-bundled-audio.test.cjs
 
       - name: Gate Android release on Quran, adhkar, security and offline checks
         env:
