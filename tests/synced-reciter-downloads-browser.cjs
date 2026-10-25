@@ -52,13 +52,13 @@ const browserPath = process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium';
         this.emit({status:'done',track,bytes:12345,progress:1});
         return true;
       };
-      window.QuranQud.loadChapter = async function(reader,surah) {
+      window.QuranQud = {...window.QuranQud,loadChapter:async function(reader,surah) {
         const count=window.QuranAudio.VERSE_COUNTS[surah-1];
         return {reciterId:reader.id,surah,
           audioUrl:'https://server9.mp3quran.net/'+reader.slug+'/'+String(surah).padStart(3,'0')+'.mp3',
           verses:Array.from({length:count},(_,i)=>({ayah:i+1,segments:[{word:1,start:0,end:100}]}))
         };
-      };
+      }};
     });
 
     await page.locator('#synced-download-one').click();
