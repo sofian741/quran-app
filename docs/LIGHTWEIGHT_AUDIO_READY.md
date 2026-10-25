@@ -30,3 +30,7 @@ Verify airplane mode / Wi-Fi off on Android WebView for both «الاستماع�
 ## Latest QA run
 
 Rebuild after offline player notices, Arabic error normalization, and the focused browser test for real Quran guide sheets across Skip / Previous / Next. The audio corpus remains absent from the APK.
+
+## Full five-page guided-tour state synchronization
+
+QA rebuild requested after applying the same real-panel synchronization across all tours, not only the Mushaf. Quran remains on its previously fixed panel-aware flow. Adhkar now closes the actual morning reader on Previous and restores it on Next/resume, with a safe Skip that opens the real morning chapter only after the local dataset is ready; its optional final Skip never increments the tasbih or pretends to swipe. Recitations returns to the actual reciter list on Previous, and reader selection is optional. The Home verse preview is dismissed when moving back, and My Library's explanations do not alter downloaded files. All five page guides are re-versioned and the offline service-worker shell is refreshed. The Android QA gate must run both the Quran and editorial Back/Skip/resume browser regressions before publishing an APK.
