@@ -47,6 +47,7 @@ jobs:
           node --check tests/qud-play-browser.cjs
           node tests/mushaf-reciter-switch.cjs
           QURAN_TOUR_QA_ONLY=1 CHROMIUM_PATH=/usr/bin/chromium node tests/tour-navigation-browser.cjs
+          EDITORIAL_TOUR_QA_ONLY=1 CHROMIUM_PATH=/usr/bin/chromium node tests/tour-navigation-browser.cjs
 
       - name: Verify QUD 9000 playback in Chromium
         env:
