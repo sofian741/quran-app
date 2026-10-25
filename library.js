@@ -3,7 +3,7 @@
 const core=window.QuranAudio,api=window.QuranDownloads,$=id=>document.getElementById(id);if(!core||!api)return;
 const dm=new api.DownloadManager(),audio=$('library-audio');let items=[],visible=[],currentItem=null,currentIndex=-1;
 const icon=(type)=>type==='play'?'<svg viewBox="0 0 24 24"><path d="m8 5 12 7-12 7V5Z"/></svg>':type==='pause'?'<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg>':type==='delete'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5"/></svg>':'';
-function tracks(){return dm.list().filter(t=>t?.provider==='mp3quran'&&Number(t.surah)>=1&&Number(t.surah)<=114)}
+function tracks(){return dm.list().filter(t=>t&&!t.bundled&&api.canDownloadTrack({...t,provider:'mp3quran'})&&Number(t.surah)>=1&&Number(t.surah)<=114)}
 function readerKey(t){return String(t.reciterId||t.reciterName||'unknown')}
 function readerName(t){return t.reciterName||'قارئ القرآن'}
 function surahName(t){return t.surahName||core.SURAH_NAMES[Number(t.surah)-1]||`السورة ${t.surah}`}
