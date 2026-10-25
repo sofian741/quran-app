@@ -147,6 +147,7 @@
       if(event.button!==0)return;
       const rect=node.getBoundingClientRect();
       bubbleDrag={x:event.clientX,y:event.clientY,left:rect.left,top:rect.top,moved:false};
+      moving=true;
       bubble.setPointerCapture(event.pointerId);
     });
     bubble.addEventListener('pointermove',event=>{
@@ -168,6 +169,7 @@
         storeUi();
       }
       bubbleDrag=null;
+      moving=false;
     };
     bubble.addEventListener('pointerup',finishBubble);
     bubble.addEventListener('pointercancel',finishBubble);
@@ -211,7 +213,9 @@
     };
     handle.addEventListener('pointerup',finish);
     handle.addEventListener('pointercancel',finish);
-    if(isMushaf && uiState.collapsed===undefined) uiState.collapsed=true;
+    // Reading must never start with a wide control covering Quran text.
+    // The listener may expand it explicitly on this screen.
+    if(isMushaf) uiState.collapsed=true;
     window.addEventListener('resize',()=>placeMini());
     placeMini();
   }
@@ -228,7 +232,9 @@
     if(!mini)return;
     mini.hidden=!s?.active;
     if(!s?.active)return;
+    const wasCollapsed=mini.classList.contains('is-collapsed');
     mini.classList.toggle('is-collapsed',!!uiState.collapsed);
+    if(wasCollapsed!==!!uiState.collapsed) requestAnimationFrame(placeMini);
     $('ayat-floating-title').textContent=s.title||'تلاوة القرآن الكريم';
     $('ayat-floating-artist').textContent=s.artist||'القرآن الكريم';
     const toggle=mini.querySelector('[data-floating="toggle"]');
