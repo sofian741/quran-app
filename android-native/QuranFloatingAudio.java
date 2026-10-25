@@ -62,23 +62,23 @@ public class QuranFloatingAudio extends Plugin {
         } catch (Exception e) { call.reject("Could not start recitation playback",e); }
     }
     @PluginMethod public void play(PluginCall call) {
-        if (QuranPlaybackService.current() != null) command(QuranPlaybackService.ACTION_PLAY);
+        if (QuranPlaybackService.current() != null) QuranPlaybackService.current().play();
         call.resolve(statusValue());
     }
     @PluginMethod public void pause(PluginCall call) {
-        if (QuranPlaybackService.current() != null) command(QuranPlaybackService.ACTION_PAUSE);
+        if (QuranPlaybackService.current() != null) QuranPlaybackService.current().pause();
         call.resolve(statusValue());
     }
     @PluginMethod public void next(PluginCall call) {
-        if (QuranPlaybackService.current() != null) command(QuranPlaybackService.ACTION_NEXT);
+        if (QuranPlaybackService.current() != null) QuranPlaybackService.current().skip(1);
         call.resolve(statusValue());
     }
     @PluginMethod public void previous(PluginCall call) {
-        if (QuranPlaybackService.current() != null) command(QuranPlaybackService.ACTION_PREVIOUS);
+        if (QuranPlaybackService.current() != null) QuranPlaybackService.current().skip(-1);
         call.resolve(statusValue());
     }
     @PluginMethod public void stop(PluginCall call) {
-        if (QuranPlaybackService.current() != null) command(QuranPlaybackService.ACTION_STOP);
+        if (QuranPlaybackService.current() != null) QuranPlaybackService.current().stopPlayback();
         call.resolve();
     }
     @PluginMethod public void seek(PluginCall call) {
