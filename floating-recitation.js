@@ -17,7 +17,7 @@
     });
     return;
   }
-  let engine = null, downloads = null, transfer = null;
+  let engine = null, downloads = null, transfer = null, handedOff = false;
   let mini = null, last = null, poll = null, moving = false;
   let uiState = (() => { try { return JSON.parse(localStorage.getItem(UI_KEY)||'{}'); } catch { return {}; } })();
   const storeUi = () => { try { localStorage.setItem(UI_KEY,JSON.stringify(uiState)); } catch {} };
@@ -61,6 +61,7 @@
         store({reciterId:s.reciterId,moshafId:s.moshafId,server:s.server,
           availableSurahs:playlist.map(row=>row.surah),repeat:s.repeat,speed:s.speed,
           reciterName:s.reciterName,moshafName:s.moshafName});
+        handedOff = true;
         engine.pause();
         return true;
       } catch (e) {
@@ -89,7 +90,7 @@
     return {playing:!!s.playing,surah};
   }
   function attachEngine(target, downloadManager) {
-    engine=target;downloads=downloadManager;
+    engine=target;downloads=downloadManager;handedOff=false;
     document.addEventListener('click',event=>{
       const link=event.target.closest?.('a[href]');
       if (!link || event.defaultPrevented || event.button !== 0 ||
@@ -106,7 +107,7 @@
     window.addEventListener('pagehide',()=>{
       // Fallback for Android Back or programmatic navigation. Link taps are
       // intercepted above so the foreground service starts before teardown.
-      if (engine?.trackUrl && !transfer) handoff();
+      if (engine?.trackUrl && !transfer && !handedOff) handoff();
     });
   }
   function miniMarkup() {
