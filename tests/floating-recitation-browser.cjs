@@ -11,6 +11,8 @@ const catalog={reciters:[{id:7,name:'مشاري راشد العفاسي',moshaf:
   const browser=await chromium.launch({headless:true,executablePath:browserPath,args:['--no-sandbox']});
   try{
     const page=await browser.newPage({viewport:{width:390,height:844},serviceWorkers:'block'});
+    page.setDefaultTimeout(12000);
+    page.setDefaultNavigationTimeout(12000);
     const errors=[];
     page.on('pageerror',e=>errors.push(e.message));
     await page.addInitScript(()=>{
