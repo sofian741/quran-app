@@ -122,7 +122,7 @@ async function testIndependentPages(browser,origin){
   assert.match(page.url(),/recitations\.html$/,'Recitations guide must remain on its page');
   await page.goto(origin+'/library.html');
   await invite(page).waitFor({state:'visible'});
-  assert.match(await invite(page).textContent(),/مكتبتي/);
+  assert.match(await invite(page).textContent(),/المكتبة الصوتية/);
   await invite(page).locator('[data-tour-action="later"]').click();
   assert.equal(await invite(page).isVisible(),false);
   await page.goto(origin+'/adhkar.html');
