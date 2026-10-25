@@ -4,6 +4,8 @@ const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const base=process.env.QURAN_BASE_URL||'http://127.0.0.1:4173';
 const browserPath=process.env.QURAN_BROWSER_PATH||'/usr/bin/chromium';
+const guard=setTimeout(()=>{console.error('Floating audio browser regression timed out');process.exit(1)},120000);
+guard.unref();
 const catalog={reciters:[{id:7,name:'مشاري راشد العفاسي',moshaf:[{
   id:71,name:'حفص',server:'https://server.mp3quran.net/afs/',surah_list:'1,2,3'
 }]}]};
