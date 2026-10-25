@@ -106,7 +106,7 @@ const catalog = { reciters: [
         await page.waitForFunction(() => window.quranAudioEngine.state.provider === 'mp3quran');
         assert.equal(await page.evaluate(() => window.quranAudioEngine.state.reciterName),
             'قارئ تجريبي غير متزامن');
-        assert.match(await page.locator('#audio-sync-note').textContent(), /دون تحويل عشوائي/);
+        assert.match(await page.locator('#audio-sync-note').textContent(), /من أولها|من بدايتها/);
         // No saved recording + no internet: show a clear offline message,
         // keep the selected sheikh, and never force Mishary.
         await page.evaluate(() => {
