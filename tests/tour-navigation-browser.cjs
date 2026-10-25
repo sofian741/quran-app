@@ -243,7 +243,7 @@ async function testQuranFromSettings(browser,origin){
   page.on('pageerror',error=>securityErrors.push(error.message));
   await page.goto(origin+'/quran.html');
   await page.waitForFunction(()=>document.querySelector('#quran-text')?.dataset.layoutState==='ready');
-  assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'),/tour\.js\?v=62$/);
+  assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'),/tour\.js\?v=63$/);
   await invite(page).waitFor({state:'visible'});
   await invite(page).locator('[data-tour-action="later"]').click();
   const original=await page.evaluate(()=>({
