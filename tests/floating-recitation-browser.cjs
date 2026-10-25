@@ -69,6 +69,8 @@ const catalog={reciters:[{id:7,name:'مشاري راشد العفاسي',moshaf:
     await page.waitForURL('**/library.html');
     await page.waitForFunction(()=>document.getElementById('ayat-floating-audio') &&
       !document.getElementById('ayat-floating-audio').hidden);
+    // First-run guided tour is a separate modal; isolate the audio control test.
+    await page.addStyleTag({content:'.ayat-tour-root{display:none!important}'});
     assert.match(await page.locator('#ayat-floating-title').textContent(),/سورة/);
     await page.click('[data-floating="toggle"]');
     assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('testAndroidPlayback')).playing),false);
