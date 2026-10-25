@@ -141,7 +141,38 @@
     mini=node;
     const open=()=>location.assign('recitations.html');
     node.querySelector('.ayat-floating-info').addEventListener('click',open);
-    node.querySelector('.ayat-floating-bubble').addEventListener('click',()=>{
+    const bubble=node.querySelector('.ayat-floating-bubble');
+    let bubbleDrag=null, suppressBubbleClick=false;
+    bubble.addEventListener('pointerdown',event=>{
+      if(event.button!==0)return;
+      const rect=node.getBoundingClientRect();
+      bubbleDrag={x:event.clientX,y:event.clientY,left:rect.left,top:rect.top,moved:false};
+      bubble.setPointerCapture(event.pointerId);
+    });
+    bubble.addEventListener('pointermove',event=>{
+      if(!bubbleDrag)return;
+      const dx=event.clientX-bubbleDrag.x,dy=event.clientY-bubbleDrag.y;
+      if(Math.abs(dx)+Math.abs(dy)>8)bubbleDrag.moved=true;
+      if(!bubbleDrag.moved)return;
+      node.style.left=Math.max(8,Math.min(innerWidth-54,bubbleDrag.left+dx))+'px';
+      node.style.top=Math.max(54,Math.min(innerHeight-125,bubbleDrag.top+dy))+'px';
+      node.style.right='auto';node.style.bottom='auto';
+    });
+    const finishBubble=()=>{
+      if(!bubbleDrag)return;
+      suppressBubbleClick=bubbleDrag.moved;
+      if(bubbleDrag.moved){
+        const rect=node.getBoundingClientRect();
+        uiState.left=Math.round(rect.left/innerWidth*1000)/1000;
+        uiState.top=Math.round(rect.top/innerHeight*1000)/1000;
+        storeUi();
+      }
+      bubbleDrag=null;
+    };
+    bubble.addEventListener('pointerup',finishBubble);
+    bubble.addEventListener('pointercancel',finishBubble);
+    bubble.addEventListener('click',()=>{
+      if(suppressBubbleClick){suppressBubbleClick=false;return;}
       uiState.collapsed=false;storeUi();renderMini(last);
     });
     node.querySelectorAll('[data-floating]').forEach(button=>button.addEventListener('click',async()=>{
