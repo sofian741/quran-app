@@ -5,13 +5,14 @@ if(!core||!downloadsApi)return;
 const ui={audio:$('recitation-audio'),list:$('reciter-list'),search:$('reciter-search'),completeOnly:$('complete-only'),moshaf:$('moshaf-select'),surah:$('surah-select'),play:$('play-pause'),playIcon:$('play-icon'),playLabel:$('play-label'),previous:$('previous'),next:$('next'),seek:$('seek'),speed:$('speed'),repeat:$('repeat'),status:$('player-status'),catalogStatus:$('catalog-status'),count:$('reader-count'),title:$('player-title'),subtitle:$('player-subtitle'),duration:$('duration'),current:$('current-time'),connection:$('connection-label'),reload:$('reload-catalog'),download:$('download-current'),theme:$('recitations-theme-toggle'),playerMode:$('player-mode'),mainPlayer:$('main-player'),mini:$('mini-player'),miniOpen:$('mini-open'),miniPlay:$('mini-play'),miniNext:$('mini-next'),miniIcon:$('mini-play-icon'),miniTitle:$('mini-title'),miniSubtitle:$('mini-subtitle'),miniProgress:$('mini-progress-fill')};
 if(Object.values(ui).some(v=>!v))return;
 const engine=new core.AudioEngine(ui.audio,{stateKey:'quranRecitationsStateV1'}),catalogService=new core.CatalogService(),downloads=new downloadsApi.DownloadManager();window.quranAudioEngine=engine;
-let catalog=[],selectedReciter=null,selectedMoshaf=null,applying=false,miniEnabled=false,downloadCheck=0;
+let catalog=[],selectedReciter=null,selectedMoshaf=null,applying=false,miniEnabled=false,miniEverPlayed=false,downloadCheck=0;
+ui.audio.addEventListener('play',()=>{miniEverPlayed=true;updateMiniVisibility()});
 window.QuranFloatingRecitation?.attachEngine?.(engine,downloads);
 const THEME_KEY='quranHomeTheme';
 function readTheme(){try{const v=localStorage.getItem(THEME_KEY);if(v==='dark'||v==='light')return v;}catch{}return window.matchMedia?.('(prefers-color-scheme: dark)').matches?'dark':'light'}
 function applyTheme(theme){document.body.dataset.theme=theme;ui.theme.setAttribute('aria-label',theme==='dark'?'تفعيل الوضع النهاري':'تفعيل الوضع الليلي');document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#141e1a':'#f7f8f3')}
 applyTheme(readTheme());ui.theme.addEventListener('click',()=>{const t=document.body.dataset.theme==='dark'?'light':'dark';applyTheme(t);try{localStorage.setItem(THEME_KEY,t)}catch{}});
-function updateMiniVisibility(){const rect=ui.mainPlayer.getBoundingClientRect();ui.mini.hidden=!(miniEnabled&&rect.bottom<0)}
+function updateMiniVisibility(){const rect=ui.mainPlayer.getBoundingClientRect();ui.mini.hidden=!(miniEnabled&&miniEverPlayed&&rect.bottom<0)}
 ui.miniOpen.addEventListener('click',()=>ui.mainPlayer.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'}));ui.miniPlay.addEventListener('click',()=>toggleWithConnectionNotice());ui.miniNext.addEventListener('click',()=>engine.next());window.addEventListener('scroll',updateMiniVisibility,{passive:true});window.addEventListener('resize',updateMiniVisibility);
 function option(select,value,label){const o=document.createElement('option');o.value=String(value);o.textContent=label;select.append(o)}
 function fillSurahs(moshaf,selected){ui.surah.replaceChildren();moshaf.surahs.forEach(n=>option(ui.surah,n,`${core.arabicDigits(n)}. سورة ${core.SURAH_NAMES[n-1]}`));ui.surah.value=String(moshaf.surahs.includes(Number(selected))?selected:moshaf.surahs[0])}
