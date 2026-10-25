@@ -18,3 +18,7 @@ Release QA must pass:
 4. Android APK must be built and uploaded as Ayat.apk.
 
 This is a new QA build, not an authorization to publish on Google Play.
+
+## Final regression build: preserve legacy QUD downloads
+
+In addition to the audio-free APK, keep recordings downloaded under older synchronized-provider metadata visible in «مكتبتي» and the offline MP3Quran catalog. Their original app-owned Android audio files must remain usable after an install-over update. The latest browser test confirms that offline verse listening chooses a downloaded, exact-timed reader instead of switching to Mishary. This note triggers the final QA APK rebuild from the latest changes.
