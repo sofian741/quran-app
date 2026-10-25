@@ -35,5 +35,5 @@ test('Mushaf never hardcodes a switch to Mishary when listening to an ayah',()=>
     const listener=source.slice(start,end);
     assert.doesNotMatch(listener,/selectAligned\(7|مشاري العفاسي لتشغيل الآية/);
     assert.match(listener,/verseListener\.listen/);
-    assert.match(listener,/لا يوجد إنترنت أو تلاوة مناسبة محمّلة/);
+    assert.match(listener,/لا يوجد اتصال بالإنترنت/);
 });
