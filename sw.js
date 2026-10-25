@@ -1,16 +1,16 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v67';
+const APP_CACHE = 'quran-reader-shell-v66';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',
     './style.css', './home.css', './home.js', './welcome.css', './welcome-boot.js', './welcome.js', './tour.css?v=57', './tour-home.css?v=59', './tour.js?v=63', './onboarding.css', './onboarding.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
-    './recitations-overrides.css', './synced-reciter-downloads.css', './unified-nav.css', './global-theme.js', './library.css', './adhkar.css', './legal.css',
+    './recitations-overrides.css', './unified-nav.css', './global-theme.js', './library.css', './adhkar.css', './legal.css',
     './service-worker-register.js', './home-settings.js?v=54', './android-build-info.js', './app-update.js', './app.js', './reader-enhancements.js', './reader-layout-polish.js',
     './mushaf-layout-prewarm-worker.js',
     './verse-actions.js', './tafsir.js', './quran-search.js', './verse-tools.js',
     './audio-connectivity.js', './audio-core.js', './audio-downloads.js', './data/qud/registry.js', './qud-audio.js', './offline-reciter-catalog.js',
-    './audio-bulk-download.js', './synced-reciter-downloads.js', './mp3quran-ayah-sync.js', './verse-audio-selection.js', './mushaf-audio.js', './recitations.js', './recitations-library-link.js', './library.js', './adhkar.js',
+    './audio-bulk-download.js', './mp3quran-ayah-sync.js', './verse-audio-selection.js', './mushaf-audio.js', './recitations.js', './recitations-library-link.js', './library.js', './adhkar.js',
     './data/quran-uthmani.txt', './data/mushaf-layout.json', './data/adhkar.json', './data/adhkar-source.json',
     './scripts/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2'
 ];

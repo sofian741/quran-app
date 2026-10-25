@@ -11,7 +11,6 @@
   <title>مكتبة التلاوات | آيات | Ayat</title>
   <link rel="stylesheet" href="recitations.css">
   <link rel="stylesheet" href="recitations-overrides.css">
-  <link rel="stylesheet" href="synced-reciter-downloads.css">
   <link rel="stylesheet" href="unified-nav.css">
   <link rel="stylesheet" href="tour.css?v=57">
   <link rel="stylesheet" href="tour-home.css?v=59">
@@ -41,37 +40,6 @@
       <span class="my-library-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="m15 6-6 6 6 6"/></svg></span>
     </a>
 
-    <section class="synced-downloads" id="synced-downloads" aria-labelledby="synced-downloads-title">
-      <div class="synced-section-heading">
-        <span class="eyebrow">تلاوات بتوقيتات كلمات مطابقة</span>
-        <h2 id="synced-downloads-title">قرّاء التظليل <span>والتحميل</span></h2>
-        <p>اختار الشيخ وحمّل سورة أو المصحف كاملًا. التسجيلات دي متطابقة مع توقيتات الكلمات في المصحف، فتقدر تبدأ من أي آية وتتابع التظليل حتى من غير إنترنت.</p>
-      </div>
-      <div class="synced-reader-list" id="synced-reader-list" role="group" aria-label="قراء التظليل المتاح تنزيل تسجيلاتهم"></div>
-      <div class="synced-download-panel">
-        <div class="synced-selection">
-          <div><span class="synced-panel-label">القارئ المحدد</span><strong id="synced-selected-reader">جاري تجهيز القراء…</strong></div>
-          <label for="synced-surah">السورة</label>
-          <select id="synced-surah" aria-label="اختر السورة لتنزيل تلاوتها المتزامنة"></select>
-        </div>
-        <div class="synced-actions">
-          <button type="button" id="synced-download-one">تنزيل السورة بالتظليل</button>
-          <button type="button" id="synced-download-all">تنزيل المصحف كاملًا</button>
-          <button type="button" id="synced-cancel-download" hidden>إيقاف بعد السورة الحالية</button>
-        </div>
-        <div id="synced-progress-wrap" class="synced-progress-wrap" hidden>
-          <progress id="synced-progress" max="100" value="0"></progress>
-        </div>
-        <p id="synced-download-status" role="status" aria-live="polite">اختر القارئ والسورة، ثم اضغط تنزيل.</p>
-        <a class="synced-library-link" href="library.html">عرض التلاوات المحفوظة في «مكتبتي»</a>
-      </div>
-      <details class="synced-other-sources">
-        <summary>وباقي قراء التظليل؟</summary>
-        <p>فيه قراء آخرون بيدعموا تظليل الكلمات أثناء الاستماع داخل المصحف، لكن مصادر تسجيلاتهم الحالية غير معتمدة عندنا للتنزيل الدائم. علشان نحافظ على حقوق التسجيلات ودقة التوقيت، مش هننزّل تسجيلًا مختلفًا ونعتبره متزامنًا.</p>
-        <p id="synced-unavailable-list"></p>
-      </details>
-    </section>
-
     <section class="player-card" id="main-player" aria-labelledby="player-title">
       <div class="player-section-label"><span class="live-mark"></span> مشغل القرآن الكريم <span class="player-section-rule"></span></div>
       <div class="player-head">
@@ -99,7 +67,7 @@
       <div id="reciter-list" class="reciter-grid" aria-live="polite"></div><p id="catalog-status" class="catalog-status" role="status"></p>
     </section>
 
-    <footer class="attribution"><span>تسجيلات MP3Quran من <a href="https://www.mp3quran.net/ar" target="_blank" rel="noopener noreferrer">MP3Quran.net</a>، وتوقيتات تظليل الكلمات من QUD (CC BY 4.0).</span><span>التلاوات المحفوظة تُدار من صفحة «مكتبتي». <a href="licenses.html">المصادر والتراخيص والخصوصية</a>.</span></footer>
+    <footer class="attribution"><span>التسجيلات وبيانات القرّاء من <a href="https://www.mp3quran.net/ar" target="_blank" rel="noopener noreferrer">MP3Quran.net</a>.</span><span>التلاوات المحفوظة تُدار من صفحة «مكتبتي». <a href="licenses.html">المصادر والتراخيص والخصوصية</a>.</span></footer>
   </main>
 </div>
 
@@ -121,11 +89,8 @@
 <script src="audio-downloads.js"></script>
 <script src="native-background-audio.js"></script>
 <script src="offline-reciter-catalog.js"></script>
-<script src="data/qud/registry.js"></script>
-<script src="qud-audio.js"></script>
 <script src="recitations.js"></script>
 <script src="audio-bulk-download.js"></script>
-<script src="synced-reciter-downloads.js"></script>
 <script src="recitations-library-link.js"></script>
 <script src="tour.js?v=63"></script>
 </body>
