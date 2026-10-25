@@ -97,7 +97,7 @@
   ui.reader.textContent = selected?.name || 'لا توجد تلاوات قابلة للتنزيل';
 
   async function verifiedTrack(reader, surah) {
-    const chapter = await qud.loadChapter(reader, surah);
+    const chapter = await window.QuranQud.loadChapter(reader, surah);
     const url = chapter?.audioUrl;
     if (Number(chapter?.surah) !== surah || Number(chapter?.reciterId) !== Number(reader.id) ||
         chapter.verses?.length !== core.VERSE_COUNTS[surah - 1] ||
