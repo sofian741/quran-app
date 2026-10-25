@@ -60,10 +60,6 @@
     let downloadBatch = false;
     let cancelRequested = false;
     const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
-    let brandNewAudioState = false;
-    try { brandNewAudioState = !localStorage.getItem(core.STATE_KEY); }
-    catch (_) { /* Private mode should not block the reader. */ }
-
     function canDownloadCurrentReciter(state) {
         if (state.provider === 'mp3quran') return true;
         const source = window.QuranQud?.reciters?.find(
@@ -121,12 +117,12 @@
         ui.reciter.appendChild(syncedGroup);
 
         const mp3Group = document.createElement('optgroup');
-        mp3Group.label = `مكتبة التلاوات (${core.arabicDigits(catalog.length)}) • تسجيلات غير متزامنة`;
+        mp3Group.label = `مكتبة التلاوات (${core.arabicDigits(catalog.length)}) • تظليل الآيات حسب التسجيل`;
         catalog.forEach(reciter => option(mp3Group,
-            `mp3:${reciter.id}`, `${reciter.name} • يبدأ التسجيل من بدايته`));
+            `mp3:${reciter.id}`, `${reciter.name} • تشغيل السور وتحميلها`));
         if (state.provider === 'mp3quran' && !catalog.some(item => item.id === Number(state.reciterId))) {
             option(mp3Group, selectedValue,
-                `${state.reciterName} • تسجيل غير متزامن`);
+                `${state.reciterName} • تسجيل صوتي`);
         }
         if (mp3Group.children.length) ui.reciter.appendChild(mp3Group);
 
@@ -192,7 +188,7 @@
                     if (group?.label.startsWith('مكتبة التلاوات')) {
                         const caption = document.createElement('small');
                         caption.className = 'audio-picker-group-caption';
-                        caption.textContent = 'لا يوجد تظليل كلمات أو تشغيل من آية محددة. عند اختيار آية للاستماع، سيتم التحويل تلقائيًا إلى مشاري العفاسي مع تنبيه واضح.';
+                        caption.textContent = 'يمكن تنزيل التلاوات للاستماع دون إنترنت. عند الضغط على «الاستماع» من آية، يُستخدم القارئ المحمّل صاحب التوقيت المطابق، ولن يتغير القارئ تلقائيًا إلى مشاري.';
                         fragment.appendChild(caption);
                     }
                 }
@@ -351,7 +347,7 @@
                 ? alignedDiscoveryStatus
                 : hasOfficialMp3AyahTiming(state)
                 ? 'توقيتات MP3Quran الأصلية تطابق هذا التسجيل؛ يتظلل نطاق الآية تلقائيًا. تظليل الكلمات يتطلب تسجيلًا متزامنًا يدعم توقيت كل كلمة.'
-                : 'يبدأ التسجيل من بداية السورة. يبحث آيات عن توقيتات الآيات الرسمية المطابقة لنفس التسجيل لتظليل الآية فقط دون تخمين الكلمات. ولو ضغطت «الاستماع» من آية محددة، سيتحول التطبيق تلقائيًا إلى مشاري العفاسي المتزامن مع تنبيه واضح.';
+                : 'يبدأ التسجيل من بداية السورة. عند طلب الاستماع من آية، نبحث أولًا عن تلاوة محمّلة بتوقيتات مطابقة؛ وإن لم تتوفر نستخدم التسجيل المختار عبر الإنترنت إذا كان متزامنًا، دون تحويل عشوائي للقارئ.';
         }
         applyingState = false;
     }
@@ -725,42 +721,47 @@
         ui.switchNotice.hidden = true;
     });
 
+    const verseListener = window.QuranVerseListen?.create({
+        engine, downloads, getCatalog: () => catalog
+    });
     ui.listenAction.addEventListener('click', async () => {
         const selected = window.mushafVerseActions?.getSelectedVerse?.();
-        if (!selected) return;
+        if (!selected || ui.listenAction.disabled) return;
         window.mushafVerseActions.close();
+        ui.switchNotice.hidden = true;
         listenNotice = '';
         listenNoticeUntil = 0;
-
-        let started = false;
-        if (engine.state.provider === 'quran-foundation') {
-            started = await engine.goTo(selected.surah, selected.ayah, { autoplay: true });
-        } else {
-            const previousReader = engine.state.reciterName;
-            showSwitchNotice('تنبيه: هذا القارئ لا يدعم التشغيل من آية محددة',
-                `القارئ «${previousReader}» من مكتبة التلاوات غير المتزامنة، وتسجيله لا يوفر توقيتًا دقيقًا للآيات والكلمات. لذلك يتم التحويل تلقائيًا إلى مشاري راشد العفاسي لتشغيل الآية ${core.arabicDigits(selected.ayah)} من سورة ${core.SURAH_NAMES[selected.surah - 1]} مع التظليل. تغيير القارئ مقصود وليس خطأ في التطبيق. جاري التجهيز…`);
-            // An explicit user request to listen to an individual verse is the
-            // only action that switches a non-aligned MP3 reader to Mishary.
-            // Never try to seek inside an unaligned full-surah MP3 recording.
-            started = await engine.selectAligned(7, {
-                surah: selected.surah,
-                ayah: selected.ayah,
-                autoplay: true
-            });
-            if (started) {
-                lastAlignedId = 7;
-                showSwitchNotice('تم التحويل إلى مشاري العفاسي لتشغيل الآية',
-                    `القارئ «${previousReader}» لا يدعم البدء من آية محددة. تم اختيار مشاري راشد العفاسي تلقائيًا، وبدأ تشغيل الآية ${core.arabicDigits(selected.ayah)} من سورة ${core.SURAH_NAMES[selected.surah - 1]} مع التظليل. هذا سلوك مقصود في التطبيق وليس عطلًا. يمكنك الرجوع لقارئك السابق من «مكتبة التلاوات» في أي وقت.`);
-            } else {
-                showSwitchNotice('تعذّر تشغيل الآية بمشاري العفاسي',
-                    `تسجيل «${previousReader}» لا يدعم البدء من آية محددة. حاول التطبيق التحويل إلى مشاري العفاسي، لكن تعذّر بدء الصوت. تحقق من الاتصال وحاول مجددًا. هذا ليس تغييرًا عشوائيًا للقارئ.`);
+        ui.listenAction.disabled = true;
+        try {
+            if (!verseListener) throw new Error('خدمة الاستماع من الآية غير جاهزة.');
+            const result = await verseListener.listen(selected.surah, selected.ayah);
+            if (result.cancelled) return;
+            if (!result.ok) {
+                const message = result.message || 'تعذّر بدء التلاوة. تحقق من الاتصال وحاول مجددًا.';
+                showSwitchNotice(result.offline ? 'لا يوجد إنترنت أو تلاوة مناسبة محمّلة'
+                    : 'تعذّر الاستماع من هذه الآية', message);
+                listenNotice = message;
+                listenNoticeUntil = Date.now() + 12000;
+                ui.status.textContent = message;
+                return;
             }
-        }
-
-        if (!started) {
-            listenNotice = 'تعذّر بدء الآية المحددة. تحقق من الاتصال وحاول مجددًا.';
-            listenNoticeUntil = Date.now() + 8000;
-            ui.status.textContent = listenNotice;
+            if (engine.state.provider === 'quran-foundation') {
+                lastAlignedId = engine.state.reciterId;
+            }
+            window.dispatchEvent(new Event('mushaf:reciter-changed'));
+            if (result.switched) {
+                showSwitchNotice('تشغيل الآية بصوت قارئ محمّل',
+                    `القارئ المختار «${result.selected}» ليس له تسجيل محمّل متزامن لهذه الآية. استخدمنا تسجيل «${result.name}» المحفوظ عندك بتوقيتات مطابقة للآية، دون تنزيل جديد أو اختيار مشاري تلقائيًا.`);
+            }
+        } catch (error) {
+            const message = navigator.onLine === false
+                ? 'أنت غير متصل بالإنترنت. حمّل تلاوة السورة مسبقًا أو شغّل الإنترنت للاستماع.'
+                : (error?.message || 'تعذّر تشغيل الآية. حاول مجددًا.');
+            showSwitchNotice('تعذّر الاستماع', message);
+            listenNotice = message;
+            listenNoticeUntil = Date.now() + 12000;
+        } finally {
+            ui.listenAction.disabled = false;
         }
     });
 
@@ -773,9 +774,14 @@
         const url = state.provider === 'quran-foundation' ? timing?.audioUrl :
             core.mp3Url({ server: state.server, surahs: state.availableSurahs }, state.surah);
         return url ? {
-            url, provider: state.provider, reciterId: state.reciterId,
-            reciterName: state.reciterName, surah: state.surah,
-            surahName: core.SURAH_NAMES[state.surah - 1],
+            url,
+            // QUD synchronized voices may use MP3Quran's own chapter files.
+            // Save these as MP3Quran recordings, including for offline verse seek.
+            provider: downloadsApi.canDownloadTrack({provider:'mp3quran',url})
+                ? 'mp3quran' : state.provider,
+            reciterId: state.reciterId, reciterName: state.reciterName,
+            moshafId: state.moshafId, moshafName: state.moshafName,
+            surah: state.surah, surahName: core.SURAH_NAMES[state.surah - 1],
             ayah: state.provider === 'quran-foundation' ? timing?.ayah : null
         } : null;
     }
@@ -864,13 +870,10 @@
 
     async function refreshStorage() {
         const tracks = downloads.list();
-        const builtIn = tracks.filter(item => item.bundled);
-        const added = tracks.filter(item => !item.bundled);
-        const addedBytes = added.reduce((sum, item) => sum + (Number(item.bytes) || 0), 0);
+        const addedBytes = tracks.reduce((sum, item) => sum + (Number(item.bytes) || 0), 0);
         const estimate = await downloads.estimate();
         const free = estimate ? Math.max(0, estimate.quota - estimate.usage) : null;
-        ui.storageInfo.textContent = (builtIn.length ? `مضمنة مع التطبيق: ${core.arabicDigits(builtIn.length)} سورة • ` : '') +
-            `التنزيلات الإضافية: ${downloadsApi.humanSize(addedBytes)}` +
+        ui.storageInfo.textContent = `تلاواتك المحمّلة: ${downloadsApi.humanSize(addedBytes)}` +
             (free === null ? ' • المساحة المتاحة غير معروفة' :
                 ` • مساحة تخزين متاحة تقريبًا: ${downloadsApi.humanSize(free)}`) +
             ' • يُفضّل استخدام Wi-Fi لتنزيل المصحف كاملًا.';
@@ -1087,7 +1090,7 @@
             fillReciters(engine.state);
         } catch (_) {
             if (!catalog.length) {
-                // Aligned Mashary remains available even when the MP3 catalog is offline.
+                // Aligned readers remain available online even when the MP3 catalog is offline.
                 ui.moshaf.disabled = true;
                 fillReciters(engine.snapshot());
             }
@@ -1095,20 +1098,6 @@
     }
 
     applyState(engine.snapshot(), true);
-    // On a clean installation only: prefer the complete, locally licensed
-    // word-synchronized Huthaifi reader if the verified bundle is present.
-    // Never override an existing reciter, progress or user selection.
-    if (brandNewAudioState && window.QuranLicensedHuthaifi?.ready) {
-        window.QuranLicensedHuthaifi.ready.then(async available => {
-            if (!available || !brandNewAudioState || engine.status !== 'idle' ||
-                Number(engine.state.reciterId) !== 7 || !engine.audio.paused) return;
-            brandNewAudioState = false;
-            lastAlignedId = 9004;
-            await engine.selectAligned(9004, {
-                surah: engine.state.surah, ayah: engine.state.ayah, autoplay: false
-            });
-        }).catch(error => console.warn('Default offline reader unavailable', error));
-    }
     loadCatalog();
     if (!window.QudAudioRegistry?.reciters?.length) {
         loadAlignedReciters();
