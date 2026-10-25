@@ -85,6 +85,7 @@ jobs:
           node tests/quran-features.cjs
           node tests/offline-browser.cjs
           QURAN_TOUR_QA_ONLY=1 CHROMIUM_PATH=/usr/bin/chromium node tests/tour-navigation-browser.cjs
+          EDITORIAL_TOUR_QA_ONLY=1 CHROMIUM_PATH=/usr/bin/chromium node tests/tour-navigation-browser.cjs
 
       - name: Embed installed build number and update endpoint
         env:
