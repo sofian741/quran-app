@@ -341,16 +341,16 @@
         </div>
         <p class="audio-sync-note" id="audio-sync-note" role="status"></p>
         <label class="audio-switch"><input id="audio-auto-follow" type="checkbox" checked><span>متابعة الآية تلقائيًا أثناء التلاوة</span></label>
-        <p class="audio-download-explanation">التطبيق لا يضم تسجيلات صوتية مسبقًا لتوفير المساحة. حمّل السور التي تريدها من MP3Quran لتستمع إليها دون إنترنت. عند اختيار «الاستماع» على آية، يبدأ تلقائيًا أي تسجيل محمّل بتوقيتات تظليل مطابقة من الآية المحددة، مع تفضيل تظليل الكلمات. لو التسجيل المحمّل لا يحتوي توقيتات مطابقة، نشغّل السورة من بدايتها ونوضح السبب بدل تخمين موضع الآية. تظليل الكلمات متاح للتسجيلات المتزامنة فقط.</p>
-        <div class="audio-download-actions">
+
+        <div class="audio-download-actions" hidden>
             <button id="audio-download" type="button">تحميل تلاوة السورة</button>
             <button id="audio-download-all" type="button">تحميل المصحف الصوتي كاملًا</button>
             <button id="audio-cancel-download" type="button" hidden>إيقاف التنزيل</button>
             <a href="recitations.html">فتح مكتبة القرّاء كاملة</a>
         </div>
-        <p id="audio-storage-info" class="audio-storage-info" aria-live="polite">جاري حساب مساحة التنزيلات…</p>
-        <div id="audio-download-progress" class="audio-download-progress" role="status" aria-live="polite"></div>
-        <div id="audio-download-list" class="audio-download-list"></div>
+        <p id="audio-storage-info" hidden class="audio-storage-info" aria-live="polite">جاري حساب مساحة التنزيلات…</p>
+        <div id="audio-download-progress" hidden class="audio-download-progress" role="status" aria-live="polite"></div>
+        <div id="audio-download-list" hidden class="audio-download-list"></div>
     </aside>
 
     <div class="audio-repeat-backdrop" id="audio-repeat-backdrop" hidden></div>
@@ -401,8 +401,6 @@
 <script src="native-background-audio.js"></script>
     <script src="data/qud/registry.js"></script>
     <script src="qud-audio.js"></script>
-    <script src="mp3quran-ayah-sync.js"></script>
-    <script src="verse-audio-selection.js"></script>
   <script src="offline-reciter-catalog.js"></script>
     <script src="floating-recitation.js"></script>
     <script src="mushaf-audio.js"></script>
