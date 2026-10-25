@@ -11,7 +11,9 @@ const blockedDirs = new Set([
 
 const blockedFiles = new Set([
   '.gitignore', 'package.json', 'package-lock.json',
-  'capacitor.config.json', 'capacitor.config.ts'
+  'capacitor.config.json', 'capacitor.config.ts',
+  // Legacy audio-bundle adapters are intentionally excluded from the APK.
+  'offline-mishary.js', 'offline-mishary-sync.js', 'offline-licensed-reciter.js'
 ]);
 
 const blockedExt = new Set([
@@ -57,6 +59,5 @@ if (!names.has('index.html')) {
 
 console.log('Prepared Android web bundle in www/');
 
-// Offline Mushary recordings are inserted after web preparation by the
-// manual Android build workflow. Keeping the download step separate avoids
-// accidentally shipping a partial Quran audio corpus.
+// No recorded recitation is bundled in the APK. Users explicitly download
+// the surahs they want into persistent app-owned storage after installation.
