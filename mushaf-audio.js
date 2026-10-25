@@ -329,11 +329,16 @@
             fillReciters(state);
             ui.speedLabel.textContent = `${state.speed}×`;
             const downloadable = canDownloadCurrentReciter(state);
-            ui.download.hidden = !downloadable;
-            ui.downloadAll.hidden = !downloadable;
+            // Keep the download actions visible, but disabled for sources
+            // whose permanent-download rights or matching chapter audio
+            // are not established. A vanishing button hides the reason.
+            ui.download.hidden = false;
+            ui.downloadAll.hidden = false;
+            ui.download.disabled = downloadBatch || !downloadable;
+            ui.downloadAll.disabled = downloadBatch || !downloadable;
             if (!downloadable && !downloadBatch) {
                 ui.downloadProgress.textContent =
-                    'هذا القارئ متاح للاستماع المباشر، لكن مصدر تسجيله لا يدعم التنزيل الدائم حاليًا.';
+                    'القارئ ده بيدعم تظليل الكلمات أثناء الاستماع، لكن مصدر التسجيل مش متاح للتنزيل الدائم حاليًا. تقدر تحمّل قراء تظليل آخرين من قسم «قراء التظليل والتحميل» في صفحة التلاوات.';
             }
             ui.downloadAll.textContent = state.availableSurahs.length === 114
                 ? 'تحميل المصحف الصوتي كاملًا'
@@ -841,8 +846,9 @@
 
     function setDownloadBusy(busy) {
         downloadBatch = busy;
-        ui.download.disabled = busy;
-        ui.downloadAll.disabled = busy;
+        const downloadable = canDownloadCurrentReciter(engine.snapshot());
+        ui.download.disabled = busy || !downloadable;
+        ui.downloadAll.disabled = busy || !downloadable;
         ui.cancelDownload.hidden = !busy;
         ui.cancelDownload.disabled = false;
         if (busy) cancelRequested = false;
