@@ -26,3 +26,7 @@ In addition to the audio-free APK, keep recordings downloaded under older synchr
 ## Offline messages and Quran tutorial navigation QA
 
 Verify airplane mode / Wi-Fi off on Android WebView for both «الاستماع» from an ayah and the main Play button. The user must see a clear Arabic no-internet message, never an English HTTP 404. The Quran guide's step and real app sheet must remain synchronized across Next, Previous, Skip, resume, and early exit; skipping the initial long press opens genuine verse actions, while the reciter-selection explanation uses Next without forcing a reader choice.
+
+## Latest QA run
+
+Rebuild after offline player notices, Arabic error normalization, and the focused browser test for real Quran guide sheets across Skip / Previous / Next. The audio corpus remains absent from the APK.
