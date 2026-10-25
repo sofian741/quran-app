@@ -10,6 +10,8 @@ on:
       - tests/qud-play-browser.cjs
       - tests/qud-real-media-browser.cjs
       - qud-audio.js
+      - verse-audio-selection.js
+      - mp3quran-ayah-sync.js
       - .github/workflows/verify-mushaf-reciter-switch.yml
   workflow_dispatch:
 permissions:
@@ -29,12 +31,14 @@ jobs:
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/quran-test-server.log 2>&1 &
           sleep 2
-      - name: Test full library and automatic reciter fallback
+      - name: Test offline notice and exact downloaded-reciter verse playback
         env:
           QURAN_BROWSER_PATH: /usr/bin/chromium
           QURAN_BASE_URL: http://127.0.0.1:4173
         run: |
           node --check mushaf-audio.js
+          node --check verse-audio-selection.js
+          node --test tests/verse-audio-selection.test.cjs
           node --check tests/mushaf-reciter-switch.cjs
           node --check tests/qud-play-browser.cjs
           node tests/mushaf-reciter-switch.cjs
