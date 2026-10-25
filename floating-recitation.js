@@ -250,9 +250,6 @@
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
     else start();
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
-    if(isMushaf)document.addEventListener('click',event=>{
-      if(event.target.closest?.('#audio-play,[data-verse-action="listen"]'))stop();
-    },true);
   }
   window.QuranFloatingRecitation=Object.freeze({
     supported:true,attachEngine,handoff,reclaim,stop,status
