@@ -48,13 +48,19 @@ public class QuranPlaybackService extends Service {
         } catch (Exception e) { return false; }
     }
 
-    private boolean approvedLocal(String path) {
+    static boolean approvedLocal(Context context, String path) {
         try {
-            File dir = getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC);
+            File dir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC);
             File file = new File(path).getCanonicalFile();
             return dir != null && file.isFile() && file.getParentFile().equals(dir.getCanonicalFile()) &&
                 file.getName().matches("quran-[0-9]+-[0-9]+\\.mp3");
         } catch (Exception e) { return false; }
+    }
+
+    static boolean approvedSource(Context context, String raw) {
+        if (approvedUrl(raw)) return true;
+        try { Uri uri = Uri.parse(raw); return "file".equals(uri.getScheme()) &&
+            approvedLocal(context,uri.getPath()); } catch (Exception e) { return false; }
     }
 
     @Override public void onCreate() {
@@ -91,7 +97,7 @@ public class QuranPlaybackService extends Service {
                 stopSelf(); return START_NOT_STICKY;
             }
             for (String url : incoming) {
-                if (!approvedUrl(url)) { stopSelf(); return START_NOT_STICKY; }
+                if (!approvedSource(this,url)) { stopSelf(); return START_NOT_STICKY; }
             }
             urls.clear(); urls.addAll(incoming);
             titles.clear(); titles.addAll(names);
@@ -130,7 +136,7 @@ public class QuranPlaybackService extends Service {
                 .setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
             String url = urls.get(index);
             // A local file is accepted only from our app-owned download directory.
-            if (url.startsWith("file://") && approvedLocal(Uri.parse(url).getPath())) {
+            if (url.startsWith("file://") && approvedLocal(this,Uri.parse(url).getPath())) {
                 next.setDataSource(Uri.parse(url).getPath());
             } else if (approvedUrl(url)) next.setDataSource(url);
             else throw new SecurityException("Invalid recitation source");
@@ -140,8 +146,6 @@ public class QuranPlaybackService extends Service {
                 try {
                     if (requestedPosition > 0) mp.seekTo(Math.min(requestedPosition,
                         Math.max(0,mp.getDuration()-250)));
-                    if (Build.VERSION.SDK_INT >= 23) mp.setPlaybackParams(
-                        mp.getPlaybackParams().setSpeed(speed));
                     if (pendingPlay) startPlayer();
                 } catch (Exception e) { error = "تعذّر بدء التلاوة"; }
                 updateNotification();
@@ -173,6 +177,8 @@ public class QuranPlaybackService extends Service {
         try {
             audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
             player.start();
+            if (Build.VERSION.SDK_INT >= 23 && speed != 1f) player.setPlaybackParams(
+                player.getPlaybackParams().setSpeed(speed));
             pendingPlay = true;
             updateNotification();
         } catch (Exception e) { error = "تعذّر تشغيل التلاوة."; updateNotification(); }
@@ -205,7 +211,7 @@ public class QuranPlaybackService extends Service {
     }
     void setSpeed(float value) {
         speed = Math.max(.75f,Math.min(2f,value));
-        if (ready && player != null && Build.VERSION.SDK_INT >= 23) {
+        if (ready && player != null && player.isPlaying() && Build.VERSION.SDK_INT >= 23) {
             try { player.setPlaybackParams(player.getPlaybackParams().setSpeed(speed)); }
             catch (Exception ignored) {}
         }
