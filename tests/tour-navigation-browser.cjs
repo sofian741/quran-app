@@ -393,6 +393,11 @@ async function testOfflineNoHandoff(browser,origin){
   const origin='http://127.0.0.1:'+server.address().port;
   const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
   try{
+    if(process.env.QURAN_TOUR_QA_ONLY==='1'){
+      await testQuranTourSkipAndBack(browser,origin);
+      console.log('Quran tour skip/back/panel synchronization browser test passed.');
+      return;
+    }
     await testIndependentPages(browser,origin);
     await testAdhkarGuide(browser,origin);
     await testManualCrossPageLaunch(browser,origin);
