@@ -347,7 +347,7 @@
                 ? alignedDiscoveryStatus
                 : hasOfficialMp3AyahTiming(state)
                 ? 'توقيتات MP3Quran الأصلية تطابق هذا التسجيل؛ يتظلل نطاق الآية تلقائيًا. تظليل الكلمات يتطلب تسجيلًا متزامنًا يدعم توقيت كل كلمة.'
-                : 'يبدأ التسجيل من بداية السورة. عند طلب الاستماع من آية، نبحث أولًا عن تلاوة محمّلة بتوقيتات مطابقة؛ وإن لم تتوفر نستخدم التسجيل المختار عبر الإنترنت إذا كان متزامنًا، دون تحويل عشوائي للقارئ.';
+                : 'عند اختيار «الاستماع» على آية، نفضّل أي تلاوة محمّلة بتظليل مطابق. لو التسجيل لا يملك توقيتات الآيات، نشغّل السورة من أولها ونوضح السبب بدل تخمين مكان الآية.';
         }
         applyingState = false;
     }
@@ -790,7 +790,14 @@
                 lastAlignedId = engine.state.reciterId;
             }
             window.dispatchEvent(new Event('mushaf:reciter-changed'));
-            if (result.switched) {
+            if (result.startedAtBeginning) {
+                const switched = result.switched
+                    ? `لم نجد تسجيلًا محمّلًا بتظليل مطابق. استخدمنا «${result.name}» الموجود عندك بدل «${result.selected}». `
+                    : '';
+                const source = result.downloaded ? 'المحمّل عندك' : 'المختار';
+                showSwitchNotice('التلاوة بدأت من أول السورة',
+                    `${switched}تسجيل «${result.name}» ${source} لا تتوفر له توقيتات مطابقة للآيات، فمش هنقدر نبدأ من الآية ${core.arabicDigits(selected.ayah)} أو نظلّلها بدقة. عشان كده شغّلنا سورة ${core.SURAH_NAMES[selected.surah - 1]} من بدايتها، من غير تخمين أو تظليل غير صحيح. لو عايز تبدأ من نفس الآية، حمّل تسجيلًا متزامنًا.`);
+            } else if (result.switched) {
                 showSwitchNotice('تشغيل الآية بصوت قارئ محمّل',
                     `القارئ المختار «${result.selected}» ليس له تسجيل محمّل متزامن لهذه الآية. استخدمنا تسجيل «${result.name}» المحفوظ عندك بتوقيتات مطابقة للآية، دون تنزيل جديد أو اختيار مشاري تلقائيًا.`);
             }
