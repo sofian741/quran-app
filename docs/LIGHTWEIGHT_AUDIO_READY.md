@@ -44,3 +44,5 @@ When the user taps "Listen" on a Mushaf verse, check downloaded MP3Quran recordi
 - Mushaf verse listening is online-only and limited to precisely aligned reciters. Full-surah readers remain in the recitations library.
 - Android recitations now hand off to a foreground media playback service with notification transport controls, a movable collapsible mini player on other screens, and state restoration on return.
 - No recitation audio is bundled in the APK; downloads remain optional and app-owned.
+
+- QA follow-up: added draggable collapsed bubble, offline-preserving stop behavior, and open-current-surah deep link. Updated browser regressions and cache v68.
