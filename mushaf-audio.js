@@ -92,8 +92,7 @@
         ui.sheet.classList.add('is-open');
         ui.sheet.setAttribute('aria-hidden', 'false');
         requestAnimationFrame(() => ui.backdrop.classList.add('is-open'));
-        renderDownloads();
-        refreshStorage();
+        // Downloads are managed from the dedicated recitations library.
     }
 
     function closeOptions() {
@@ -1109,7 +1108,7 @@
     }
 
     applyState(engine.snapshot(), true);
-    loadCatalog();
+    // MP3Quran catalog belongs to the recitations page, not the mushaf.
     if (!window.QudAudioRegistry?.reciters?.length) {
         loadAlignedReciters();
     } else if (engine.state.provider === 'quran-foundation' &&
