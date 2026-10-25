@@ -61,8 +61,8 @@ const catalog={reciters:[{id:7,name:'مشاري راشد العفاسي',moshaf:
     await page.waitForFunction(()=>!!document.querySelector('#surah-select option'));
     await page.click('#play-pause');
     await page.waitForFunction(()=>!document.querySelector('#recitation-audio').paused);
-    await page.click('a.brand');
-    await page.waitForURL('**/index.html');
+    await page.click('a.my-library-card');
+    await page.waitForURL('**/library.html');
     await page.waitForFunction(()=>document.getElementById('ayat-floating-audio') &&
       !document.getElementById('ayat-floating-audio').hidden);
     assert.match(await page.locator('#ayat-floating-title').textContent(),/سورة/);
