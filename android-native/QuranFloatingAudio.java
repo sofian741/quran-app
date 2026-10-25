@@ -39,7 +39,7 @@ public class QuranFloatingAudio extends Plugin {
             ArrayList<String> titles = new ArrayList<>();
             for (int i = 0; i < rawUrls.length(); i++) {
                 String url = rawUrls.getString(i);
-                if (!QuranPlaybackService.approvedUrl(url)) {
+                if (!QuranPlaybackService.approvedSource(getContext(),url)) {
                     call.reject("Unapproved recitation URL"); return;
                 }
                 urls.add(url);
