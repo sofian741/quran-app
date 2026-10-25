@@ -85,7 +85,7 @@
       repeat:data.repeat,speed:data.speed
     });
     targetEngine.pendingResume=targetEngine.state.position;
-    targetEngine.persist();
+    window.QuranAudio.writeJson(targetEngine.stateKey,targetEngine.state);
     await stop();
     everPlayed = true;
     return {playing:!!s.playing,surah};
