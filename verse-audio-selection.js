@@ -9,8 +9,8 @@
     if (!core || !downloadsApi) return;
 
     const OFFLINE_EMPTY = 'أنت غير متصل بالإنترنت، ولا توجد تلاوة محمّلة لهذه السورة على جهازك. شغّل الإنترنت للاستماع، أو نزّل السورة من «التلاوات» لتعمل بدون إنترنت.';
-    const OFFLINE_UNALIGNED = 'السورة موجودة ضمن تحميلاتك، لكن التسجيل المحمّل لا تتوفر له توقيتات دقيقة للبدء من هذه الآية بدون إنترنت. شغّل الإنترنت لجلب التوقيتات، أو حمّل تسجيلًا متزامنًا من MP3Quran.';
-    const ONLINE_UNALIGNED = 'التسجيل المختار لا تتوفر له توقيتات مطابقة تسمح بالبدء من هذه الآية بدقة. اختر قارئًا متزامنًا، أو قارئًا من MP3Quran له توقيتات آيات رسمية. لن نبدّل الشيخ من غير سبب.';
+    const OFFLINE_UNALIGNED = 'السورة موجودة ضمن تحميلاتك، لكن تعذّر فتح التسجيل المحفوظ. جرّب تشغيله من «مكتبتي» أو أعد تنزيله.';
+    const ONLINE_UNALIGNED = 'تعذّر تشغيل التسجيل المختار. جرّب قارئًا آخر أو تحقق من اتصال الإنترنت.';
     const validVerse = (surah, ayah) =>
         Number.isInteger(surah) && surah >= 1 && surah <= 114 &&
         Number.isInteger(ayah) && ayah >= 1 && ayah <= core.VERSE_COUNTS[surah - 1];
@@ -105,12 +105,12 @@
             return !!played;
         }
 
-        async function attemptTrack(track, surah, ayah, stillCurrent) {
+        async function attemptTrack(track, surah, ayah, stillCurrent, mode = 'any') {
             if (!stillCurrent()) return null;
             const qud = window.QuranQud;
             // QUD's local metadata gives *word-level* highlighting for the
             // exact MP3Quran edition, without any internet requirement.
-            try {
+            if (mode !== 'ayah') try {
                 const reciter = await qud?.matchMp3Track?.(track.url, surah);
                 if (reciter && stillCurrent()) {
                     const same = engine.state.provider === 'quran-foundation' &&
@@ -123,6 +123,7 @@
                 console.warn('Exact QUD chapter unavailable; checking verse timing',error);
             }
             if (!stillCurrent()) return null;
+            if (mode === 'word') return null;
             const mp3Timing = window.QuranMp3AyahTiming;
             const folder = track.url.slice(0,track.url.lastIndexOf('/')+1);
             try {
@@ -134,6 +135,42 @@
                 console.info('No exact MP3Quran ayah timing for this edition',error);
             }
             return null;
+        }
+
+        // A downloaded MP3 without matching verse timestamps is still useful.
+        // Play the real saved recording from 00:00, never guess an ayah offset
+        // or synthesize highlighting for a different recording edition.
+        async function playFromSurahStart(track, stillCurrent) {
+            if (!stillCurrent()) return false;
+            const found = mp3ReciterForTrack(track, getCatalog());
+            if (!found) return false;
+            const surah = Number(track.surah);
+            const same = trackUrl(engine.snapshot(), surah) === track.url;
+            const ready = same
+                ? await engine.goTo(surah, 1, {autoplay:false,position:0})
+                : await engine.selectMp3(found.reciter, found.moshaf, {
+                    surah, autoplay:false, position:0
+                });
+            if (!ready || !stillCurrent()) return false;
+            engine.__mp3AyahChapter = null;
+            engine.currentTiming = null;
+            engine.state.ayah = 1;
+            engine.state.position = 0;
+            engine.pendingResume = 0;
+            const audio = engine.audio;
+            const version = engine.prepareVersion;
+            const reset = () => {
+                if (!stillCurrent() || version !== engine.prepareVersion ||
+                    engine.audio !== audio || engine.trackUrl !== track.url) return;
+                try { audio.currentTime = 0; }
+                catch (_) { /* Metadata may still be loading. */ }
+            };
+            if (audio.readyState >= 1) reset();
+            else audio.addEventListener('loadedmetadata', reset, {once:true});
+            const played = await engine.play();
+            if (!played || !stillCurrent()) return false;
+            return {ok:true,name:found.reciter.name || track.reciterName || 'القارئ',
+                kind:'surah-start',startedAtBeginning:true};
         }
 
         async function listen(surah, ayah) {
@@ -166,14 +203,33 @@
             const prioritized = [...saved].sort((a,b) =>
                 Number(b.url === selectedUrl) - Number(a.url === selectedUrl) ||
                 Number(b.savedAt || 0) - Number(a.savedAt || 0));
+            // Search every saved recording for word timing first, then for
+            // official verse timing. An unsynchronized favorite must not
+            // eclipse a different saved reciter with precise highlighting.
+            for (const mode of ['word','ayah']) {
+                for (const track of prioritized) {
+                    const result = await attemptTrack(track,surah,ayah,stillCurrent,mode);
+                    if (!stillCurrent()) return {ok:false,cancelled:true};
+                    if (result?.ok) return {
+                        ...result,downloaded:true,
+                        switched: result.name !== original.reciterName &&
+                            track.url !== selectedUrl,
+                        selected: original.reciterName
+                    };
+                }
+            }
+
+            // No matching timings for any saved recording. Prefer the
+            // user's selected saved sheikh, otherwise the newest saved
+            // recording, and explain why playback begins at surah start.
             for (const track of prioritized) {
-                const result = await attemptTrack(track,surah,ayah,stillCurrent);
+                const result = await playFromSurahStart(track,stillCurrent);
                 if (!stillCurrent()) return {ok:false,cancelled:true};
                 if (result?.ok) return {
                     ...result,downloaded:true,
                     switched: result.name !== original.reciterName &&
                         track.url !== selectedUrl,
-                    selected: original.reciterName
+                    selected:original.reciterName
                 };
             }
 
@@ -198,15 +254,23 @@
                         || 'تعذّر الاتصال بخادم التلاوة. تحقق من الإنترنت وحاول مرة أخرى.'};
             }
             if (selectedUrl) {
-                const result = await attemptTrack({
+                const selectedTrack = {
                     url:selectedUrl, surah, reciterId:original.reciterId,
                     reciterName:original.reciterName, moshafId:original.moshafId,
                     moshafName:original.moshafName
-                },surah,ayah,stillCurrent);
+                };
+                const result = await attemptTrack(selectedTrack,surah,ayah,stillCurrent);
+                if (!stillCurrent()) return {ok:false,cancelled:true};
                 if (result?.ok) return {
                     ...result,downloaded:false,
                     switched:result.name !== original.reciterName &&
                         selectedUrl !== (engine.trackUrl || ''),
+                    selected:original.reciterName
+                };
+                const fallback = await playFromSurahStart(selectedTrack,stillCurrent);
+                if (!stillCurrent()) return {ok:false,cancelled:true};
+                if (fallback?.ok) return {
+                    ...fallback,downloaded:false,switched:false,
                     selected:original.reciterName
                 };
             }
