@@ -61,39 +61,58 @@ public class QuranFloatingAudio extends Plugin {
             call.resolve();
         } catch (Exception e) { call.reject("Could not start recitation playback",e); }
     }
+    private void onMain(PluginCall call, Runnable action) {
+        new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+            try { action.run(); call.resolve(statusValue()); }
+            catch (Exception e) { call.reject("Audio control unavailable",e); }
+        });
+    }
     @PluginMethod public void play(PluginCall call) {
-        if (QuranPlaybackService.current() != null) QuranPlaybackService.current().play();
-        call.resolve(statusValue());
+        onMain(call, () -> {
+            QuranPlaybackService service = QuranPlaybackService.current();
+            if (service != null) service.play();
+        });
     }
     @PluginMethod public void pause(PluginCall call) {
-        if (QuranPlaybackService.current() != null) QuranPlaybackService.current().pause();
-        call.resolve(statusValue());
+        onMain(call, () -> {
+            QuranPlaybackService service = QuranPlaybackService.current();
+            if (service != null) service.pause();
+        });
     }
     @PluginMethod public void next(PluginCall call) {
-        if (QuranPlaybackService.current() != null) QuranPlaybackService.current().skip(1);
-        call.resolve(statusValue());
+        onMain(call, () -> {
+            QuranPlaybackService service = QuranPlaybackService.current();
+            if (service != null) service.skip(1);
+        });
     }
     @PluginMethod public void previous(PluginCall call) {
-        if (QuranPlaybackService.current() != null) QuranPlaybackService.current().skip(-1);
-        call.resolve(statusValue());
+        onMain(call, () -> {
+            QuranPlaybackService service = QuranPlaybackService.current();
+            if (service != null) service.skip(-1);
+        });
     }
     @PluginMethod public void stop(PluginCall call) {
-        if (QuranPlaybackService.current() != null) QuranPlaybackService.current().stopPlayback();
-        call.resolve();
+        onMain(call, () -> {
+            QuranPlaybackService service = QuranPlaybackService.current();
+            if (service != null) service.stopPlayback();
+        });
     }
     @PluginMethod public void seek(PluginCall call) {
-        QuranPlaybackService service = QuranPlaybackService.current();
-        if (service != null) service.seek(call.getInt("position",0));
-        call.resolve(statusValue());
+        onMain(call, () -> {
+            QuranPlaybackService service = QuranPlaybackService.current();
+            if (service != null) service.seek(call.getInt("position",0));
+        });
     }
     @PluginMethod public void speed(PluginCall call) {
-        QuranPlaybackService service = QuranPlaybackService.current();
-        if (service != null) service.setSpeed(call.getFloat("speed",1f));
-        call.resolve(statusValue());
+        onMain(call, () -> {
+            QuranPlaybackService service = QuranPlaybackService.current();
+            if (service != null) service.setSpeed(call.getFloat("speed",1f));
+        });
     }
     @PluginMethod public void repeat(PluginCall call) {
-        QuranPlaybackService service = QuranPlaybackService.current();
-        if (service != null) service.setRepeat(call.getBoolean("repeat",false));
-        call.resolve(statusValue());
+        onMain(call, () -> {
+            QuranPlaybackService service = QuranPlaybackService.current();
+            if (service != null) service.setRepeat(call.getBoolean("repeat",false));
+        });
     }
 }
