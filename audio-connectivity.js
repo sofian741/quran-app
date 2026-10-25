@@ -48,7 +48,7 @@
     }
     function safeError(message) {
         const value = String(message || '');
-        if (/\b(?:404|500|502|503|504)\b|http|failed to fetch|networkerror|load failed|not found/i.test(value)) {
+        if (/\b(?:404|500|502|503|504)\b|http|failed to fetch|networkerror|load failed|not found|[a-z]{3,}/i.test(value)) {
             return 'تعذّر الوصول إلى تسجيل التلاوة أو بياناته. تأكد من اتصال الإنترنت وحاول مرة أخرى.';
         }
         return value || 'تعذّر تشغيل التلاوة. تحقق من الاتصال وحاول مرة أخرى.';
