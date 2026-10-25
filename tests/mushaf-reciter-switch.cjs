@@ -143,6 +143,8 @@ const catalog = { reciters: [
             window.quranAudioEngine.state.reciterId === 9004 &&
             window.quranAudioEngine.state.ayah === 3, { timeout: 30000 });
         assert.match(await page.locator('#audio-reader-name').textContent(), /الحذيفي/);
+        await page.waitForFunction(() => /المحفوظ عندك/.test(
+            document.getElementById('audio-switch-notice-message').textContent));
         assert.match(await page.locator('#audio-switch-notice-message').textContent(), /المحفوظ عندك/);
         assert.equal(await page.evaluate(() => window.quranAudioEngine.state.reciterId === 7),false);
         await page.evaluate(() => document.getElementById('audio-switch-notice-dismiss').click());
