@@ -10,7 +10,7 @@ const APP_SHELL = [
     './mushaf-layout-prewarm-worker.js',
     './verse-actions.js', './tafsir.js', './quran-search.js', './verse-tools.js',
     './mushaf-deep-link.js', './floating-recitation.js', './floating-recitation.css', './audio-connectivity.js', './audio-core.js', './audio-downloads.js', './data/qud/registry.js', './qud-audio.js', './offline-reciter-catalog.js',
-    './audio-bulk-download.js', './mp3quran-ayah-sync.js', './verse-audio-selection.js', './mushaf-audio.js', './recitations.js', './recitations-library-link.js', './library.js', './adhkar.js',
+    './audio-bulk-download.js', './mushaf-audio.js', './recitations.js', './recitations-library-link.js', './library.js', './adhkar.js',
     './data/quran-uthmani.txt', './data/mushaf-layout.json', './data/adhkar.json', './data/adhkar-source.json',
     './scripts/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2'
 ];
