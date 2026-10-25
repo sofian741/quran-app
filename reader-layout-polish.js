@@ -752,25 +752,8 @@
     });
     window.addEventListener('mushaf:page-ready', stabilizeVisiblePage);
 
-    // Switching reciters can change audio overlays and the visible reader
-    // geometry without replacing the Quran page DOM. A page turn naturally
-    // recalculates the fit, so do that same recalculation in place.
-    window.addEventListener('mushaf:reciter-changed', () => {
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-            const pageNumber = fromArabicDigits(displayPageNumber.textContent);
-            if (pageNumber > 2) {
-                layoutMemoryCache.delete(layoutCacheKey(
-                    pageNumber, text.clientWidth, text.clientHeight));
-                text.dataset.standardLayoutPage = '';
-                text.dataset.standardLayoutWidth = '';
-                text.dataset.layoutState = '';
-            } else {
-                window.mushafReader?.clearFitCache?.();
-                window.mushafReader?.fitElement?.(text, pageNumber);
-            }
-            queueSync();
-        }));
-    });
+    // Audio selection must not refit or rewrite the printed Quran lines.
+    // Actual viewport size changes are handled by the ResizeObserver below.
     // The visible reader can change dimensions without a window resize
     // (settings panels, browser chrome, safe-area and Android viewport).
     // Observe the actual page box and invalidate its fit only when its
