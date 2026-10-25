@@ -14,6 +14,9 @@ on:
       - 'recitations-overrides.css'
       - 'recitations.js'
       - 'recitations-library-link.js'
+      - 'synced-reciter-downloads.js'
+      - 'synced-reciter-downloads.css'
+      - 'tests/synced-reciter-downloads-browser.cjs'
       - 'library.html'
       - 'library.css'
       - 'library.js'
@@ -35,6 +38,9 @@ on:
       - 'recitations-overrides.css'
       - 'recitations.js'
       - 'recitations-library-link.js'
+      - 'synced-reciter-downloads.js'
+      - 'synced-reciter-downloads.css'
+      - 'tests/synced-reciter-downloads-browser.cjs'
       - 'library.html'
       - 'library.css'
       - 'library.js'
@@ -58,9 +64,19 @@ jobs:
           node --check adhkar.js
           node --check recitations.js
           node --check recitations-library-link.js
+          node --check synced-reciter-downloads.js
+          node --check audio-bulk-download.js
           node --check library.js
       - name: Verify page contracts and vector UI
         run: node tests/ui-pages.cjs
+      - name: Verify synchronized reciter download UI in Chromium
+        env:
+          QURAN_BROWSER_PATH: /usr/bin/chromium
+          QURAN_BASE_URL: http://127.0.0.1:4173
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/ayat-synced-browser.log 2>&1 &
+          sleep 2
+          node tests/synced-reciter-downloads-browser.cjs
       - name: Verify Adhkar corpus
         run: node tests/adhkar-data.cjs
       - name: Verify LAN HTTP assets and bounded SVG icons
