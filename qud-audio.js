@@ -556,11 +556,28 @@
         };
     }
 
+    // Resolve by the exact recording URL, not the reciter's name.
+    // Loading the small local catalog first avoids decompressing all 19
+    // QUD word-timing documents for a single verse-listen request.
+    async function matchMp3Track(url, surah) {
+        if (!safeAudioUrl(url) || !Number.isInteger(Number(surah)) ||
+            Number(surah) < 1 || Number(surah) > 114) return null;
+        const candidates = reciters.filter(item => item.channel === 'mp3quran');
+        const matches = await Promise.all(candidates.map(async item => {
+            try {
+                const catalog = await loadCatalog(item);
+                return catalog.audio.chapter_urls?.[String(surah)] === url ? item : null;
+            } catch (_) { return null; }
+        }));
+        return matches.find(Boolean) || null;
+    }
+
     window.QuranQud = Object.freeze({
         release: registry.qudRelease,
         license: registry.license,
         reciters: Object.freeze([...reciters]),
         foundationReciters: Object.freeze([...FOUNDATION_RECITERS]),
-        loadChapter
+        loadChapter,
+        matchMp3Track
     });
 })();
