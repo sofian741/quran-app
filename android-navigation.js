@@ -34,7 +34,7 @@
         if (history.length > 1 && document.referrer && new URL(document.referrer).origin === location.origin) history.back();
         else location.assign('index.html');
       };
-      if (/\/recitations\\.html$/.test(location.pathname) && window.QuranFloatingRecitation?.supported) {
+      if (location.pathname.endsWith('/recitations.html') && window.QuranFloatingRecitation?.supported) {
         window.QuranFloatingRecitation.handoff().finally(goBack);
       } else goBack();
       return;
