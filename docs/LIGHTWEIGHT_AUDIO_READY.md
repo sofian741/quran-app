@@ -46,3 +46,5 @@ When the user taps "Listen" on a Mushaf verse, check downloaded MP3Quran recordi
 - No recitation audio is bundled in the APK; downloads remain optional and app-owned.
 
 - QA follow-up: added draggable collapsed bubble, offline-preserving stop behavior, and open-current-surah deep link. Updated browser regressions and cache v68.
+
+- Final Android follow-up: preserve audio with a wake lock during screen-off playback and dispatch mini-player commands on the service main thread; hide the recitations mini until first playback.
