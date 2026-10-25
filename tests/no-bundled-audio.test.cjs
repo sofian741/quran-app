@@ -10,7 +10,7 @@ test('all three entry pages exclude legacy audio-bundle adapters',()=>{
         assert.doesNotMatch(html,/<script[^>]+(?:offline-mishary|offline-licensed-reciter|offline-mishary-sync)\.js/);
     }
     const mushaf=read('quran.html');
-    assert.match(mushaf,/<script src="verse-audio-selection\.js"><\/script>/);
+    assert.doesNotMatch(mushaf,/<script src="verse-audio-selection\.js"><\/script>/);
     assert.doesNotMatch(mushaf,/audio-download-explanation/);
     assert.doesNotMatch(mushaf,/الحذيفي المدمج/);
 });
@@ -34,6 +34,6 @@ test('Mushaf never hardcodes a switch to Mishary when listening to an ayah',()=>
     assert.ok(start>0&&end>start);
     const listener=source.slice(start,end);
     assert.doesNotMatch(listener,/selectAligned\(7|مشاري العفاسي لتشغيل الآية/);
-    assert.match(listener,/verseListener\.listen/);
+    assert.match(listener,/engine[.]goTo[(]selected[.]surah,selected[.]ayah/);
     assert.match(listener,/لا يوجد اتصال بالإنترنت/);
 });
