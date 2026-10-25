@@ -17,7 +17,7 @@
     });
     return;
   }
-  let engine = null, downloads = null, transfer = null, handedOff = false;
+  let engine = null, downloads = null, transfer = null, handedOff = false, everPlayed = false;
   let mini = null, last = null, poll = null, moving = false;
   let uiState = (() => { try { return JSON.parse(localStorage.getItem(UI_KEY)||'{}'); } catch { return {}; } })();
   const storeUi = () => { try { localStorage.setItem(UI_KEY,JSON.stringify(uiState)); } catch {} };
@@ -34,7 +34,7 @@
     try { localStorage.removeItem(KEY); } catch {}
   };
   async function handoff() {
-    if (!engine || !engine.trackUrl) return false;
+    if (!engine || !engine.trackUrl || !everPlayed) return false;
     if (transfer) return transfer;
     transfer = (async () => {
       const s = engine.snapshot();
@@ -87,10 +87,12 @@
     targetEngine.pendingResume=targetEngine.state.position;
     targetEngine.persist();
     await stop();
+    everPlayed = true;
     return {playing:!!s.playing,surah};
   }
   function attachEngine(target, downloadManager) {
     engine=target;downloads=downloadManager;handedOff=false;
+    target.audio.addEventListener('play',()=>{everPlayed=true});
     document.addEventListener('click',event=>{
       const link=event.target.closest?.('a[href]');
       if (!link || event.defaultPrevented || event.button !== 0 ||
