@@ -586,7 +586,7 @@
                 this.updateMediaMetadata();
                 this.status = this.audio.paused ? 'ready' : 'playing';
                 this.persist(); this.emit();
-                if (autoplay) await this.play();
+                if (autoplay) return await this.play();
                 return true;
             } catch (error) {
                 if (version !== this.prepareVersion) return false;
