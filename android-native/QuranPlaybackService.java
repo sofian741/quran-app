@@ -131,6 +131,7 @@ public class QuranPlaybackService extends Service {
         error = "";
         try {
             MediaPlayer next = new MediaPlayer();
+            next.setWakeMode(this, android.os.PowerManager.PARTIAL_WAKE_LOCK);
             player = next;
             next.setAudioAttributes(new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
