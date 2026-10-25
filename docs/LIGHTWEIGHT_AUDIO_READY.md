@@ -38,3 +38,9 @@ QA rebuild requested after applying the same real-panel synchronization across a
 ## Listen-from-verse: downloaded highlighting priority and honest fallback
 
 When the user taps "Listen" on a Mushaf verse, check downloaded MP3Quran recordings for that surah. Prefer exact QUD word-timed audio first, then official recording-matched MP3Quran verse timings. Select and play the best downloaded reader automatically at the requested ayah, without assuming a fixed Mishary reciter. If no saved recording has matching timestamps, play the selected downloaded recording from 00:00 with no fabricated verse/word highlighting and explain in Arabic that exact verse seeking is unavailable because this recording has no matching timing metadata. If there are no downloads, preserve the existing offline warning; when online, use the selected aligned reciter or start the selected unsynced MP3 recording at the beginning with the same explanation. Tests cover offline and online fallbacks, downloaded word-vs-verse priority, selected-reciter preference, and removal of stale highlighting. Keep all five guide flows intact.
+
+
+## Persistent audio player QA
+- Mushaf verse listening is online-only and limited to precisely aligned reciters. Full-surah readers remain in the recitations library.
+- Android recitations now hand off to a foreground media playback service with notification transport controls, a movable collapsible mini player on other screens, and state restoration on return.
+- No recitation audio is bundled in the APK; downloads remain optional and app-owned.
