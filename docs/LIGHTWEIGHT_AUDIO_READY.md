@@ -48,3 +48,5 @@ When the user taps "Listen" on a Mushaf verse, check downloaded MP3Quran recordi
 - QA follow-up: added draggable collapsed bubble, offline-preserving stop behavior, and open-current-surah deep link. Updated browser regressions and cache v68.
 
 - Final Android follow-up: preserve audio with a wake lock during screen-off playback and dispatch mini-player commands on the service main thread; hide the recitations mini until first playback.
+
+- Final floating UI polish: default to a collapsed movable bubble on Quran pages and clamp the expanded mini player inside the viewport, including after a bubble drag.
