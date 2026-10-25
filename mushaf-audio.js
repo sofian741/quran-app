@@ -44,8 +44,25 @@
     const ALIGNED_CACHE_KEY = 'quranAlignedRecitersV1';
     const MAX_ALIGNED = 35;
     const alignedReciters = [...core.ALIGNED_RECITERS];
-    let lastAlignedId = engine.state.provider === 'quran-foundation' ? engine.state.reciterId : 7;
-    let alignedDiscoveryStatus = `${core.arabicDigits(core.ALIGNED_RECITERS.length)} قارئًا متزامنًا من QUD وQuran Foundation. آيتان فقط من القراء الجدد لهما تظليل آية دون كلمات لعدم وجود توقيتات كلمات أصلية.`;
+    // Keep the MP3Quran library independent: the mushaf offers precise verse playback only.
+    if (engine.state.provider === 'mp3quran') {
+        try {
+            if (!localStorage.getItem('quranRecitationsStateV1')) {
+                localStorage.setItem('quranRecitationsStateV1', JSON.stringify(engine.state));
+            }
+        } catch (_) {}
+        engine.state = core.sanitizeState({
+            ...engine.state,provider:'quran-foundation',reciterId:7,
+            reciterName:'مشاري راشد العفاسي',moshafId:null,
+            moshafName:'حفص عن عاصم — مزامنة دقيقة',server:null,
+            availableSurahs:Array.from({length:114},(_,i)=>i+1),
+            ayah:1,position:0
+        });
+        engine.pendingResume=0;
+        engine.persist();
+    }
+    let lastAlignedId = engine.state.reciterId;
+    let alignedDiscoveryStatus = 'استمع من الآية التي تختارها.';
     let activeReciter = null;
     let closeTimer = null;
     let renderedVerse = '';
@@ -111,26 +128,16 @@
             `aligned:${state.reciterId}` : `mp3:${state.reciterId}`;
 
         const syncedGroup = document.createElement('optgroup');
-        syncedGroup.label = `القراء المتزامنون (${core.arabicDigits(alignedReciters.length)}) • تشغيل من أي آية + تظليل الكلمات`;
+        syncedGroup.label = `الاستماع من أي آية (${core.arabicDigits(alignedReciters.length)} قارئ)`;
         alignedReciters.forEach(reciter => option(syncedGroup,
             `aligned:${reciter.id}`, reciter.label || `${reciter.name} • تظليل الكلمات`));
         ui.reciter.appendChild(syncedGroup);
 
-        const mp3Group = document.createElement('optgroup');
-        mp3Group.label = `مكتبة التلاوات (${core.arabicDigits(catalog.length)}) • تظليل الآيات حسب التسجيل`;
-        catalog.forEach(reciter => option(mp3Group,
-            `mp3:${reciter.id}`, `${reciter.name} • تشغيل السور وتحميلها`));
-        if (state.provider === 'mp3quran' && !catalog.some(item => item.id === Number(state.reciterId))) {
-            option(mp3Group, selectedValue,
-                `${state.reciterName} • تسجيل صوتي`);
-        }
-        if (mp3Group.children.length) ui.reciter.appendChild(mp3Group);
-
         ui.reciter.value = selectedValue;
         if (!ui.reciter.value) ui.reciter.selectedIndex = 0;
-        const selected = catalog.find(reciter => reciter.id === Number(state.reciterId)) ||
-            catalogService.preferred(catalog);
-        fillMoshaf(selected, state.moshafId);
+        activeReciter = null;
+        ui.moshaf.replaceChildren();
+        updatePicker('moshaf');
         updatePicker('reciter');
     }
 
@@ -329,8 +336,8 @@
             fillReciters(state);
             ui.speedLabel.textContent = `${state.speed}×`;
             const downloadable = canDownloadCurrentReciter(state);
-            ui.download.hidden = !downloadable;
-            ui.downloadAll.hidden = !downloadable;
+            ui.download.hidden = true;
+            ui.downloadAll.hidden = true;
             if (!downloadable && !downloadBatch) {
                 ui.downloadProgress.textContent =
                     'هذا القارئ متاح للاستماع المباشر، لكن مصدر تسجيله لا يدعم التنزيل الدائم حاليًا.';
@@ -342,6 +349,7 @@
             ui.repeatHint.textContent = state.provider === 'mp3quran'
                 ? 'تكرار الآية أو نطاق الآيات يحتاج نسخة متزامنة من القارئ نفسه؛ لن يتم تبديل الشيخ تلقائيًا.'
                 : 'تكرار الآية يعيد الآية الحالية، وتكرار النطاق يعيد الآيات من البداية للنهاية بعدد المرات المحدد.';
+            ui.syncNote.style.display = 'none';
             ui.syncNote.classList.toggle('is-unavailable', !canHighlightVerse(state));
             ui.syncNote.textContent = state.provider === 'quran-foundation'
                 ? alignedDiscoveryStatus
@@ -566,37 +574,18 @@
     ui.backdrop.addEventListener('click', closeOptions);
     async function toggleWithConnectionNotice() {
         if (!engine.audio.paused) { engine.pause(); return; }
-        const url = engine.trackUrl || (engine.state.provider === 'mp3quran'
-            ? core.mp3Url({server:engine.state.server,surahs:engine.state.availableSurahs},
-                engine.state.surah) : '');
-        let saved = false;
-        try { if (url) saved = await downloads.has(url); }
-        catch (_) { /* A missing cache entry is not a downloaded recording. */ }
-        if (!saved && engine.audio.readyState < 3 &&
-            (window.QuranAudioConnectivity
-                ? await window.QuranAudioConnectivity.isOffline()
-                : navigator.onLine === false)) {
-            const message = window.QuranAudioConnectivity?.OFFLINE_MESSAGE ||
-                'لا يوجد اتصال بالإنترنت. شغّل الإنترنت أو حمّل السورة للاستماع.';
-            showSwitchNotice('لا يوجد اتصال بالإنترنت', message);
-            listenNotice = message;
+        const offline = window.QuranAudioConnectivity
+            ? await window.QuranAudioConnectivity.isOffline() : navigator.onLine === false;
+        if (offline) {
+            listenNotice = 'لا يوجد اتصال بالإنترنت.';
             listenNoticeUntil = Date.now() + 12000;
-            ui.status.textContent = message;
+            ui.status.textContent = listenNotice;
             return;
         }
-        const played = await engine.play();
-        if (!played) {
-            const offline = window.QuranAudioConnectivity
-                ? await window.QuranAudioConnectivity.isOffline()
-                : navigator.onLine === false;
-            const message = offline
-                ? window.QuranAudioConnectivity?.OFFLINE_MESSAGE
-                : window.QuranAudioConnectivity?.safeError(engine.error);
-            showSwitchNotice(offline ? 'لا يوجد اتصال بالإنترنت' : 'تعذّر تشغيل التلاوة',
-                message || 'تعذّر تشغيل التلاوة. تحقق من الاتصال وحاول مجددًا.');
-            listenNotice = message;
-            listenNoticeUntil = Date.now() + 12000;
-            ui.status.textContent = message;
+        await window.QuranFloatingRecitation?.stop?.();
+        if (!(await engine.play())) {
+            ui.status.textContent = window.QuranAudioConnectivity?.safeError(engine.error) ||
+                'تعذّر تشغيل التلاوة. حاول مرة أخرى.';
         }
     }
     ui.play.addEventListener('click', toggleWithConnectionNotice);
@@ -756,66 +745,35 @@
         ui.switchNotice.hidden = true;
     });
 
-    const verseListener = window.QuranVerseListen?.create({
-        engine, downloads, getCatalog: () => catalog
-    });
     ui.listenAction.addEventListener('click', async () => {
         const selected = window.mushafVerseActions?.getSelectedVerse?.();
         if (!selected || ui.listenAction.disabled) return;
         window.mushafVerseActions.close();
         ui.switchNotice.hidden = true;
-        listenNotice = '';
-        listenNoticeUntil = 0;
         ui.listenAction.disabled = true;
         try {
-            if (!verseListener) throw new Error('خدمة الاستماع من الآية غير جاهزة.');
-            const result = await verseListener.listen(selected.surah, selected.ayah);
-            if (result.cancelled) return;
-            if (!result.ok) {
-                const offline = result.offline || (window.QuranAudioConnectivity
-                    ? await window.QuranAudioConnectivity.isOffline()
-                    : navigator.onLine === false);
-                const message = offline
-                    ? (result.offline ? result.message : window.QuranAudioConnectivity?.OFFLINE_MESSAGE)
-                    : (window.QuranAudioConnectivity?.safeError(result.message) ||
-                        'تعذّر بدء التلاوة. تحقق من الاتصال وحاول مجددًا.');
-                showSwitchNotice(offline ? 'لا يوجد اتصال بالإنترنت'
-                    : 'تعذّر الاستماع من هذه الآية', message);
-                listenNotice = message;
+            const offline = window.QuranAudioConnectivity
+                ? await window.QuranAudioConnectivity.isOffline() : navigator.onLine === false;
+            if (offline) {
+                listenNotice = 'لا يوجد اتصال بالإنترنت.';
                 listenNoticeUntil = Date.now() + 12000;
-                ui.status.textContent = message;
+                ui.status.textContent = listenNotice;
                 return;
             }
-            if (engine.state.provider === 'quran-foundation') {
-                lastAlignedId = engine.state.reciterId;
+            await window.QuranFloatingRecitation?.stop?.();
+            // Only an aligned reader is offered here. Never silently start a
+            // full-surah recording at verse 1 or switch to a different sheikh.
+            const ready = await engine.goTo(selected.surah,selected.ayah,{autoplay:true});
+            if (!ready) {
+                ui.status.textContent = 'تعذّر بدء الاستماع من هذه الآية. جرّب قارئًا آخر.';
+                return;
             }
+            lastAlignedId = engine.state.reciterId;
             window.dispatchEvent(new Event('mushaf:reciter-changed'));
-            if (result.startedAtBeginning) {
-                const switched = result.switched
-                    ? `لم نجد تسجيلًا محمّلًا بتظليل مطابق. استخدمنا «${result.name}» الموجود عندك بدل «${result.selected}». `
-                    : '';
-                const source = result.downloaded ? 'المحمّل عندك' : 'المختار';
-                showSwitchNotice('التلاوة بدأت من أول السورة',
-                    `${switched}تسجيل «${result.name}» ${source} لا تتوفر له توقيتات مطابقة للآيات، فمش هنقدر نبدأ من الآية ${core.arabicDigits(selected.ayah)} أو نظلّلها بدقة. عشان كده شغّلنا سورة ${core.SURAH_NAMES[selected.surah - 1]} من بدايتها، من غير تخمين أو تظليل غير صحيح. لو عايز تبدأ من نفس الآية، حمّل تسجيلًا متزامنًا.`);
-            } else if (result.switched) {
-                showSwitchNotice('تشغيل الآية بصوت قارئ محمّل',
-                    `القارئ المختار «${result.selected}» ليس له تسجيل محمّل متزامن لهذه الآية. استخدمنا تسجيل «${result.name}» المحفوظ عندك بتوقيتات مطابقة للآية، دون تنزيل جديد أو اختيار مشاري تلقائيًا.`);
-            }
         } catch (error) {
-            const offline = window.QuranAudioConnectivity
-                ? await window.QuranAudioConnectivity.isOffline()
-                : navigator.onLine === false;
-            const message = offline
-                ? (window.QuranAudioConnectivity?.OFFLINE_MESSAGE ||
-                    'لا يوجد اتصال بالإنترنت. شغّل الإنترنت أو حمّل السورة.')
-                : (window.QuranAudioConnectivity?.safeError(error?.message) ||
-                    'تعذّر تشغيل الآية. حاول مجددًا.');
-            showSwitchNotice(offline ? 'لا يوجد اتصال بالإنترنت' : 'تعذّر الاستماع', message);
-            listenNotice = message;
-            listenNoticeUntil = Date.now() + 12000;
-        } finally {
-            ui.listenAction.disabled = false;
-        }
+            ui.status.textContent = window.QuranAudioConnectivity?.safeError(error?.message) ||
+                'تعذّر بدء الاستماع من الآية.';
+        } finally { ui.listenAction.disabled = false; }
     });
 
     window.addEventListener('mushaf:page-ready', () => {
