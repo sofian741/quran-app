@@ -67,6 +67,8 @@ jobs:
           node --check mushaf-audio.js
           node --check native-background-audio.js
           node --check qud-audio.js
+          node --check synced-reciter-downloads.js
+          node --check audio-bulk-download.js
           node --check library.js
           node --check app-update.js
           node --check android-navigation.js
@@ -84,6 +86,9 @@ jobs:
           node tests/security-static.cjs
           node tests/quran-features.cjs
           node tests/offline-browser.cjs
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/ayat-synced-browser.log 2>&1 &
+          sleep 2
+          QURAN_BASE_URL=http://127.0.0.1:4173 node tests/synced-reciter-downloads-browser.cjs
           QURAN_TOUR_QA_ONLY=1 CHROMIUM_PATH=/usr/bin/chromium node tests/tour-navigation-browser.cjs
           EDITORIAL_TOUR_QA_ONLY=1 CHROMIUM_PATH=/usr/bin/chromium node tests/tour-navigation-browser.cjs
 
