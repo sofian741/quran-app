@@ -397,6 +397,7 @@ async function testOfflineNoHandoff(browser,origin){
     await testAdhkarGuide(browser,origin);
     await testManualCrossPageLaunch(browser,origin);
     await testQuranFromSettings(browser,origin);
+    await testQuranTourSkipAndBack(browser,origin);
     await testOfflineNoHandoff(browser,origin);
     console.log('Independent page discovery browser tests passed.');
   }finally{await browser.close();server.close();}
