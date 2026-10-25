@@ -564,7 +564,42 @@
     });
     ui.close.addEventListener('click', closeOptions);
     ui.backdrop.addEventListener('click', closeOptions);
-    ui.play.addEventListener('click', () => engine.toggle());
+    async function toggleWithConnectionNotice() {
+        if (!engine.audio.paused) { engine.pause(); return; }
+        const url = engine.trackUrl || (engine.state.provider === 'mp3quran'
+            ? core.mp3Url({server:engine.state.server,surahs:engine.state.availableSurahs},
+                engine.state.surah) : '');
+        let saved = false;
+        try { if (url) saved = await downloads.has(url); }
+        catch (_) { /* A missing cache entry is not a downloaded recording. */ }
+        if (!saved && engine.audio.readyState < 3 &&
+            (window.QuranAudioConnectivity
+                ? await window.QuranAudioConnectivity.isOffline()
+                : navigator.onLine === false)) {
+            const message = window.QuranAudioConnectivity?.OFFLINE_MESSAGE ||
+                'لا يوجد اتصال بالإنترنت. شغّل الإنترنت أو حمّل السورة للاستماع.';
+            showSwitchNotice('لا يوجد اتصال بالإنترنت', message);
+            listenNotice = message;
+            listenNoticeUntil = Date.now() + 12000;
+            ui.status.textContent = message;
+            return;
+        }
+        const played = await engine.play();
+        if (!played) {
+            const offline = window.QuranAudioConnectivity
+                ? await window.QuranAudioConnectivity.isOffline()
+                : navigator.onLine === false;
+            const message = offline
+                ? window.QuranAudioConnectivity?.OFFLINE_MESSAGE
+                : window.QuranAudioConnectivity?.safeError(engine.error);
+            showSwitchNotice(offline ? 'لا يوجد اتصال بالإنترنت' : 'تعذّر تشغيل التلاوة',
+                message || 'تعذّر تشغيل التلاوة. تحقق من الاتصال وحاول مجددًا.');
+            listenNotice = message;
+            listenNoticeUntil = Date.now() + 12000;
+            ui.status.textContent = message;
+        }
+    }
+    ui.play.addEventListener('click', toggleWithConnectionNotice);
     ui.previous.addEventListener('click', () => engine.previous());
     ui.next.addEventListener('click', () => engine.next());
     ui.seek.addEventListener('input', () => {
@@ -737,8 +772,14 @@
             const result = await verseListener.listen(selected.surah, selected.ayah);
             if (result.cancelled) return;
             if (!result.ok) {
-                const message = result.message || 'تعذّر بدء التلاوة. تحقق من الاتصال وحاول مجددًا.';
-                showSwitchNotice(result.offline ? 'لا يوجد إنترنت أو تلاوة مناسبة محمّلة'
+                const offline = result.offline || (window.QuranAudioConnectivity
+                    ? await window.QuranAudioConnectivity.isOffline()
+                    : navigator.onLine === false);
+                const message = offline
+                    ? (result.offline ? result.message : window.QuranAudioConnectivity?.OFFLINE_MESSAGE)
+                    : (window.QuranAudioConnectivity?.safeError(result.message) ||
+                        'تعذّر بدء التلاوة. تحقق من الاتصال وحاول مجددًا.');
+                showSwitchNotice(offline ? 'لا يوجد اتصال بالإنترنت'
                     : 'تعذّر الاستماع من هذه الآية', message);
                 listenNotice = message;
                 listenNoticeUntil = Date.now() + 12000;
@@ -754,10 +795,15 @@
                     `القارئ المختار «${result.selected}» ليس له تسجيل محمّل متزامن لهذه الآية. استخدمنا تسجيل «${result.name}» المحفوظ عندك بتوقيتات مطابقة للآية، دون تنزيل جديد أو اختيار مشاري تلقائيًا.`);
             }
         } catch (error) {
-            const message = navigator.onLine === false
-                ? 'أنت غير متصل بالإنترنت. حمّل تلاوة السورة مسبقًا أو شغّل الإنترنت للاستماع.'
-                : (error?.message || 'تعذّر تشغيل الآية. حاول مجددًا.');
-            showSwitchNotice('تعذّر الاستماع', message);
+            const offline = window.QuranAudioConnectivity
+                ? await window.QuranAudioConnectivity.isOffline()
+                : navigator.onLine === false;
+            const message = offline
+                ? (window.QuranAudioConnectivity?.OFFLINE_MESSAGE ||
+                    'لا يوجد اتصال بالإنترنت. شغّل الإنترنت أو حمّل السورة.')
+                : (window.QuranAudioConnectivity?.safeError(error?.message) ||
+                    'تعذّر تشغيل الآية. حاول مجددًا.');
+            showSwitchNotice(offline ? 'لا يوجد اتصال بالإنترنت' : 'تعذّر الاستماع', message);
             listenNotice = message;
             listenNoticeUntil = Date.now() + 12000;
         } finally {
