@@ -32,7 +32,7 @@
       {selector:'#open-saved',mode:'note',group:'إعدادات المصحف',title:'المحفوظات',body:'من هنا ترجع للمفضلة وفاصلة الآية وفاصلة الصفحة، وكل نوع موجود في تبويب مستقل.'},
       {selector:'#open-quran-search',mode:'note',group:'إعدادات المصحف',title:'البحث عن آية',body:'البحث يعمل بالكلمة أو بجزء من الآية، ويتجاهل التشكيل، ثم ينقلك للموضع أو يفتح التفسير. وهو متاح دون إنترنت.'},
       {selector:'#audio-open-options',mode:'real-open',opens:'#audio-options-sheet',prepare:'close-settings',audio:true,group:'التلاوة',title:'افتح خيارات التلاوة',body:'اضغط اسم القارئ الحقيقي أعلى المشغّل لفتح خيارات الاستماع.'},
-      {selector:'#audio-reciter-field',mode:'pick-quran-reciter',audio:true,group:'خيارات التلاوة',title:'غيّر القارئ بنفسك',body:'اضغط حقل القارئ واختر الصوت الذي تريده من القائمة. لن يبدأ تشغيل الصوت تلقائيًا.'},
+      {selector:'#audio-reciter-field',mode:'note',audio:true,group:'خيارات التلاوة',title:'اختيار القارئ',body:'من هنا تختار القارئ اللي تحبه، وتقدر تبحث باسمه. مش لازم تختار قارئ أثناء الشرح، اضغط «التالي» عشان نكمل.'},
       {selector:'#audio-sync-note',fallback:'#audio-auto-follow',mode:'note',audio:true,group:'خيارات التلاوة',title:'تظليل الآية والكلمة',body:'التسجيلات المتزامنة تظلّل الآية والكلمة حسب توقيتات موثوقة لنفس التسجيل. بعض تلاوات MP3Quran تدعم تظليل الآية فقط. خيار المتابعة التلقائية ينقل الصفحة مع التلاوة ويمكنك إيقافه.'},
       {selector:'#audio-surah-field',mode:'note',audio:true,group:'خيارات التلاوة',title:'السورة وآية البداية',body:'اختر السورة من هنا. وللبدء من آية محددة، افتح خيارات الآية واضغط «الاستماع» كما رأيت في بداية الجولة.'},
       {selector:'.audio-download-actions',mode:'note',audio:true,group:'التحميل',title:'الاستماع دون إنترنت',body:'التطبيق لا يحمل مصحفًا صوتيًا ضمن ملف التثبيت لتوفير المساحة. اختر السور أو القارئ وحمّل التسجيلات من MP3Quran للاستماع دون إنترنت. لا تبدأ الجولة أي تنزيل، ويعرض التطبيق المساحة وحالة التقدم.'},
@@ -68,7 +68,7 @@
   };
   const kind = PAGES[PAGE];
   if (!kind) return;
-  const VERSIONS = {home:'v7',quran:'v6',recitations:'v6',library:'v6',adhkar:'v6'};
+  const VERSIONS = {home:'v7',quran:'v7',recitations:'v6',library:'v6',adhkar:'v6'};
   const versionFor = k => VERSIONS[k] || 'v1';
   const DONE = k => 'ayat-tour-done-' + k + '-' + versionFor(k);
   const STEP = k => 'ayat-tour-step-' + k + '-' + versionFor(k);
@@ -166,11 +166,8 @@
     modal.querySelector('[role="dialog"]')?.focus({preventScroll:true});
   }
   function quranResumeStep(index){
-    if(kind!=='quran')return index;
-    if(index>=1&&index<=4)return 0;
-    if(index===6)return 5;
-    if(index===9||index===10)return 8;
-    if(index>=12)return 11;
+    // The tour now restores the real panel belonging to every step, so it
+    // can resume exactly where the user stopped.
     return index;
   }
   function closeQuranPanels(){
@@ -182,6 +179,55 @@
       ['#audio-options-sheet.is-open','#audio-close-options']
     ]){
       if(document.querySelector(sheet))document.querySelector(button)?.click();
+    }
+  }
+  // A Quran tour step is a pair: explanatory card + actual app panel.
+  // Reconcile both on Next, Previous, Skip and resume. No step may depend
+  // on a side effect from an earlier step.
+  async function syncQuranStep(index,token){
+    if(kind!=='quran')return;
+    const verseSteps=index>=1&&index<=4;
+    const indexStep=index===6;
+    const settingsStep=index===9||index===10;
+    const audioStep=index>=12;
+    const closeIfOpen=(selector,button)=>{
+      if(document.querySelector(selector)?.classList.contains('is-open'))
+        document.querySelector(button)?.click();
+    };
+    closeIfOpen('#verse-actions-sheet','#close-verse-actions');
+    if(indexStep){
+      closeIfOpen('#settings-sheet','#close-settings');
+      closeIfOpen('#audio-options-sheet','#audio-close-options');
+      if(!document.querySelector('#index-sheet.is-open'))
+        document.getElementById('open-index')?.click();
+    }else if(settingsStep){
+      closeIfOpen('#index-sheet','#close-index');
+      closeIfOpen('#audio-options-sheet','#audio-close-options');
+      if(!document.querySelector('#settings-sheet.is-open'))
+        document.getElementById('open-settings')?.click();
+    }else if(audioStep){
+      closeIfOpen('#index-sheet','#close-index');
+      closeIfOpen('#settings-sheet','#close-settings');
+      if(!document.querySelector('#audio-options-sheet.is-open'))
+        document.getElementById('audio-open-options')?.click();
+    }else{
+      closeIfOpen('#index-sheet','#close-index');
+      closeIfOpen('#settings-sheet','#close-settings');
+      closeIfOpen('#audio-options-sheet','#audio-close-options');
+    }
+    if(!verseSteps)return;
+    // Wait for the genuine 604-page Mushaf words to be rendered before
+    // opening the real verse-actions sheet after a skipped long press.
+    for(let attempt=0;attempt<80;attempt++){
+      if(token!==stepToken||!active||active.step!==index)return;
+      const word=chooseTourVerse();
+      if(word){
+        const match=/^(\d+):(\d+)$/.exec(word.dataset.verse||'');
+        if(match&&window.mushafVerseActions?.openForTour?.({
+          surah:Number(match[1]),ayah:Number(match[2])
+        }))return;
+      }
+      await delay(100);
     }
   }
   function start(replay=false){
@@ -328,6 +374,8 @@
   }
   async function prepare(s,token){
     if(kind==='quran'){
+      await syncQuranStep(active.step,token);
+      if(token!==stepToken)return;
       if(s.prepare==='close-verse')document.getElementById('close-verse-actions')?.click();
       else if(s.prepare==='close-index')document.getElementById('close-index')?.click();
       else if(s.prepare==='close-settings')document.getElementById('close-settings')?.click();
@@ -677,11 +725,8 @@
     };
     setTimeout(waitForPanel,0);
   },true);
-  window.addEventListener('mushaf:reciter-changed',()=>{
-    if(kind==='quran'&&active&&!busy&&TOURS.quran[active.step]?.mode==='pick-quran-reciter'){
-      setTimeout(()=>{if(active&&TOURS.quran[active.step]?.mode==='pick-quran-reciter')advance();},180);
-    }
-  });
+  // Changing a reader is optional during the Quran guide. The user advances
+  // explicitly with Next, and a reader change never jumps tutorial steps.
   document.addEventListener('ayat:reciter-chosen',()=>{
     if(kind==='recitations'&&active&&TOURS[kind][active.step]?.mode==='pick-reciter'){
       setTimeout(()=>{if(active&&TOURS[kind][active.step]?.mode==='pick-reciter')advance();},380);
