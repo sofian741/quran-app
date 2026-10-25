@@ -17,7 +17,7 @@ copyfile("android-native/QuranFloatingAudio.java", main.parent / "QuranFloatingA
 copyfile("android-native/QuranPlaybackService.java", main.parent / "QuranPlaybackService.java")
 manifest = Path("android/app/src/main/AndroidManifest.xml")
 xml = manifest.read_text(encoding="utf-8")
-for permission in ("android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"):
+for permission in ("android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK", "android.permission.WAKE_LOCK"):
     line = f'<uses-permission android:name="{permission}" />'
     if line not in xml:
         xml = xml.replace("<application", line + "\n    <application", 1)
