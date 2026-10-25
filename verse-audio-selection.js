@@ -26,7 +26,9 @@
         catch (_) { return null; }
         if (url.protocol !== 'https:' || !url.pathname.endsWith('.mp3')) return null;
         const server = url.href.slice(0, url.href.lastIndexOf('/') + 1);
-        const reciter = catalog.find(row => row.moshaf?.some(item => item.server === server)) ||
+        const reciter = catalog.find(row => Number(row.id) === Number(track.reciterId) &&
+                row.moshaf?.some(item => item.server === server)) ||
+            catalog.find(row => row.moshaf?.some(item => item.server === server)) ||
             (Number.isSafeInteger(Number(track.reciterId)) && Number(track.reciterId) > 0
                 ? {id:Number(track.reciterId), name:track.reciterName || 'القارئ', moshaf:[]} : null);
         if (!reciter) return null;
@@ -62,7 +64,7 @@
             const success = isCurrent
                 ? await engine.goTo(surah, ayah, {autoplay:true})
                 : await engine.selectAligned(id, {surah,ayah,autoplay:true});
-            return !!success;
+            return !!success && engine.status !== 'error';
         }
 
         async function playMp3Track(track, chapter, ayah, stillCurrent) {
@@ -169,7 +171,8 @@
                 if (!stillCurrent()) return {ok:false,cancelled:true};
                 if (result?.ok) return {
                     ...result,downloaded:true,
-                    switched: result.name !== original.reciterName,
+                    switched: result.name !== original.reciterName &&
+                        track.url !== selectedUrl,
                     selected: original.reciterName
                 };
             }
@@ -195,7 +198,8 @@
                 },surah,ayah,stillCurrent);
                 if (result?.ok) return {
                     ...result,downloaded:false,
-                    switched:result.name !== original.reciterName,
+                    switched:result.name !== original.reciterName &&
+                        selectedUrl !== (engine.trackUrl || ''),
                     selected:original.reciterName
                 };
             }
