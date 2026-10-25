@@ -13,6 +13,9 @@ on:
       - 'recitations.css'
       - 'recitations-overrides.css'
       - 'recitations.js'
+      - 'floating-recitation.js'
+      - 'floating-recitation.css'
+      - 'tests/floating-recitation-browser.cjs'
       - 'recitations-library-link.js'
       - 'library.html'
       - 'library.css'
@@ -57,6 +60,7 @@ jobs:
         run: |
           node --check adhkar.js
           node --check recitations.js
+          node --check floating-recitation.js
           node --check recitations-library-link.js
           node --check library.js
       - name: Verify page contracts and vector UI
@@ -67,3 +71,12 @@ jobs:
         env:
           QURAN_BROWSER_PATH: /usr/bin/chromium
         run: node tests/lan-http-assets.cjs
+
+      - name: Verify native floating audio handoff in browser simulation
+        env:
+          QURAN_BROWSER_PATH: /usr/bin/chromium
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/ayat-floating-server.log 2>&1 &
+          sleep 2
+          node tests/floating-recitation-browser.cjs
+          node tests/recitations-browser.cjs
