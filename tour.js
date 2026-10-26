@@ -32,7 +32,7 @@
       {selector:'#open-saved',mode:'note',group:'إعدادات المصحف',title:'المحفوظات',body:'من هنا ترجع للمفضلة وفاصلة الآية وفاصلة الصفحة، وكل نوع موجود في تبويب مستقل.'},
       {selector:'#open-quran-search',mode:'note',group:'إعدادات المصحف',title:'البحث عن آية',body:'البحث يعمل بالكلمة أو بجزء من الآية، ويتجاهل التشكيل، ثم ينقلك للموضع أو يفتح التفسير. وهو متاح دون إنترنت.'},
       {selector:'#audio-open-options',mode:'real-open',opens:'#audio-options-sheet',prepare:'close-settings',audio:true,group:'التلاوة',title:'افتح خيارات التلاوة',body:'اضغط اسم القارئ الحقيقي أعلى المشغّل لفتح خيارات الاستماع.'},
-      {selector:'#audio-reciter-field',mode:'pick-quran-reciter',audio:true,group:'خيارات التلاوة',title:'غيّر القارئ بنفسك',body:'اضغط حقل القارئ واختر الصوت الذي تريده من القائمة. لن يبدأ تشغيل الصوت تلقائيًا.'},
+      {selector:'#audio-reciter-field',mode:'note',audio:true,group:'خيارات التلاوة',title:'اختيار القارئ',body:'من هنا تختار القارئ الذي تحبه. مش لازم تضغط على الحقل أثناء الشرح؛ اضغط «التالي» عشان نكمل من غير تغيير الصوت أو حدوث أي تعارض.'},
       {selector:'#audio-sync-note',fallback:'#audio-auto-follow',mode:'note',audio:true,group:'خيارات التلاوة',title:'تظليل الآية والكلمة',body:'التسجيلات المتزامنة تظلّل الآية أثناء القراءة، وتظلّل الكلمة عندما تتوفر توقيتات موثوقة. خيار المتابعة التلقائية ينقل الصفحة مع التلاوة ويمكنك إيقافه.'},
       {selector:'#audio-surah-field',mode:'note',audio:true,group:'خيارات التلاوة',title:'السورة وآية البداية',body:'اختر السورة من هنا. وللبدء من آية محددة، افتح خيارات الآية واضغط «الاستماع» كما رأيت في بداية الجولة.'},
       {selector:'.audio-download-actions',mode:'note',audio:true,group:'التحميل',title:'الاستماع دون إنترنت',body:'يمكنك تحميل السورة الحالية أو سور القارئ المتاحة. لا تبدأ الجولة أي تنزيل، ويعرض التطبيق المساحة وحالة التقدم قبل وأثناء الحفظ.'},
@@ -172,6 +172,49 @@
     if(index===9||index===10)return 8;
     if(index>=12)return 11;
     return index;
+  }
+  // Keep each lesson attached to its REAL control, even when a user skipped
+  // the preceding action. Open the existing UI via its own buttons; never
+  // fabricate a tutorial-only copy of a sheet or change user data.
+  const QURAN_DEPENDENCIES = [
+    {start:1,end:4,panel:'#verse-actions-sheet',button:'#close-verse-actions',open:()=>false},
+    {start:6,end:6,panel:'#index-sheet',button:'#open-index'},
+    {start:9,end:10,panel:'#settings-sheet',button:'#open-settings'},
+    {start:12,end:17,panel:'#audio-options-sheet',button:'#audio-open-options'}
+  ];
+  function visiblePanel(selector){
+    const panel=document.querySelector(selector);
+    return !!panel&&(panel.classList.contains('is-open')||
+      panel.getAttribute('aria-hidden')==='false'||
+      (!panel.hidden&&getComputedStyle(panel).display!=='none'));
+  }
+  async function ensureQuranContext(step,token){
+    if(kind!=='quran')return;
+    const index=TOURS.quran.indexOf(step);
+    const dependency=QURAN_DEPENDENCIES.find(group=>index>=group.start&&index<=group.end);
+    if(!dependency)return;
+    if(visiblePanel(dependency.panel))return;
+    if(dependency.panel==='#verse-actions-sheet'){
+      // A real verse must be selected for this menu. Reuse the same selection
+      // mechanism as a genuine long press, with no audio or bookmark changes.
+      const word=chooseTourVerse();
+      if(!word)return;
+      const key=word.dataset.verse;
+      const selected=window.mushafVerseActions?.getSelectedVerse?.();
+      if(selected&&String(selected.surah)+':'+String(selected.ayah)===key&&visiblePanel(dependency.panel))return;
+      // Real verse selection is supplied by the reader's own event handler.
+      // Don't dispatch synthetic clicks or invent verse metadata.
+      if(typeof window.mushafVerseActions?.openForVerse==='function'){
+        const parts=key.split(':').map(Number);
+        window.mushafVerseActions.openForVerse(parts[0],parts[1]);
+      }
+    }else{
+      document.querySelector(dependency.button)?.click();
+    }
+    for(let attempt=0;attempt<20&&!visiblePanel(dependency.panel);attempt++){
+      if(token!==stepToken||!active)return;
+      await delay(60);
+    }
   }
   function closeQuranPanels(){
     if(kind!=='quran')return;
@@ -328,6 +371,8 @@
   }
   async function prepare(s,token){
     if(kind==='quran'){
+      await ensureQuranContext(s,token);
+      if(token!==stepToken||!active)return;
       if(s.prepare==='close-verse')document.getElementById('close-verse-actions')?.click();
       else if(s.prepare==='close-index')document.getElementById('close-index')?.click();
       else if(s.prepare==='close-settings')document.getElementById('close-settings')?.click();
