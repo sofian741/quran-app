@@ -23,3 +23,7 @@ download fixes on main. Validate installation over the preceding QA version on d
 ## QA update verification (2026-10-21)
 
 Build a fresh Ayat.apk from the latest main commit. Verify direct upgrade from an older installed QA build to this newest version, retaining user settings and offline audio. The latest GitHub Release must expose the stable asset name Ayat.apk.
+
+## QA-53 Lite: audio and keyboard regression build (26 October 2026)
+
+Build only from the isolated qa/test-stable-53 branch. The Android package intentionally contains no preinstalled Mishary recitations; 19 QUD word-timing datasets are decoded only in generated Android web assets so reciter playback does not depend on WebView gzip support. Preserve original mushaf typography and kashida; pin Quran page geometry while the software keyboard is visible. Publish the signed QA artifact as Ayat.apk for the in-app update tester, after automated verification.
