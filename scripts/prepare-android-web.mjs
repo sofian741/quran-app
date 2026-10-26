@@ -65,9 +65,9 @@ if (decodedQud !== 19) {
 }
 const registryFile = join(qudDir, 'registry.js');
 const originalRegistry = await readFile(registryFile, 'utf8');
-const androidRegistry = originalRegistry.replace(/\\.word\\.json\\.gz/g, '.word.json');
+const androidRegistry = originalRegistry.replace(/\.word\.json\.gz/g, '.word.json');
 if (androidRegistry === originalRegistry ||
-    (androidRegistry.match(/\\.word\\.json"/g) || []).length !== decodedQud) {
+    (androidRegistry.match(/\.word\.json"/g) || []).length !== decodedQud) {
   throw new Error('Could not activate the 19 decoded Android timing sources');
 }
 await writeFile(registryFile, androidRegistry);
