@@ -157,7 +157,8 @@
             new URL(audioUrl).hostname.toLowerCase() !== 'download.quranicaudio.com') {
             throw new Error('مصدر التسجيل غير معتمد لهذا القارئ.');
         }
-        const knownMissing = new Set(['5:89:1', '10:12:76']);
+        // Missing word segments must never block a whole reciter or chapter.
+        // Those individual verses can still use their genuine verse timestamps.
         const verses = file.timestamps.map((timing, index) => {
             const ayah = index + 1;
             const start = Number(timing.timestamp_from);
@@ -177,9 +178,9 @@
                     Number.isFinite(segment.end) && segment.start >= 0 &&
                     segment.end > segment.start)
                 .sort((a, b) => a.start - b.start);
-            if (!segments.length && !knownMissing.has(`${reciter.foundationId}:${surah}:${ayah}`)) {
-                throw new Error(`تظليل الكلمات غير متاح للآية ${surah}:${ayah}.`);
-            }
+            // Preserve verified ayah timing even when the upstream service has
+            // no word-level segments for this particular verse. Never invent
+            // word boundaries or reject the remaining 6235+ playable verses.
             return {
                 surah, ayah, audioUrl,
                 timestampFrom: start, timestampTo: end, duration: end - start,
