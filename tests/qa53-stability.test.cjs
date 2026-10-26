@@ -22,12 +22,12 @@ test('original mushaf typography, kashida and canonical 604-page data remain byt
 
 test('all reciter metadata remain available and keyboard guard is included only in reader page', () => {
     const html = fs.readFileSync('quran.html', 'utf8');
-    assert.match(html, /src="reader-layout-polish\\.js"/);
-    assert.match(html, /src="mushaf-keyboard-viewport\\.js"/);
-    assert.match(html, /src="qud-audio\\.js"/);
+    assert.match(html, /src="reader-layout-polish\.js"/);
+    assert.match(html, /src="mushaf-keyboard-viewport\.js"/);
+    assert.match(html, /src="qud-audio\.js"/);
     const registry = fs.readFileSync('data/qud/registry.js', 'utf8');
-    assert.equal((registry.match(/\\.word\\.json\\.gz/g) || []).length, 19);
-    assert.equal((registry.match(/"id":90\\d\\d/g) || []).length, 19);
+    assert.equal((registry.match(/\.word\.json\.gz/g) || []).length, 19);
+    assert.equal((registry.match(/"id":90\d\d/g) || []).length, 19);
 });
 
 test('keyboard show/hide never changes Quran page dimensions, and normal viewport returns after dismissal', () => {
