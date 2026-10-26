@@ -5,8 +5,8 @@
     // silently replace the chosen sheikh with a hard-coded default.
     // Only the exact audio URL may be paired with a timing document.
     const core = window.QuranAudio;
-    const downloadsApi = window.QuranDownloads;
-    if (!core || !downloadsApi) return;
+    // Exact-ayah playback must work even if the download library is unavailable.
+    if (!core) return;
 
     const OFFLINE_EMPTY = 'أنت غير متصل بالإنترنت، ولا توجد تلاوة محمّلة لهذه السورة على جهازك. شغّل الإنترنت للاستماع، أو نزّل السورة من «التلاوات» لتعمل بدون إنترنت.';
     const OFFLINE_UNALIGNED = 'السورة موجودة ضمن تحميلاتك، لكن تعذّر فتح التسجيل المحفوظ. جرّب تشغيله من «مكتبتي» أو أعد تنزيله.';
