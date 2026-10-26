@@ -19,15 +19,18 @@ test('offline indicator immediately reports no internet',async()=>{
   assert.equal(await api.isOffline(),true);
   assert.equal(requests.length,0);
 });
-test('WebView online flag is unreliable: both failed external probes mean offline',async()=>{
+test('blocked external probes cannot falsely block a playable Android recording',async()=>{
   const {api,requests}=setup({online:true,reachable:false});
-  assert.equal(await api.isOffline(),true);
+  assert.equal(await api.isOffline(),false);
+  assert.equal(requests.length,0);
+  assert.equal(await api.checkConnection(),false);
   assert.equal(requests.length,2);
-  assert.match(api.OFFLINE_MESSAGE,/لا يوجد اتصال بالإنترنت/);
 });
-test('reachable remote source is online',async()=>{
+test('network status check never issues third-party requests before playback',async()=>{
   const {api,requests}=setup({online:true,reachable:true});
   assert.equal(await api.isOffline(),false);
+  assert.equal(requests.length,0);
+  assert.equal(await api.checkConnection(),true);
   assert.equal(requests.length,1);
 });
 test('HTTP 404 and English fetch errors never appear in player text',()=>{
