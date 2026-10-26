@@ -44,7 +44,10 @@
         return pending;
     }
     async function isOffline() {
-        return navigator.onLine === false || !(await checkConnection());
+        // Third-party no-cors probes are not authoritative on Android WebView:
+        // CORS, DNS filtering or one blocked domain can reject a perfectly
+        // usable connection. Let the requested audio/metadata URL try first.
+        return navigator.onLine === false;
     }
     function safeError(message) {
         const value = String(message || '');
