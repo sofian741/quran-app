@@ -566,22 +566,9 @@
     ui.backdrop.addEventListener('click', closeOptions);
     async function toggleWithConnectionNotice() {
         if (!engine.audio.paused) { engine.pause(); return; }
-        const url = engine.trackUrl || (engine.state.provider === 'mp3quran'
-            ? core.mp3Url({server:engine.state.server,surahs:engine.state.availableSurahs},
-                engine.state.surah) : '');
-        let saved = false;
-        try { if (url) saved = await downloads.has(url); }
-        catch (_) { /* A missing cache entry is not a downloaded recording. */ }
-        if (!saved && engine.audio.readyState < 3 &&
-            navigator.onLine === false) {
-            const message = window.QuranAudioConnectivity?.OFFLINE_MESSAGE ||
-                'لا يوجد اتصال بالإنترنت. شغّل الإنترنت أو حمّل السورة للاستماع.';
-            showSwitchNotice('لا يوجد اتصال بالإنترنت', message);
-            listenNotice = message;
-            listenNoticeUntil = Date.now() + 12000;
-            ui.status.textContent = message;
-            return;
-        }
+        // Attempt the actual source first. Android's online flag and
+        // third-party connectivity probes can lie, and a service worker may
+        // still serve a valid downloaded track without a connection.
         const played = await engine.play();
         if (!played) {
             const offline = navigator.onLine === false;
