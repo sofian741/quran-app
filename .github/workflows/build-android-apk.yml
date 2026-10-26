@@ -72,45 +72,27 @@ jobs:
       - name: Prepare bundled web app
         run: npm run android:prepare
 
-      - name: Install audio verification and encoding tools
-        run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
-
-      - name: Bundle all Mishary audio before Android packaging
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Verify lightweight Android package (no embedded reciter)
         run: |
-          mkdir -p www/offline/mishary
-          if gh release download assets-mishary-synced-v3-opus --pattern mishary-synced-v3-opus.zip --dir /tmp; then
-            unzip -q /tmp/mishary-synced-v3-opus.zip -d www/offline/mishary
-            echo "Restored prepared Mishary audio package."
-          else
-            echo "Synchronized audio release missing. Rebuilding from exact EveryAyah recordings and word timestamps."
-            python3 scripts/build-synced-mishary.py --codec opus-webm --bitrate 32k --output www/offline/mishary
-          fi
           python3 - <<'PY'
-          import json
           from pathlib import Path
-          folder = Path('www/offline/mishary')
-          data = json.loads((folder / 'manifest.json').read_text())
-          import hashlib
-          assert data['schemaVersion'] == 2 and data['syncLevel'] == 'word'
-          assert data['audioCodec'] == 'opus' and data['audioContainer'] == 'webm'
-          assert data['recordingSource'] == 'EveryAyah/Alafasy_128kbps'
-          assert len(data['tracks']) == 114
-          assert {t['surah'] for t in data['tracks']} == set(range(1,115))
-          for track in data['tracks']:
-              assert track['file'] == f"{track['surah']:03}.webm", track
-              path = folder / track['file']
-              assert path.is_file() and path.stat().st_size == track['bytes'], path
-              assert hashlib.sha256(path.read_bytes()).hexdigest() == track['sha256'], path
-              timing = folder / track['timing']
-              assert timing.is_file() and hashlib.sha256(timing.read_bytes()).hexdigest() == track['timingSha256'], timing
-              doc = json.loads(timing.read_text(encoding='utf-8'))
-              assert doc['surah'] == track['surah'] and doc['schemaVersion'] == 2
-              assert len(doc['verses']) > 0 and all(isinstance(row.get('words'), list) for row in doc['verses'])
-          count = sum(len(json.loads((folder / t['timing']).read_text(encoding='utf-8'))['verses']) for t in data['tracks'])
-          assert count == 6236, count
-          print('114 compact WebM/Opus surahs / 6236 ayahs and matching word alignment hashes verified')
+          out = Path('www')
+          assert not (out / 'offline/mishary').exists(), 'Bundled Mishary audio leaked into APK'
+          for file in ('offline-mishary.js', 'offline-mishary-sync.js'):
+              assert not (out / file).exists(), file + ' must not ship'
+          for page in ('quran.html', 'library.html', 'recitations.html'):
+              expected = '\\n'.join(
+                  line for line in Path(page).read_text(encoding='utf-8').split('\\n')
+                  if 'src="offline-mishary.js"' not in line
+                  and 'src="offline-mishary-sync.js"' not in line
+              )
+              packaged = (out / page).read_text(encoding='utf-8')
+              assert packaged == expected, page + ' changed beyond deleting offline-audio hooks'
+          for file in ('app.js', 'reader-enhancements.js', 'reader-layout-polish.js',
+                       'mushaf-audio.js', 'audio-core.js', 'audio-downloads.js',
+                       'assets/fonts/amiri-quran-arabic-400-normal.woff2'):
+              assert (out / file).read_bytes() == Path(file).read_bytes(), file + ' was modified'
+          print('Audio pack removed; mushaf, kashida, font, online player and downloads unchanged.')
           PY
 
       - name: Create Android project
