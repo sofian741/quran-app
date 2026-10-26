@@ -204,6 +204,19 @@
 
     // The stable surah/ayah key will be used to load tafsir later.
     window.mushafVerseActions = {
+        // The guided tour may reopen the REAL verse menu after "Skip" or
+        // "Previous". Use the same validated word and open routine as a hold.
+        // Never trigger tafsir, audio, bookmarks, or a page transition.
+        openForVerse(surah, ayah) {
+            if (isOpen()) return selectedVerse?.verseKey === surah + ':' + ayah;
+            const key = surah + ':' + ayah;
+            const word = [...text.querySelectorAll('.mushaf-word[data-verse]')]
+                .find(item => item.dataset.verse === key);
+            const verse = word && verseFromTarget(word);
+            if (!verse) return false;
+            openVerseActions(verse, { id: -1, type: 'touch' });
+            return true;
+        },
         getSelectedVerse() {
             return selectedVerse ? { ...selectedVerse } : null;
         },
