@@ -56,11 +56,12 @@ jobs:
           node --check offline-mishary-sync.js
           node --check native-background-audio.js
           node --check qud-audio.js
+          node --check mushaf-keyboard-viewport.js
           node --check library.js
           node --check app-update.js
           node --check android-navigation.js
           node --check scripts/prepare-android-web.mjs
-          node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs
+          node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs tests/qa53-stability.test.cjs
 
       - name: Embed installed build number and update endpoint
         env:
@@ -92,6 +93,21 @@ jobs:
                        'mushaf-audio.js', 'audio-core.js', 'audio-downloads.js',
                        'assets/fonts/amiri-quran-arabic-400-normal.woff2'):
               assert (out / file).read_bytes() == Path(file).read_bytes(), file + ' was modified'
+          from json import loads
+          qud = out / 'data/qud'
+          docs = sorted(qud.glob('*.word.json'))
+          assert len(docs) == 19, 'Missing one of the 19 synchronized reciters'
+          assert not list(qud.glob('*.word.json.gz')), 'Old compressed QUD data was bundled'
+          for doc in docs:
+              payload = loads(doc.read_text(encoding='utf-8'))
+              assert payload['_meta']['schema_version'] == 3 and payload['_meta']['tier'] == 'word'
+              assert len(payload['rows']) >= 6000, doc.name + ' has insufficient timings'
+          registry = (qud / 'registry.js').read_text(encoding='utf-8')
+          assert registry.count('.word.json"') == 19
+          assert '.word.json.gz' not in registry
+          assert (out / 'mushaf-keyboard-viewport.js').read_bytes() == Path('mushaf-keyboard-viewport.js').read_bytes()
+          assert 'mushaf-keyboard-viewport.js' in (out / 'quran.html').read_text(encoding='utf-8')
+          assert (out / 'qud-audio.js').read_bytes() == Path('qud-audio.js').read_bytes()
           print('Audio pack removed; mushaf, kashida, font, online player and downloads unchanged.')
           PY
 
