@@ -42,7 +42,3 @@ When the user taps "Listen" on a Mushaf verse, check downloaded MP3Quran recordi
 ## Reciter playback and Mushaf layout regression QA
 
 Build the install-over Ayat QA APK after the reciter-switch playback-intent fix, accurate audio failure reporting, quiet online verse playback, and removal of unnecessary Quran line refitting on audio selection. Verify reciter switching, offline notices, unchanged Quran kashida, and audio playback on Android before accepting this build.
-
-## Android phone verse-listening QA
-
-Rebuild the Android QA APK from the latest main branch after fixing the mobile-specific priority bug: when online, a selected synchronized reciter must play the tapped ayah rather than falling back to an unrelated downloaded untimed chapter recording. Remove the obsolete surah-start and switched-reciter notices. Validate on a physical Android phone before marking this fix verified.
