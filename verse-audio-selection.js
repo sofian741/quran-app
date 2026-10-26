@@ -219,26 +219,9 @@
                 }
             }
 
-            // A synchronized selected reciter must take priority over unrelated
-            // downloaded, untimed MP3s whenever the device is online.
-            // Otherwise Android devices with older downloads unexpectedly
-            // start the surah at 00:00 instead of the tapped verse.
-            const offline = window.QuranAudioConnectivity
-                ? await window.QuranAudioConnectivity.isOffline()
-                : navigator.onLine === false;
-            if (!stillCurrent()) return {ok:false,cancelled:true};
-
-            if (!offline && original.provider === 'quran-foundation') {
-                const played = await playAligned(original.reciterId,surah,ayah,true,stillCurrent);
-                return played
-                    ? {ok:true,name:original.reciterName,kind:'stream',downloaded:false,switched:false}
-                    : {ok:false,message:window.QuranAudioConnectivity?.safeError(engine.error)
-                        || 'تعذّر الاتصال بخادم التلاوة. تحقق من الإنترنت وحاول مرة أخرى.'};
-            }
-
-            // Without connectivity, a saved recording without verified verse
-            // timings may still be played from the beginning, but it must not
-            // displace the selected online synchronized reciter.
+            // No matching timings for any saved recording. Prefer the
+            // user's selected saved sheikh, otherwise the newest saved
+            // recording, and explain why playback begins at surah start.
             for (const track of prioritized) {
                 const result = await playFromSurahStart(track,stillCurrent);
                 if (!stillCurrent()) return {ok:false,cancelled:true};
@@ -249,11 +232,27 @@
                     selected:original.reciterName
                 };
             }
+
+            // A WebView may say "online" while airplane mode is enabled.
+            // Check real connectivity before fetching any uncached recitation.
+            const offline = window.QuranAudioConnectivity
+                ? await window.QuranAudioConnectivity.isOffline()
+                : navigator.onLine === false;
+            if (!stillCurrent()) return {ok:false,cancelled:true};
             if (offline) return {
                 ok:false, offline:true,
                 message:saved.length ? OFFLINE_UNALIGNED : OFFLINE_EMPTY
             };
 
+            // No suitable download: stream the *selected* reader online,
+            // using precise timings only. The app never silently picks Mishary.
+            if (original.provider === 'quran-foundation') {
+                const played = await playAligned(original.reciterId,surah,ayah,true,stillCurrent);
+                return played
+                    ? {ok:true,name:original.reciterName,kind:'stream',downloaded:false,switched:false}
+                    : {ok:false,message:window.QuranAudioConnectivity?.safeError(engine.error)
+                        || 'تعذّر الاتصال بخادم التلاوة. تحقق من الإنترنت وحاول مرة أخرى.'};
+            }
             if (selectedUrl) {
                 const selectedTrack = {
                     url:selectedUrl, surah, reciterId:original.reciterId,
