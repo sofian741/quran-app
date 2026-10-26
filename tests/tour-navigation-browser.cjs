@@ -243,7 +243,7 @@ async function testQuranFromSettings(browser,origin){
   page.on('pageerror',error=>securityErrors.push(error.message));
   await page.goto(origin+'/quran.html');
   await page.waitForFunction(()=>document.querySelector('#quran-text')?.dataset.layoutState==='ready');
-  assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'),/tour\.js\?v=57$/);
+  assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'),/tour\.js\?v=62$/);
   await invite(page).waitFor({state:'visible'});
   await invite(page).locator('[data-tour-action="later"]').click();
   const original=await page.evaluate(()=>({
@@ -274,6 +274,14 @@ async function testQuranFromSettings(browser,origin){
   assert.equal(await page.locator('#verse-actions-sheet').getAttribute('aria-hidden'),'false','Real verse action sheet opens');
   assert.ok(await page.locator('.verse-highlight-band').count()>0,'The app highlights the genuinely selected verse');
 
+  // Skip long press: the real verse menu must open before dependent steps.
+  await lesson(page).locator('[data-tour-action="previous"]').click();
+  assert.match(await waitTourTitle(page,/اضغط مطولًا على الآية/),/اضغط مطولًا على الآية/);
+  await lesson(page).locator('[data-tour-action="assist"]').click();
+  assert.match(await waitTourTitle(page,/كل ما تحتاجه للآية/),/كل ما تحتاجه للآية/);
+  assert.equal(await page.locator('#verse-actions-sheet').getAttribute('aria-hidden'),'false',
+    'Skipping must restore the actual verse menu');
+
   await nextQuranNote(page,/التفسير الميسّر/);
   await nextQuranNote(page,/ابدأ الاستماع من هنا/);
   await nextQuranNote(page,/حفظ ونسخ ومشاركة/);
@@ -286,8 +294,8 @@ async function testQuranFromSettings(browser,origin){
   assert.equal(await page.evaluate(()=>localStorage.getItem('quranPageMarkerV1')),original.pageMarker,'Explaining the page marker does not alter it');
   await lesson(page).locator('[data-tour-action="pause"]').click();
   await page.evaluate(()=>{
-    localStorage.setItem('ayat-tour-remind-at-quran-v6','0');
-    localStorage.setItem('ayat-tour-last-shown-quran-v6','0');
+    localStorage.setItem('ayat-tour-remind-at-quran-v7','0');
+    localStorage.setItem('ayat-tour-last-shown-quran-v7','0');
   });
   await page.reload();
   await invite(page).waitFor({state:'visible'});
@@ -301,19 +309,17 @@ async function testQuranFromSettings(browser,origin){
   await nextQuranNote(page,/افتح خيارات التلاوة/);
   assert.equal(await page.locator('#settings-sheet').getAttribute('aria-hidden'),'true');
   await page.locator('#audio-open-options').click();
-  assert.match(await waitTourTitle(page,/غيّر القارئ بنفسك/),/غيّر القارئ بنفسك/);
+  assert.match(await waitTourTitle(page,/اختيار القارئ/),/اختيار القارئ/);
   assert.equal(await page.locator('#audio-options-sheet').getAttribute('aria-hidden'),'false');
-  await page.locator('#audio-reciter-trigger').click();
-  await page.waitForFunction(()=>document.querySelectorAll('#audio-reciter-results button').length>1);
-  await page.locator('#audio-reciter-results button').nth(1).click();
-  assert.match(await waitTourTitle(page,/تظليل الآية والكلمة/),/تظليل الآية والكلمة/);
+  assert.equal(await lesson(page).locator('[data-tour-action="quran-next"]').count(),1,'Reader step must use Next only');
+  await nextQuranNote(page,/تظليل الآية والكلمة/);
   assert.equal(await page.evaluate(()=>document.getElementById('mushaf-recitation-audio').paused),true,'Choosing a reciter in the lesson never starts audio');
   await nextQuranNote(page,/السورة وآية البداية/);
   await nextQuranNote(page,/الاستماع دون إنترنت/);
   assert.equal(await page.locator('#audio-download-progress').textContent(),'','Tour never starts a download');
   await nextQuranNote(page,/إدارة الملفات المحمّلة/);
   await lesson(page).locator('[data-tour-action="quran-next"]').click();
-  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-quran-v6')==='1');
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-quran-v7')==='1');
   assert.equal(await page.evaluate(()=>window.mushafReader.getCurrentPage()),original.page,'Tour keeps the reading page unchanged');
   assert.deepEqual(securityErrors,[],'No JavaScript or CSP errors during the Quran lesson');
   await context.close();
