@@ -38,6 +38,26 @@ for (const entry of await readdir(root, { withFileTypes: true })) {
   await cp(src, dest);
 }
 
+// QA-53 lightweight Android build: keep the reader, typography, kashida,
+// tafsir, and online/on-demand reciters unchanged. Ship no preinstalled
+// Mishary recordings or the interception scripts that redirect playback to them.
+// This affects only generated www/, never the source HTML or existing downloads.
+await rm(join(out, 'offline', 'mishary'), { recursive: true, force: true });
+for (const script of ['offline-mishary.js', 'offline-mishary-sync.js']) {
+  await rm(join(out, script), { force: true });
+}
+for (const page of ['quran.html', 'library.html', 'recitations.html']) {
+  const path = join(out, page);
+  const original = await readFile(path, 'utf8');
+  const updated = original.split('\n').filter(line =>
+    !/<script\\s+src=["']offline-mishary(?:-sync)?\\.js["']><\\/script>/.test(line)
+  ).join('\n');
+  if (original === updated || /<script\\s+src=["']offline-mishary(?:-sync)?\\.js["']><\\/script>/.test(updated)) {
+    throw new Error('Failed to remove bundled-audio hook in ' + page);
+  }
+  await writeFile(path, updated);
+}
+
 // Tafsir is essential offline Quran content; scripts/ is excluded from the app bundle.
 const tafsirSource = join(root, 'scripts', 'tafsir_muyassar.json');
 const tafsirDest = join(out, 'data', 'tafsir_muyassar.json');
@@ -57,6 +77,5 @@ if (!names.has('index.html')) {
 
 console.log('Prepared Android web bundle in www/');
 
-// Offline Mushary recordings are inserted after web preparation by the
-// manual Android build workflow. Keeping the download step separate avoids
-// accidentally shipping a partial Quran audio corpus.
+// Historical QA-53 audio bundles are deliberately NOT inserted into www.
+// Users can stream or download their chosen reciter on demand.
