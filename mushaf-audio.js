@@ -188,7 +188,7 @@
                     if (group?.label.startsWith('مكتبة التلاوات')) {
                         const caption = document.createElement('small');
                         caption.className = 'audio-picker-group-caption';
-                        caption.textContent = 'يمكن تنزيل التلاوات للاستماع دون إنترنت. عند الضغط على «الاستماع» من آية، يُستخدم القارئ المحمّل صاحب التوقيت المطابق، ولن يتغير القارئ تلقائيًا إلى مشاري.';
+                        caption.textContent = 'يمكن تنزيل السور للاستماع دون إنترنت. زر «استماع» على آية يحافظ على القارئ المختار، ولا يبدأ من منتصف التسجيل إلا مع توقيتات دقيقة تخص نفس التسجيل.';
                         fragment.appendChild(caption);
                     }
                 }
@@ -573,9 +573,7 @@
         try { if (url) saved = await downloads.has(url); }
         catch (_) { /* A missing cache entry is not a downloaded recording. */ }
         if (!saved && engine.audio.readyState < 3 &&
-            (window.QuranAudioConnectivity
-                ? await window.QuranAudioConnectivity.isOffline()
-                : navigator.onLine === false)) {
+            navigator.onLine === false) {
             const message = window.QuranAudioConnectivity?.OFFLINE_MESSAGE ||
                 'لا يوجد اتصال بالإنترنت. شغّل الإنترنت أو حمّل السورة للاستماع.';
             showSwitchNotice('لا يوجد اتصال بالإنترنت', message);
@@ -586,9 +584,7 @@
         }
         const played = await engine.play();
         if (!played) {
-            const offline = window.QuranAudioConnectivity
-                ? await window.QuranAudioConnectivity.isOffline()
-                : navigator.onLine === false;
+            const offline = navigator.onLine === false;
             const message = offline
                 ? window.QuranAudioConnectivity?.OFFLINE_MESSAGE
                 : window.QuranAudioConnectivity?.safeError(engine.error);
@@ -772,9 +768,8 @@
             const result = await verseListener.listen(selected.surah, selected.ayah);
             if (result.cancelled) return;
             if (!result.ok) {
-                const offline = result.offline || (window.QuranAudioConnectivity
-                    ? await window.QuranAudioConnectivity.isOffline()
-                    : navigator.onLine === false);
+                // Playback failures are not evidence that the phone is offline.
+                const offline = result.offline === true || navigator.onLine === false;
                 const message = offline
                     ? (result.offline ? result.message : window.QuranAudioConnectivity?.OFFLINE_MESSAGE)
                     : (window.QuranAudioConnectivity?.safeError(result.message) ||
@@ -792,9 +787,7 @@
             window.dispatchEvent(new Event('mushaf:reciter-changed'));
 
         } catch (error) {
-            const offline = window.QuranAudioConnectivity
-                ? await window.QuranAudioConnectivity.isOffline()
-                : navigator.onLine === false;
+            const offline = navigator.onLine === false;
             const message = offline
                 ? (window.QuranAudioConnectivity?.OFFLINE_MESSAGE ||
                     'لا يوجد اتصال بالإنترنت. شغّل الإنترنت أو حمّل السورة.')
