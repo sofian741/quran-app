@@ -1,5 +1,6 @@
 import { cp, mkdir, readdir, rm, readFile, writeFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
+import { gunzipSync } from 'node:zlib';
 
 const root = process.cwd();
 const out = join(root, 'www');
@@ -37,6 +38,40 @@ for (const entry of await readdir(root, { withFileTypes: true })) {
   if (blockedExt.has(extname(entry.name).toLowerCase())) continue;
   await cp(src, dest);
 }
+
+// Android WebView compatibility: the QUD corpus ships in gzip files, and
+// opening a reciter previously required DecompressionStream at runtime. Some
+// WebViews cannot decode these local gzip assets reliably. Keep the original
+// verified dataset, but decode only the Android bundle's copy at build time.
+// The existing QUD loader already accepts UTF-8 JSON when gzip magic is absent.
+// No reciter, ayah, or word timestamp is interpolated or rewritten.
+const qudDir = join(out, 'data', 'qud');
+let decodedQud = 0;
+for (const name of await readdir(qudDir)) {
+  if (!name.endsWith('.word.json.gz')) continue;
+  const source = join(qudDir, name);
+  const json = gunzipSync(await readFile(source));
+  const payload = JSON.parse(json.toString('utf8'));
+  if (payload?._meta?.schema_version !== 3 || payload?._meta?.tier !== 'word' ||
+      !Array.isArray(payload.rows) || payload.rows.length < 6000) {
+    throw new Error('Invalid synchronized word corpus: ' + name);
+  }
+  await writeFile(source.slice(0, -3), json);
+  await rm(source);
+  decodedQud++;
+}
+if (decodedQud !== 19) {
+  throw new Error('Android requires all 19 QUD timing corpora; found ' + decodedQud);
+}
+const registryFile = join(qudDir, 'registry.js');
+const originalRegistry = await readFile(registryFile, 'utf8');
+const androidRegistry = originalRegistry.replace(/\\.word\\.json\\.gz/g, '.word.json');
+if (androidRegistry === originalRegistry ||
+    (androidRegistry.match(/\\.word\\.json"/g) || []).length !== decodedQud) {
+  throw new Error('Could not activate the 19 decoded Android timing sources');
+}
+await writeFile(registryFile, androidRegistry);
+console.log('Prepared ' + decodedQud + ' QUD reciters with decoded word timing for Android.');
 
 // QA-53 lightweight Android build: keep the reader, typography, kashida,
 // tafsir, and online/on-demand reciters unchanged. Ship no preinstalled
