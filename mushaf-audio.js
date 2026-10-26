@@ -790,7 +790,17 @@
                 lastAlignedId = engine.state.reciterId;
             }
             window.dispatchEvent(new Event('mushaf:reciter-changed'));
-
+            if (result.startedAtBeginning && result.switched && result.downloaded) {
+                const switched = result.switched
+                    ? `لم نجد تسجيلًا محمّلًا بتظليل مطابق. استخدمنا «${result.name}» الموجود عندك بدل «${result.selected}». `
+                    : '';
+                const source = result.downloaded ? 'المحمّل عندك' : 'المختار';
+                showSwitchNotice('التلاوة بدأت من أول السورة',
+                    `${switched}تسجيل «${result.name}» ${source} لا تتوفر له توقيتات مطابقة للآيات، فمش هنقدر نبدأ من الآية ${core.arabicDigits(selected.ayah)} أو نظلّلها بدقة. عشان كده شغّلنا سورة ${core.SURAH_NAMES[selected.surah - 1]} من بدايتها، من غير تخمين أو تظليل غير صحيح. لو عايز تبدأ من نفس الآية، حمّل تسجيلًا متزامنًا.`);
+            } else if (result.switched && result.downloaded) {
+                showSwitchNotice('تشغيل الآية بصوت قارئ محمّل',
+                    `القارئ المختار «${result.selected}» ليس له تسجيل محمّل متزامن لهذه الآية. استخدمنا تسجيل «${result.name}» المحفوظ عندك بتوقيتات مطابقة للآية، دون تنزيل جديد أو اختيار مشاري تلقائيًا.`);
+            }
         } catch (error) {
             const offline = window.QuranAudioConnectivity
                 ? await window.QuranAudioConnectivity.isOffline()
