@@ -27,3 +27,7 @@ Build a fresh Ayat.apk from the latest main commit. Verify direct upgrade from a
 ## QA-53 Lite: audio and keyboard regression build (26 October 2026)
 
 Build only from the isolated qa/test-stable-53 branch. The Android package intentionally contains no preinstalled Mishary recitations; 19 QUD word-timing datasets are decoded only in generated Android web assets so reciter playback does not depend on WebView gzip support. Preserve original mushaf typography and kashida; pin Quran page geometry while the software keyboard is visible. Publish the signed QA artifact as Ayat.apk for the in-app update tester, after automated verification.
+
+## QA-53 Lite linked tutorials (2026-10-27)
+
+Build and publish the isolated QA-53 Lite test APK with the linked walkthrough fix. Skipping the long-press lesson must reopen the genuine verse menu before explaining its actions; index, settings, and audio lessons must open their actual panels when a prior step was skipped. The Quran reciter lesson is informational and advances using Next, without forcing a reciter tap. No mushaf typography, audio timings, downloads, or kashida logic is changed by this tutorial patch.
