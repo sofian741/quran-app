@@ -44,3 +44,7 @@ Trigger Android QA APK build with strict selected-reader exact-ayah playback. Re
 ## Final Android QA playback cache refresh — 2026-10-26
 
 Rebuild after service worker shell cache v67 bump so upgrade installations load the corrected verse-audio-selection.js, mushaf-audio.js and connectivity handling rather than serving an older cached player. All exact-ayah regression tests must pass before the APK is uploaded.
+
+## Final exact-ayah QA check
+
+This build includes the download-independent exact-ayah listener in addition to the v67 service-worker refresh. Confirm all tests and install the generated Ayat.apk for a live Android check.
