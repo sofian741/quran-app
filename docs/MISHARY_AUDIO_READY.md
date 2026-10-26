@@ -32,3 +32,7 @@ Build a fresh Ayat.apk from the latest main commit. Verify direct upgrade from a
 - أبقِ الإصدارات السابقة في مراجعة منفصلة لأنها لا تتأثر بهذا التعديل.
 
 - تصحيح أخير في 2026-10-21: منع تخزين HTTP الإجباري لباقي نقاط Quran Foundation الخاصة بملفات الآيات والاستكشاف، وتضمين هذا التصحيح في محاولة بناء QA الآمنة.
+
+## QA rollback verification — 2026-10-26
+
+Rebuild the Android QA APK from the restored 0406a1d5be0454e7262c8f191916098a05285e11 project snapshot. This documentation-only commit triggers the original Android build workflow. Preserve the old application code and do not include later audio/player changes. Test before release.
