@@ -36,3 +36,7 @@ Build a fresh Ayat.apk from the latest main commit. Verify direct upgrade from a
 ## QA rollback verification — 2026-10-26
 
 Rebuild the Android QA APK from the restored 0406a1d5be0454e7262c8f191916098a05285e11 project snapshot. This documentation-only commit triggers the original Android build workflow. Preserve the old application code and do not include later audio/player changes. Test before release.
+
+## QA playback fix verification — 2026-10-26
+
+Trigger Android QA APK build with strict selected-reader exact-ayah playback. Regression tests cover a downloaded Maher surah never overriding selected Mishary, Android connectivity false negatives, accurate verse seek with matching MP3Quran timings, and no silent playback from surah start when timestamps are unavailable. Check the selected reciter, word highlighting only with authentic word segments, downloaded full-surah playback, and app upgrade on an actual device. This is a QA-only build; no unlicensed recordings may be bundled.
