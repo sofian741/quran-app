@@ -177,7 +177,7 @@
   // the preceding action. Open the existing UI via its own buttons; never
   // fabricate a tutorial-only copy of a sheet or change user data.
   const QURAN_DEPENDENCIES = [
-    {start:1,end:4,panel:'#verse-actions-sheet',button:'#close-verse-actions',open:()=>false},
+    {start:1,end:4,panel:'#verse-actions-sheet'},
     {start:6,end:6,panel:'#index-sheet',button:'#open-index'},
     {start:9,end:10,panel:'#settings-sheet',button:'#open-settings'},
     {start:12,end:17,panel:'#audio-options-sheet',button:'#audio-open-options'}
@@ -200,10 +200,6 @@
       const word=chooseTourVerse();
       if(!word)return;
       const key=word.dataset.verse;
-      const selected=window.mushafVerseActions?.getSelectedVerse?.();
-      if(selected&&String(selected.surah)+':'+String(selected.ayah)===key&&visiblePanel(dependency.panel))return;
-      // Real verse selection is supplied by the reader's own event handler.
-      // Don't dispatch synthetic clicks or invent verse metadata.
       if(typeof window.mushafVerseActions?.openForVerse==='function'){
         const parts=key.split(':').map(Number);
         window.mushafVerseActions.openForVerse(parts[0],parts[1]);
