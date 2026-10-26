@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v62';
+const APP_CACHE = 'quran-reader-shell-v63-qa53-light';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',
@@ -12,7 +12,7 @@ const APP_SHELL = [
     './audio-core.js', './audio-downloads.js', './data/qud/registry.js', './qud-audio.js', './offline-reciter-catalog.js',
     './audio-bulk-download.js', './mushaf-audio.js', './recitations.js', './recitations-library-link.js', './library.js', './adhkar.js',
     './data/quran-uthmani.txt', './data/mushaf-layout.json', './data/adhkar.json', './data/adhkar-source.json',
-    './scripts/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2'
+    './data/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2'
 ];
 
 self.addEventListener('install', event => {
