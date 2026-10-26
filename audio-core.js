@@ -710,8 +710,8 @@
             this.pendingResume = this.state.position;
             if (sameTrack) {
                 this.seek(this.state.position);
-                if (autoplay) await this.play();
-                return true;
+                // Propagate media play failures to the caller.
+                return autoplay ? !!(await this.play()) : true;
             }
             this.audio.pause(); this.trackUrl = '';
             return this.prepare({ autoplay });
