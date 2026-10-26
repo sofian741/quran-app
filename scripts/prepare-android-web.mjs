@@ -49,10 +49,11 @@ for (const script of ['offline-mishary.js', 'offline-mishary-sync.js']) {
 for (const page of ['quran.html', 'library.html', 'recitations.html']) {
   const path = join(out, page);
   const original = await readFile(path, 'utf8');
-  const updated = original.split('\n').filter(line =>
-    !/<script\\s+src=["']offline-mishary(?:-sync)?\\.js["']><\\/script>/.test(line)
-  ).join('\n');
-  if (original === updated || /<script\\s+src=["']offline-mishary(?:-sync)?\\.js["']><\\/script>/.test(updated)) {
+  const isBundledAudioHook = line =>
+    line.includes('src="offline-mishary.js"') ||
+    line.includes('src="offline-mishary-sync.js"');
+  const updated = original.split('\n').filter(line => !isBundledAudioHook(line)).join('\n');
+  if (original === updated || updated.split('\n').some(isBundledAudioHook)) {
     throw new Error('Failed to remove bundled-audio hook in ' + page);
   }
   await writeFile(path, updated);
