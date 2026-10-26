@@ -186,8 +186,8 @@
       if (!options.preserveRepeat) this.state.repeat.completed = 0;
       placeAt(this, this.state.position);
       this.persist(); this.updateMediaMetadata(); this.emit();
-      if (autoplay) await this.play();
-      return true;
+      // Never tell the verse button playback succeeded when Android rejected play().
+      return autoplay ? !!(await this.play()) : true;
     }
     this.__offlineMisharyChapter = null;
     return originalGoTo.call(this, surah, ayah, options);
