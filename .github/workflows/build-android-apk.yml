@@ -270,4 +270,12 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      # Historical QA comparison: artifact only, never replace latest release.
+      - name: Publish temporary QA-53 in-app update
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: qa-${{ github.run_number }}
+          name: Ayat QA-53 test 0.1.${{ github.run_number }}
+          files: dist/Ayat.apk
+          make_latest: true
+          generate_release_notes: false
+          body: Temporary QA-53 historical comparison build. For in-app test only, not a production or Google Play release.
