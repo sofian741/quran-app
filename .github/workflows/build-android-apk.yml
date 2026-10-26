@@ -3,12 +3,13 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, qa/test-stable-53]
     paths:
       - docs/MISHARY_AUDIO_READY.md
+      - .github/workflows/build-android-apk.yml
 
 concurrency:
-  group: qa-apk-main
+  group: qa-apk-${{ github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -269,12 +270,4 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish APK release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: qa-${{ github.run_number }}
-          name: Ayat QA 0.1.${{ github.run_number }}
-          files: dist/Ayat.apk
-          make_latest: true
-          generate_release_notes: false
-          body: Temporary QA build for install-over updates. Not a Google Play release.
+      # Historical QA comparison: artifact only, never replace latest release.
