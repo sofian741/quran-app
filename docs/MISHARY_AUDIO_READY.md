@@ -40,3 +40,7 @@ Rebuild the Android QA APK from the restored 0406a1d5be0454e7262c8f191916098a052
 ## QA playback fix verification — 2026-10-26
 
 Trigger Android QA APK build with strict selected-reader exact-ayah playback. Regression tests cover a downloaded Maher surah never overriding selected Mishary, Android connectivity false negatives, accurate verse seek with matching MP3Quran timings, and no silent playback from surah start when timestamps are unavailable. Check the selected reciter, word highlighting only with authentic word segments, downloaded full-surah playback, and app upgrade on an actual device. This is a QA-only build; no unlicensed recordings may be bundled.
+
+## Final Android QA playback cache refresh — 2026-10-26
+
+Rebuild after service worker shell cache v67 bump so upgrade installations load the corrected verse-audio-selection.js, mushaf-audio.js and connectivity handling rather than serving an older cached player. All exact-ayah regression tests must pass before the APK is uploaded.
