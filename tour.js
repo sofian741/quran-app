@@ -68,7 +68,7 @@
   };
   const kind = PAGES[PAGE];
   if (!kind) return;
-  const VERSIONS = {home:'v7',quran:'v6',recitations:'v6',library:'v6',adhkar:'v6'};
+  const VERSIONS = {home:'v7',quran:'v7',recitations:'v6',library:'v6',adhkar:'v6'};
   const versionFor = k => VERSIONS[k] || 'v1';
   const DONE = k => 'ayat-tour-done-' + k + '-' + versionFor(k);
   const STEP = k => 'ayat-tour-step-' + k + '-' + versionFor(k);
