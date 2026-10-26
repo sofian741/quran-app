@@ -81,8 +81,8 @@ jobs:
           for file in ('offline-mishary.js', 'offline-mishary-sync.js'):
               assert not (out / file).exists(), file + ' must not ship'
           for page in ('quran.html', 'library.html', 'recitations.html'):
-              expected = '\\n'.join(
-                  line for line in Path(page).read_text(encoding='utf-8').split('\\n')
+              expected = '\n'.join(
+                  line for line in Path(page).read_text(encoding='utf-8').split('\n')
                   if 'src="offline-mishary.js"' not in line
                   and 'src="offline-mishary-sync.js"' not in line
               )
