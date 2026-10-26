@@ -243,6 +243,14 @@ jobs:
           mkdir -p dist
           cp android/app/build/outputs/apk/debug/app-debug.apk "dist/Ayat.apk"
           sha256sum "dist/Ayat.apk"
+          # Shipping 492 MiB of pre-installed recitations here is forbidden.
+          python3 - <<'PY'
+          from pathlib import Path
+          apk = Path('dist/Ayat.apk')
+          size = apk.stat().st_size
+          print(f'QA-53 Lite APK: {size / (1024 * 1024):.1f} MiB')
+          assert size < 180 * 1024 * 1024, 'Unexpectedly large APK: bundled audio may have leaked'
+          PY
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -256,8 +264,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: qa-${{ github.run_number }}
-          name: Ayat QA-53 test 0.1.${{ github.run_number }}
+          name: Ayat QA-53 Lite 0.1.${{ github.run_number }}
           files: dist/Ayat.apk
           make_latest: true
           generate_release_notes: false
-          body: Temporary QA-53 historical comparison build. For in-app test only, not a production or Google Play release.
+          body: Lightweight QA-53 comparison. No audio reciter is bundled; online playback and optional downloads remain. Temporary in-app test, not a Google Play release.
