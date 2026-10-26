@@ -16,7 +16,7 @@ const chapters = {
         {surah:2,ayah:3,timestampFrom:6000,timestampTo:9000}]
 };
 
-function setup({offline=false, saved=[], selected='aligned', qudMatch=null, timing=null}={}) {
+function setup({offline=false, saved=[], selected='aligned', qudMatch=null, timing=null, alignedFails=false}={}) {
     const calls = [];
     const core = {
         VERSE_COUNTS:[7,286],
@@ -36,7 +36,7 @@ function setup({offline=false, saved=[], selected='aligned', qudMatch=null, timi
         audio:{readyState:1,currentTime:0,addEventListener(){}},
         prepareVersion:1,
         snapshot(){return {...this.state};},
-        async goTo(surah,ayah,options){calls.push(['goTo',surah,ayah,options]);this.state.surah=surah;this.state.ayah=ayah;return true;},
+        async goTo(surah,ayah,options){calls.push(['goTo',surah,ayah,options]);this.state.surah=surah;this.state.ayah=ayah;return !alignedFails;},
         async selectAligned(id,options){
             calls.push(['selectAligned',id,options]);
             this.state={...this.state,provider:'quran-foundation',reciterId:id,
@@ -82,148 +82,85 @@ function setup({offline=false, saved=[], selected='aligned', qudMatch=null, timi
     return {listener,engine,calls};
 }
 
-test('offline without downloaded audio shows explicit connection/download guidance and never switches reciter',async()=>{
-    const {listener,calls}=setup({offline:true});
+test('selected synchronized reader never switches to downloaded Maher on Android',async()=>{
+    const maher=track('https://server.mp3quran.net/maher/002.mp3',45,'ماهر');
+    const {listener,calls,engine}=setup({offline:false,saved:[maher]});
+    const result=await listener.listen(2,3);
+    assert.equal(result.ok,true);
+    assert.equal(result.switched,false);
+    assert.equal(result.downloaded,false);
+    assert.equal(engine.state.ayah,3);
+    assert.deepEqual(calls.find(row=>row[0]==='goTo').slice(1,3),[2,3]);
+    assert.equal(calls.some(row=>row[0]==='selectMp3'||row[0]==='match'||row[0]==='has'),false);
+});
+test('online aligned reader does not run unrelated connectivity probes',async()=>{
+    const {listener,calls}=setup({offline:false});
+    assert.equal((await listener.listen(2,3)).ok,true);
+    assert.equal(calls.some(row=>row[0]==='goTo'),true);
+});
+test('failed aligned playback never triggers downloaded alternate reciter',async()=>{
+    const maher=track('https://server.mp3quran.net/maher/002.mp3',45,'ماهر');
+    const {listener,calls}=setup({offline:true,saved:[maher],alignedFails:true});
     const result=await listener.listen(2,3);
     assert.equal(result.ok,false);
     assert.equal(result.offline,true);
-    assert.match(result.message,/غير متصل بالإنترنت/);
-    assert.match(result.message,/حمّل/);
-    assert.equal(calls.some(row=>row[0]==='selectAligned'||row[0]==='goTo'),false);
+    assert.equal(calls.some(row=>row[0]==='selectMp3'||row[0]==='match'||row[0]==='play'),false);
 });
-
-test('selected aligned reader uses its downloaded matching MP3Quran chapter at the exact ayah',async()=>{
-    const {listener,calls}=setup({offline:true,saved:[track()]});
+test('online failed aligned playback is not mislabelled offline',async()=>{
+    const {listener}=setup({offline:false,alignedFails:true});
     const result=await listener.listen(2,3);
-    assert.equal(result.ok,true);
-    assert.equal(result.downloaded,true);
-    assert.equal(result.kind,'word');
-    assert.equal(result.switched,false);
-    assert.deepEqual(calls.find(row=>row[0]==='goTo').slice(1,3),[2,3]);
+    assert.equal(result.ok,false);
+    assert.equal(result.offline,false);
+    assert.match(result.message,/تعذّر/);
 });
-
-test('another downloaded exact QUD reader is chosen rather than hardcoded Mishary',async()=>{
-    const {listener,calls}=setup({offline:true,selected:'mp3',
-        saved:[track()],qudMatch:{id:9004,name:'علي الحذيفي'}});
-    const result=await listener.listen(2,3);
-    assert.equal(result.ok,true);
-    assert.equal(result.switched,true);
-    assert.equal(result.name,'علي الحذيفي');
-    assert.equal(calls.find(row=>row[0]==='selectAligned')[1],9004);
-    assert.equal(calls.some(row=>row[0]==='selectAligned'&&row[1]===7),false);
-});
-
-test('downloaded MP3Quran recording with official ayah timing seeks exact start, no fake word timing',async()=>{
+test('selected MP3 with official ayah timing plays from requested ayah',async()=>{
     const savedTrack=track('https://server.mp3quran.net/test/002.mp3',22,'القارئ المختار');
-    const {listener,engine,calls}=setup({offline:true,selected:'mp3',
-        saved:[savedTrack],timing:chapters});
+    const {listener,engine,calls}=setup({offline:true,selected:'mp3',saved:[savedTrack],timing:chapters});
     const result=await listener.listen(2,3);
     assert.equal(result.ok,true);
-    assert.equal(result.kind,'ayah');
     assert.equal(result.switched,false);
     assert.equal(engine.audio.currentTime,6);
     assert.equal(engine.state.ayah,3);
     assert.equal(engine.currentTiming.timestampFrom,6000);
-    assert.equal(engine.currentTiming.segments,undefined);
     assert.ok(calls.some(row=>row[0]==='play'));
 });
-
-test('offline downloaded recording without matching timing plays from surah start, no invented highlighting',async()=>{
-    const {listener,engine,calls}=setup({offline:true,selected:'mp3',
-        saved:[track('https://server.mp3quran.net/test/002.mp3',22,'القارئ المختار')]});
+test('untimed downloaded MP3 does not start at beginning during exact-ayah action',async()=>{
+    const savedTrack=track('https://server.mp3quran.net/test/002.mp3',22,'القارئ المختار');
+    const {listener,engine,calls}=setup({offline:true,selected:'mp3',saved:[savedTrack]});
     engine.audio.currentTime=36;
-    engine.currentTiming=chapters.verses[2];
-    engine.__mp3AyahChapter=chapters;
     const result=await listener.listen(2,3);
-    assert.equal(result.ok,true);
-    assert.equal(result.downloaded,true);
-    assert.equal(result.kind,'surah-start');
-    assert.equal(result.startedAtBeginning,true);
-    assert.equal(result.switched,false);
-    assert.equal(engine.audio.currentTime,0);
-    assert.equal(engine.state.ayah,1);
-    assert.equal(engine.currentTiming,null);
-    assert.equal(engine.__mp3AyahChapter,null);
-    assert.ok(calls.some(row=>row[0]==='play'));
-    assert.equal(calls.some(row=>row[0]==='selectAligned'),false);
+    assert.equal(result.ok,false);
+    assert.equal(result.offline,true);
+    assert.equal(engine.audio.currentTime,36);
+    assert.equal(calls.some(row=>row[0]==='selectMp3'||row[0]==='play'),false);
 });
-
-test('prefer another saved word-timed reader over selected saved unsynced reader',async()=>{
-    const unsynced=track('https://server.mp3quran.net/test/002.mp3',22,'القارئ المختار');
-    const synced=track('https://server7.mp3quran.net/sync/002.mp3',9004,'علي الحذيفي');
-    const {listener,calls}=setup({offline:true,selected:'mp3',saved:[unsynced,synced],
-        qudMatch:url=>url===synced.url?{id:9004,name:'علي الحذيفي'}:null});
-    const result=await listener.listen(2,3);
-    assert.equal(result.ok,true);
-    assert.equal(result.kind,'word');
-    assert.equal(result.downloaded,true);
-    assert.equal(result.switched,true);
-    assert.equal(calls.find(row=>row[0]==='selectAligned')[1],9004);
-    assert.equal(calls.some(row=>row[0]==='selectMp3'),false);
-});
-
-test('prefer saved official verse timing over untimed selected recording',async()=>{
-    const unsynced=track('https://server.mp3quran.net/test/002.mp3',22,'القارئ المختار');
-    const timed=track('https://server8.mp3quran.net/timed/002.mp3',87,'قارئ بتوقيت الآيات');
-    const {listener,calls}=setup({offline:true,selected:'mp3',saved:[unsynced,timed],
-        timing:folder=>folder.includes('/timed/')?chapters:null});
-    const result=await listener.listen(2,3);
-    assert.equal(result.ok,true);
-    assert.equal(result.kind,'ayah');
-    assert.equal(result.downloaded,true);
-    assert.equal(result.switched,true);
-    assert.equal(calls.find(row=>row[0]==='selectMp3')[1],87);
-});
-
-test('prefer saved word-level timing over another saved verse-only recording',async()=>{
-    const verse=track('https://server8.mp3quran.net/timed/002.mp3',87,'قارئ بتوقيت الآيات');
-    const word=track('https://server7.mp3quran.net/sync/002.mp3',9004,'علي الحذيفي');
-    const {listener,calls}=setup({offline:true,selected:'mp3',saved:[verse,word],
-        qudMatch:url=>url===word.url?{id:9004,name:'علي الحذيفي'}:null,
-        timing:folder=>folder.includes('/timed/')?chapters:null});
-    const result=await listener.listen(2,3);
-    assert.equal(result.ok,true);
-    assert.equal(result.kind,'word');
-    assert.equal(calls.some(row=>row[0]==='selectMp3'),false);
-});
-
-test('if no timed recording exists, prefer the currently selected saved reader for surah-start fallback',async()=>{
-    const other=track('https://server8.mp3quran.net/other/002.mp3',87,'قارئ آخر');
-    const selectedTrack=track('https://server.mp3quran.net/test/002.mp3',22,'القارئ المختار');
-    other.savedAt=999;
-    const {listener,calls}=setup({offline:true,selected:'mp3',saved:[other,selectedTrack]});
-    const result=await listener.listen(2,3);
-    assert.equal(result.ok,true);
-    assert.equal(result.kind,'surah-start');
-    assert.equal(result.name,'القارئ المختار');
-    assert.equal(result.switched,false);
-    assert.equal(calls.some(row=>row[0]==='selectMp3'),false);
-});
-
-test('online no downloads streams the selected aligned reader without a forced default',async()=>{
-    const {listener,calls}=setup({offline:false});
-    const result=await listener.listen(2,3);
-    assert.equal(result.ok,true);
-    assert.equal(result.downloaded,false);
-    assert.equal(calls.find(row=>row[0]==='goTo')[2],3);
-    assert.equal(calls.some(row=>row[0]==='selectAligned'),false);
-});
-
-test('online selected MP3 without exact timing starts from first ayah with explanation flag',async()=>{
+test('online untimed MP3 reports unavailable timing without switching or restarting',async()=>{
     const {listener,engine,calls}=setup({offline:false,selected:'mp3'});
     engine.audio.currentTime=53;
     const result=await listener.listen(2,3);
-    assert.equal(result.ok,true);
-    assert.equal(result.kind,'surah-start');
-    assert.equal(result.downloaded,false);
-    assert.equal(result.startedAtBeginning,true);
-    assert.equal(result.switched,false);
-    assert.equal(engine.audio.currentTime,0);
-    assert.equal(engine.state.ayah,1);
-    assert.equal(calls.some(row=>row[0]==='selectAligned'),false);
+    assert.equal(result.ok,false);
+    assert.equal(result.offline,false);
+    assert.match(result.message,/توقيتات/);
+    assert.equal(engine.audio.currentTime,53);
+    assert.equal(calls.some(row=>row[0]==='selectMp3'||row[0]==='selectAligned'),false);
 });
-
-test('invalid verse is rejected without any playback',async()=>{
+test('different downloaded timed MP3 never overrides chosen MP3',async()=>{
+    const other=track('https://server.mp3quran.net/other/002.mp3',87,'ماهر');
+    const {listener,calls}=setup({offline:false,selected:'mp3',saved:[other],
+        timing:folder=>folder.includes('/other/')?chapters:null});
+    assert.equal((await listener.listen(2,3)).ok,false);
+    assert.equal(calls.some(row=>row[0]==='selectMp3'),false);
+    assert.equal(calls.some(row=>row[0]==='match'&&row[1]===other.url),false);
+});
+test('QUD word timing for exactly the selected MP3 remains supported',async()=>{
+    const {listener,calls}=setup({offline:false,selected:'mp3',
+        qudMatch:{id:9004,name:'القارئ المختار'}});
+    const result=await listener.listen(2,3);
+    assert.equal(result.ok,true);
+    assert.equal(result.switched,false);
+    assert.equal(calls.find(row=>row[0]==='selectAligned')[1],9004);
+});
+test('invalid verse rejected before playback',async()=>{
     const {listener,calls}=setup();
     const result=await listener.listen(2,287);
     assert.equal(result.ok,false);
