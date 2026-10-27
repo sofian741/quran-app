@@ -80,7 +80,21 @@
   layer.querySelector('.ayat-reading-exit').addEventListener('click', () => close(true));
   engine.addEventListener('state', sync);
   engine.addEventListener('time', sync);
-  frame.addEventListener('load', () => { status.hidden = true; });
+  frame.addEventListener('load', () => {
+    status.hidden = true;
+    // The recitations page is already alive behind the reader. Returning to
+    // it should close this layer, never create a second competing audio engine.
+    try {
+      frame.contentDocument?.addEventListener('click', event => {
+        const anchor = event.target.closest?.('a[href]');
+        if (!anchor) return;
+        const dest = new URL(anchor.href);
+        if (dest.origin !== location.origin || !/\/recitations\.html$/.test(dest.pathname)) return;
+        event.preventDefault();
+        close(true);
+      });
+    } catch (_) { /* If embedding is restricted, the return button still works. */ }
+  });
   frame.addEventListener('error', () => {
     status.hidden = false;
     status.textContent = 'تعذر فتح المصحف؛ يمكنك العودة إلى التلاوات.';
