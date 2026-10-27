@@ -37,9 +37,18 @@
     play.setAttribute('aria-label', s.playing ? 'إيقاف مؤقت' : 'استكمال التلاوة');
   }
   function shrink(value) {
+    if (collapsed === value) return;
+    const before = pill.getBoundingClientRect();
     collapsed = value;
     pill.classList.toggle('is-collapsed', value);
     grip.setAttribute('aria-label', value ? 'إظهار المشغل أو تحريكه' : 'تصغير المشغل أو تحريكه');
+    // Preserve the grip position so expanding a bubble does not jump away
+    // or become untouchable when it was moved near a screen edge.
+    const width = value ? 49 : Math.min(254, innerWidth - 16);
+    const rtl = getComputedStyle(pill).direction === 'rtl';
+    const gripCenter = rtl ? before.right - 23 : before.left + 23;
+    const desiredLeft = rtl ? gripCenter - width + 23 : gripCenter - 23;
+    position(desiredLeft, before.top);
   }
   function schedule() {
     clearTimeout(idleTimer);
@@ -66,10 +75,8 @@
   grip.addEventListener('pointerup', e => {
     if (!drag || drag.id !== e.pointerId) return;
     const moved = drag.moved; drag = null;
-    if (moved) {
-      const r = pill.getBoundingClientRect();
-      position(r.left + r.width / 2 < innerWidth / 2 ? 8 : innerWidth - r.width - 8, r.top);
-    } else shrink(!collapsed);
+    if (!moved) shrink(!collapsed);
+    // The final drag location is the user's choice. No edge snapping.
     if (!collapsed) schedule();
   });
   grip.addEventListener('pointercancel', () => { drag = null; schedule(); });
@@ -128,6 +135,8 @@
     status.textContent = 'جاري فتح المصحف…';
     frame.src = new URL('quran.html?ayat-reading-mode=1', location.href).href;
     pill.style.left = '8px'; pill.style.top = '58%';
+    pill.classList.remove('is-collapsed');
+    collapsed = false;
     shrink(false);
     sync();
     schedule();
