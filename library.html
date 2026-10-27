@@ -45,7 +45,7 @@
   <button id="player-prev" type="button" aria-label="التلاوة السابقة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 9 12l9 6V6ZM6 6v12"/></svg></button>
   <button id="player-toggle" class="player-toggle" type="button" aria-label="تشغيل"><svg id="player-icon" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7V5Z"/></svg></button>
   <button id="player-next" type="button" aria-label="التلاوة التالية"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 6 9 6-9 6V6Zm12 0v12"/></svg></button>
-  <span class="player-progress" aria-hidden="true"><span id="player-progress-fill"></span></span>
+  <input id="player-progress-seek" class="player-progress-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="تقديم أو تأخير التلاوة" aria-valuetext="٠:٠٠" disabled>
   <audio id="library-audio" preload="metadata"></audio>
 </aside>
 
