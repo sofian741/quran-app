@@ -31,3 +31,6 @@ Build only from the isolated qa/test-stable-53 branch. The Android package inten
 ## QA-53 Lite linked tutorials (2026-10-27)
 
 Build and publish the isolated QA-53 Lite test APK with the linked walkthrough fix. Skipping the long-press lesson must reopen the genuine verse menu before explaining its actions; index, settings, and audio lessons must open their actual panels when a prior step was skipped. The Quran reciter lesson is informational and advances using Next, without forcing a reciter tap. No mushaf typography, audio timings, downloads, or kashida logic is changed by this tutorial patch.
+## Unified Android and desktop walkthrough QA (27 October 2026)
+
+Rebuild Ayat.apk from the synchronized QA-53 Lite code now shared by main and qa/test-stable-53. Bring over only the desktop's linked, real-surface tutorial behavior across Quran, recitations, home, and adhkar, without restoring older main-branch changes to mushaf/audio. Confirm Next-only reciter lesson and Skip/Back restoring genuine menus. The installed 1.83 build does not contain this synchronized tutorial until this new APK is installed. Both code branches must stay at the same commit.
