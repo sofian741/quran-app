@@ -20,8 +20,12 @@
   }
   async function isOffline() {
     if (!pending) {
-      pending = Promise.all(ENDPOINTS.map(probeOne))
-        .then(results => !results.some(Boolean))
+      // Resolve as soon as either endpoint responds; only wait for both
+      // when no connection can be confirmed.
+      pending = Promise.any(ENDPOINTS.map(async url => {
+        if (!await probeOne(url)) throw new Error('endpoint unavailable');
+        return true;
+      })).then(() => false, () => true)
         .finally(() => { pending = null; });
     }
     return pending;
