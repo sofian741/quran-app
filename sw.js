@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v68-qa53-reading-continuity';
+const APP_CACHE = 'quran-reader-shell-v69-floating-player-connectivity';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',
@@ -9,7 +9,7 @@ const APP_SHELL = [
     './service-worker-register.js', './home-settings.js?v=54', './android-build-info.js', './app-update.js', './app.js', './reader-enhancements.js', './reader-layout-polish.js', './mushaf-keyboard-viewport.js',
     './mushaf-layout-prewarm-worker.js',
     './verse-actions.js', './tafsir.js', './quran-search.js', './verse-tools.js',
-    './audio-core.js', './audio-downloads.js', './data/qud/registry.js', './qud-audio.js', './offline-reciter-catalog.js',
+    './ayat-connectivity.js', './audio-core.js', './audio-downloads.js', './data/qud/registry.js', './qud-audio.js', './offline-reciter-catalog.js',
     './ayat-reading-continuity.js', './audio-bulk-download.js', './mushaf-audio.js', './recitations.js', './recitations-library-link.js', './library.js', './adhkar.js',
     './data/quran-uthmani.txt', './data/mushaf-layout.json', './data/adhkar.json', './data/adhkar-source.json',
     './data/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2'
