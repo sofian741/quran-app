@@ -6,3 +6,29 @@
 .home-brand-mark, .brand-mark { position: relative; isolation: isolate; color: #c6a46a; }
 .home-brand-mark svg, .brand-mark svg { position: relative; z-index: 1; color: #c6a46a; filter: drop-shadow(0 1px 2px rgba(198,164,106,.20)); }
 .home-brand-mark::after, .brand-mark::after { content: ''; position: absolute; z-index: 0; left: 28%; right: 28%; bottom: 4px; height: 5px; border-radius: 50%; background: rgba(198,164,106,.24); filter: blur(5px); pointer-events: none; }
+
+
+/* Touch-friendly seek control for the saved-recitation player. */
+.library-player .player-progress-seek{
+  position:absolute;inset-inline:12px;width:calc(100% - 24px);
+  bottom:0;margin:0;height:19px;z-index:2;
+  appearance:none;-webkit-appearance:none;cursor:pointer;
+  border:0;background:transparent;touch-action:pan-x;
+  --seek-progress:0%;
+}
+.library-player .player-progress-seek::-webkit-slider-runnable-track{
+  height:5px;border-radius:99px;
+  background:linear-gradient(to left,var(--green) var(--seek-progress),var(--soft) var(--seek-progress));
+}
+.library-player .player-progress-seek::-moz-range-track{height:5px;border-radius:99px;background:var(--soft)}
+.library-player .player-progress-seek::-moz-range-progress{height:5px;border-radius:99px;background:var(--green)}
+.library-player .player-progress-seek::-webkit-slider-thumb{
+  appearance:none;-webkit-appearance:none;width:15px;height:15px;
+  border-radius:50%;border:2px solid var(--surface);background:var(--green);
+  margin-top:-5px;box-shadow:0 1px 5px #0003;
+}
+.library-player .player-progress-seek::-moz-range-thumb{
+  width:13px;height:13px;border-radius:50%;border:2px solid var(--surface);background:var(--green);
+}
+.library-player .player-progress-seek:focus-visible{outline:2px solid var(--green);outline-offset:1px;border-radius:10px}
+.library-player .player-progress-seek:disabled{opacity:.5;cursor:default}
