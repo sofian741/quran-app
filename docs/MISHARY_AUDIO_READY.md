@@ -49,3 +49,8 @@ The approved app.js index-search change is now explicitly pinned in tests/qa53-s
 ## Mobile QA: draggable collapsed mini-player and verified connectivity (27 October 2026)
 
 Build latest main after mini-player tap/drag repair and dual HTTPS connectivity check. Test collapsed bubble tap and free drag, actual offline message with Wi-Fi/mobile data off, and no false 'offline' alert while internet works. Keep original Mushaf, reciter synchronization, and stable audio untouched beyond explicit UI entry checks.
+
+
+## Final My Library seek bar update (27 October 2026)
+
+The saved-recitation player's progress bar is now an accessible draggable range control with click-to-seek, finger drag, keyboard support, and audio duration synchronization. Rebuild main APK and verify on Android; do not change Mushaf typography or the existing player continuity implementation.
