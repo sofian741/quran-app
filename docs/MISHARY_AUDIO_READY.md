@@ -44,3 +44,8 @@ Build trigger after merging PR #26 to main. Test: synchronized-only Mushaf recit
 ## Rebuild after corrected QA-53 index-search hash guard
 
 The approved app.js index-search change is now explicitly pinned in tests/qa53-stability.test.cjs; keep all typography, font, and 604-page layout checks. Trigger new main APK build for on-device verification.
+
+
+## Mobile QA: draggable collapsed mini-player and verified connectivity (27 October 2026)
+
+Build latest main after mini-player tap/drag repair and dual HTTPS connectivity check. Test collapsed bubble tap and free drag, actual offline message with Wi-Fi/mobile data off, and no false 'offline' alert while internet works. Keep original Mushaf, reciter synchronization, and stable audio untouched beyond explicit UI entry checks.
