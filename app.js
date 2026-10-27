@@ -681,8 +681,17 @@
             }));
         }
         const fragment = document.createDocumentFragment();
+        const indexSearch = document.getElementById('index-surah-search');
+        const normalized = value => String(value || '').normalize('NFKD')
+            .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
+            .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي')
+            .replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+            .trim().toLowerCase();
+        const query = indexTab === 'surahs' ? normalized(indexSearch?.value) : '';
         entries.forEach(entry => {
             if (!entry.page) return;
+            if (query && !normalized(entry.label).includes(query) &&
+                !String(entry.number).includes(query)) return;
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'index-entry';
@@ -762,6 +771,13 @@
             }
         });
         els.indexList.replaceChildren(fragment);
+        if (query && !els.indexList.childElementCount) {
+            const empty = document.createElement('p');
+            empty.className = 'index-search-empty';
+            empty.textContent = 'لا توجد سورة بهذا الاسم أو الرقم.';
+            els.indexList.appendChild(empty);
+        }
+        if (indexSearch) indexSearch.parentElement.hidden = indexTab !== 'surahs';
         els.indexTabs.forEach(button => {
             const active = button.dataset.indexTab === indexTab;
             button.classList.toggle('is-active', active);
@@ -813,6 +829,10 @@
         });
         els.closeIndex.addEventListener('click', closeIndex);
         els.indexBackdrop.addEventListener('click', closeIndex);
+        document.getElementById('index-surah-search')?.addEventListener('input', () => {
+            renderIndex();
+            els.indexList.scrollTop = 0;
+        });
         els.indexTabs.forEach(button => button.addEventListener('click', () => {
             indexTab = button.dataset.indexTab;
             renderIndex();

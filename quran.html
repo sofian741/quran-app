@@ -10,6 +10,12 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="reader-enhancements.css">
     <link rel="stylesheet" href="audio-player.css">
+    <style>
+      .mushaf-index-search{display:block;padding:0 16px 12px}
+      .mushaf-index-search input{box-sizing:border-box;width:100%;min-height:44px;border-radius:13px;border:1px solid #9cae9f;background:var(--surface,#fff);color:inherit;padding:10px 14px;font:inherit}
+      .mushaf-index-search input:focus{outline:2px solid #0f766e;outline-offset:2px}
+      .mushaf-index-search[hidden]{display:none}
+    </style>
     <link rel="stylesheet" href="tour.css?v=57">
     <link rel="stylesheet" href="tour-home.css?v=59">
 </head>
@@ -113,6 +119,10 @@
             <button type="button" class="index-tab" data-index-tab="juz" aria-pressed="false">الأجزاء</button>
         </div>
         <p class="index-ayah-hint">اضغط السهم بجوار اسم السورة لعرض آياتها والبحث والانتقال مباشرة.</p>
+        <label class="mushaf-index-search">
+            <span class="visually-hidden">بحث عن سورة في الفهرس</span>
+            <input type="search" id="index-surah-search" placeholder="ابحث عن سورة بالاسم أو الرقم…" autocomplete="off" aria-label="بحث عن سورة في الفهرس">
+        </label>
         <div class="index-list" id="index-list"></div>
     </aside>
 

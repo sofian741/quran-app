@@ -17,6 +17,7 @@
     ]);
     const reciters = [
         ...registry.reciters.filter(item =>
+            Number(item.id) !== 9017 && // Adel Al-Karbalaei: unreliable alignment; leave library listening untouched.
             Number.isSafeInteger(Number(item.id)) && item.slug && item.name && item.timingUrl && item.catalogUrl),
         ...FOUNDATION_RECITERS
     ];
