@@ -50,6 +50,8 @@ jobs:
 
       - name: Check JavaScript syntax and offline audio tests
         run: |
+          node --check ayat-connectivity.js
+          node --check ayat-reading-continuity.js
           node --check audio-core.js
           node --check audio-downloads.js
           node --check offline-mishary.js
