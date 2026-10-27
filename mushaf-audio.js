@@ -528,7 +528,7 @@
     ui.close.addEventListener('click', closeOptions);
     ui.backdrop.addEventListener('click', closeOptions);
     ui.play.addEventListener('click', async () => {
-        if (navigator.onLine === false) {
+        if (navigator.onLine === false && engine.audio.paused) {
             ui.status.textContent = 'لا يوجد اتصال بالإنترنت. وصّل الإنترنت لتشغيل التلاوة.';
             showSwitchNotice('لا يوجد اتصال بالإنترنت', 'وصّل الإنترنت ثم اضغط تشغيل مرة أخرى.');
             return;
