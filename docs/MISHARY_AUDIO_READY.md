@@ -34,3 +34,8 @@ Build and publish the isolated QA-53 Lite test APK with the linked walkthrough f
 ## Unified Android and desktop walkthrough QA (27 October 2026)
 
 Rebuild Ayat.apk from the synchronized QA-53 Lite code now shared by main and qa/test-stable-53. Bring over only the desktop's linked, real-surface tutorial behavior across Quran, recitations, home, and adhkar, without restoring older main-branch changes to mushaf/audio. Confirm Next-only reciter lesson and Skip/Back restoring genuine menus. The installed 1.83 build does not contain this synchronized tutorial until this new APK is installed. Both code branches must stay at the same commit.
+
+
+## QA audio continuity and Mushaf index test (2026-10-27)
+
+Build trigger after merging PR #26 to main. Test: synchronized-only Mushaf reciters (Adel excluded), offline message, surah index search, and recitations audio continuing through the movable reading overlay. Verify on Android before declaring release-ready.
