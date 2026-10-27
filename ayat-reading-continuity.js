@@ -2,8 +2,11 @@
   'use strict';
   // Never move the playing <audio> between documents: keep recitations.js alive
   // while the Mushaf is displayed in a same-origin reading layer.
-  const engine = window.quranAudioEngine;
-  if (!engine || !document.getElementById('recitation-audio')) return;
+  const recitationEngine = window.quranAudioEngine;
+  const libraryPlayer = window.ayatLibraryPlayer;
+  if (!recitationEngine && !libraryPlayer) return;
+  const isLibrary = !!libraryPlayer;
+  const engine = isLibrary ? libraryPlayer : recitationEngine;
   let active = false, collapsed = false, idleTimer = 0, drag = null, backSubscription = null;
   const layer = document.createElement('section');
   layer.className = 'ayat-reading-layer';
@@ -26,7 +29,7 @@
   const info = layer.querySelector('.ayat-reading-info');
   const play = layer.querySelector('.ayat-reading-play');
   const status = layer.querySelector('.ayat-reading-status');
-  const underlay = [...document.querySelectorAll('.recitations-app,.bottom-nav,#mini-player')];
+  const underlay = [...document.querySelectorAll('.recitations-app,.library-app,.bottom-nav,#mini-player,#library-player')];
   function sync() {
     if (!active) return;
     const s = engine.snapshot();
@@ -85,22 +88,35 @@
     engine.next(); shrink(false); schedule();
   });
   layer.querySelector('.ayat-reading-exit').addEventListener('click', () => close(true));
-  engine.addEventListener('state', sync);
-  engine.addEventListener('time', sync);
+  if (isLibrary) {
+    document.getElementById('library-audio')?.addEventListener('play', sync);
+    document.getElementById('library-audio')?.addEventListener('pause', sync);
+    document.getElementById('library-audio')?.addEventListener('ended', sync);
+    window.addEventListener('ayat:library-playback', sync);
+  } else {
+    engine.addEventListener('state', sync);
+    engine.addEventListener('time', sync);
+  }
+  const ownerPage = isLibrary ? 'library.html' : 'recitations.html';
+  const pages = new Set(['index.html', 'quran.html', 'adhkar.html', 'recitations.html',
+    'library.html', 'licenses.html']);
   frame.addEventListener('load', () => {
     status.hidden = true;
-    // The recitations page is already alive behind the reader. Returning to
-    // it should close this layer, never create a second competing audio engine.
     try {
       frame.contentDocument?.addEventListener('click', event => {
         const anchor = event.target.closest?.('a[href]');
-        if (!anchor) return;
+        if (!anchor || anchor.target || event.ctrlKey || event.metaKey) return;
         const dest = new URL(anchor.href);
-        if (dest.origin !== location.origin || !/\/recitations\.html$/.test(dest.pathname)) return;
-        event.preventDefault();
-        close(true);
+        const page = dest.pathname.split('/').pop() || 'index.html';
+        if (dest.origin !== location.origin || !pages.has(page)) return;
+        if (page === ownerPage) {
+          event.preventDefault();
+          close(true);
+        }
+        // Other internal links naturally navigate inside the iframe,
+        // preserving the original audio element in its parent page.
       });
-    } catch (_) { /* If embedding is restricted, the return button still works. */ }
+    } catch (_) { /* The return button still works if access is restricted. */ }
   });
   frame.addEventListener('error', () => {
     status.hidden = false;
@@ -126,21 +142,23 @@
     sub?.remove?.();
     if (goBack && history.state?.ayatReadingLayer) history.back();
   }
-  function open() {
+  function open(destination = 'quran.html') {
     if (active) return;
     active = true;
     layer.hidden = false;
     underlay.forEach(node => { node.inert = true; });
     status.hidden = false;
     status.textContent = 'جاري فتح المصحف…';
-    frame.src = new URL('quran.html?ayat-reading-mode=1', location.href).href;
+    const target = new URL(destination, location.href);
+    target.searchParams.set('ayat-reading-mode', '1');
+    frame.src = target.href;
     pill.style.left = '8px'; pill.style.top = '58%';
     pill.classList.remove('is-collapsed');
     collapsed = false;
     shrink(false);
     sync();
     schedule();
-    history.pushState({ ayatReadingLayer: true }, '', 'quran.html?ayat-reading-mode=1');
+    history.pushState({ ayatReadingLayer: true }, '', target.pathname + target.search);
     attachBack();
   }
   window.addEventListener('popstate', () => {
@@ -150,10 +168,11 @@
     const link = e.target.closest?.('a[href]');
     if (!link || e.ctrlKey || e.metaKey || e.shiftKey || link.target) return;
     const url = new URL(link.href);
-    if (url.origin !== location.origin || !/\/quran\.html$/.test(url.pathname)) return;
+    if (url.origin !== location.origin || !pages.has(url.pathname.split('/').pop())) return;
+    if (url.pathname.split('/').pop() === ownerPage) return;
     if (!active && !engine.snapshot().playing) return;
     e.preventDefault();
-    open();
+    open(url.href);
   });
   window.ayatReadingWithAudio = { open, close: () => close(true) };
 })();
