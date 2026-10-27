@@ -32,7 +32,35 @@ async function removeTrack(t){if(t.bundled)return;if(!confirm(`حذف سورة $
 async function removeReader(group){group=group.filter(t=>!t.bundled);if(!group.length)return;const name=readerName(group[0]);if(!confirm(`حذف ${core.arabicDigits(group.length)} تلاوة محفوظة بصوت ${name}؟`))return;for(const t of group)await dm.remove(t.url);if(currentItem&&group.some(t=>t.url===currentItem.url)){audio.pause();api.releaseMedia(audio);currentItem=null;$('library-player').hidden=true}$('library-status').textContent='تم حذف التلاوات الإضافية للقارئ '+name+'.';render()}
 $('clear-library').addEventListener('click',async()=>{if(!confirm('حذف كل التلاوات المحفوظة من الجهاز؟'))return;audio.pause();api.releaseMedia(audio);currentItem=null;await dm.clear();$('library-player').hidden=true;$('library-status').textContent=items.some(t=>t.bundled)?'تم حذف التنزيلات الإضافية. تلاوات مشاري المضمنة ما زالت جاهزة.':'تم إفراغ مكتبتك.';render()});
 $('library-search').addEventListener('input',render);$('sort-mode').addEventListener('change',render);window.addEventListener('quran-downloads:change',render);window.addEventListener('storage',e=>{if(e.key===api.INDEX_KEY)render()});
-$('player-toggle').addEventListener('click',()=>{if(!currentItem)return;audio.paused?audio.play().catch(()=>{$('library-status').textContent='تعذّر تشغيل التلاوة المحفوظة.'}):audio.pause()});$('player-prev').addEventListener('click',()=>{syncCurrentIndex();if(currentIndex>0)playTrack(visible[currentIndex-1])});$('player-next').addEventListener('click',()=>{syncCurrentIndex();if(currentIndex>=0&&currentIndex<visible.length-1)playTrack(visible[currentIndex+1])});audio.addEventListener('play',paintPlayer);audio.addEventListener('pause',paintPlayer);audio.addEventListener('ended',()=>{syncCurrentIndex();if(currentIndex>=0&&currentIndex<visible.length-1)playTrack(visible[currentIndex+1]);else paintPlayer()});audio.addEventListener('timeupdate',()=>{$('player-progress-fill').style.width=audio.duration?`${Math.min(100,audio.currentTime/audio.duration*100)}%`:'0%'});
+$('player-toggle').addEventListener('click',()=>{if(!currentItem)return;audio.paused?audio.play().catch(()=>{$('library-status').textContent='تعذّر تشغيل التلاوة المحفوظة.'}):audio.pause()});$('player-prev').addEventListener('click',()=>{syncCurrentIndex();if(currentIndex>0)playTrack(visible[currentIndex-1])});$('player-next').addEventListener('click',()=>{syncCurrentIndex();if(currentIndex>=0&&currentIndex<visible.length-1)playTrack(visible[currentIndex+1])});audio.addEventListener('play',paintPlayer);audio.addEventListener('pause',paintPlayer);audio.addEventListener('ended',()=>{syncCurrentIndex();if(currentIndex>=0&&currentIndex<visible.length-1)playTrack(visible[currentIndex+1]);else paintPlayer()});const seek=$('player-progress-seek');
+let seeking=false;
+function updateSeek(){
+ const duration=Number.isFinite(audio.duration)&&audio.duration>0?audio.duration:0;
+ seek.disabled=!currentItem||!duration;
+ if(!seeking)seek.value=duration?String(Math.round(Math.max(0,Math.min(1,audio.currentTime/duration))*1000)):'0';
+ const seconds=duration?(Number(seek.value)/1000)*duration:0;
+ const fmt=n=>Math.floor(n/60)+':'+String(Math.floor(n%60)).padStart(2,'0');
+ seek.setAttribute('aria-valuetext',fmt(seconds)+' من '+fmt(duration));
+ seek.style.setProperty('--seek-progress',(Number(seek.value)/10)+'%');
+}
+seek.addEventListener('pointerdown',()=>{seeking=true});
+seek.addEventListener('input',()=>{seeking=true;updateSeek()});
+function commitSeek(){
+ const duration=audio.duration;
+ if(Number.isFinite(duration)&&duration>0){
+  const target=Number(seek.value)/1000*duration;
+  if(Number.isFinite(target))audio.currentTime=Math.max(0,Math.min(duration,target));
+ }
+ seeking=false;updateSeek();
+}
+seek.addEventListener('change',commitSeek);
+seek.addEventListener('pointerup',()=>{if(seeking)commitSeek()});
+seek.addEventListener('pointercancel',()=>{seeking=false;updateSeek()});
+audio.addEventListener('timeupdate',updateSeek);
+audio.addEventListener('loadedmetadata',updateSeek);
+audio.addEventListener('durationchange',updateSeek);
+audio.addEventListener('emptied',updateSeek);
+updateSeek();
 function applyTheme(theme){document.documentElement.dataset.theme=theme;document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#141e1a':'#f7f8f3')}
 let theme='light';try{theme=localStorage.getItem('quranHomeTheme')||'light'}catch{}applyTheme(theme);$('theme-toggle').addEventListener('click',()=>{theme=document.documentElement.dataset.theme==='dark'?'light':'dark';applyTheme(theme);try{localStorage.setItem('quranHomeTheme',theme)}catch{}});
 window.addEventListener('pagehide',()=>api.releaseMedia(audio));render();api.bundledReady?.then(render);
