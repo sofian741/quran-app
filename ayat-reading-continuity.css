@@ -10,7 +10,7 @@
 .ayat-reading-info strong,.ayat-reading-info small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ayat-reading-info strong { font-size:11px; }
 .ayat-reading-info small { font-size:9px; opacity:.83; }
-.ayat-reading-float.is-collapsed { width:43px; padding:4px; min-height:43px; opacity:.48; box-shadow:none; }
+.ayat-reading-float.is-collapsed { width:43px; padding:4px; min-height:43px; opacity:.48; box-shadow:none; pointer-events:none; }\n.ayat-reading-float.is-collapsed .ayat-reading-grip { pointer-events:auto; }
 .ayat-reading-float.is-collapsed .ayat-reading-info,
 .ayat-reading-float.is-collapsed .ayat-reading-play,
 .ayat-reading-float.is-collapsed .ayat-reading-next,
