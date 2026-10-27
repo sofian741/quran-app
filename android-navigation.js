@@ -1,6 +1,8 @@
 /* Android navigation and screen-on while actively reading. */
 (() => {
   'use strict';
+  // Parent recitations layer owns Android Back while reading inside an iframe.
+  if (window.self !== window.top && new URLSearchParams(location.search).has('ayat-reading-mode')) return;
   const isHome = /(?:^|\/)index\.html$/.test(location.pathname) || location.pathname.endsWith('/');
   let lastBack = 0;
   let wake = null;
