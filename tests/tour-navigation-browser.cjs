@@ -77,7 +77,7 @@ async function testIndependentPages(browser,origin){
     assert.equal(await page.locator('#ayat-tour-root > .ayat-tour-spot').isVisible(),true);
   }
   await lesson(page).locator('[data-tour-action="home-next"]').click();
-  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-home-v7')==='1');
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-home-v8')==='1');
   assert.equal(await page.locator('.ayat-tour-complete').count(),0,'Home guide ends without a toast');
   assert.match(page.url(),/index\.html$/,'Home guide must not navigate');
   await page.reload();
@@ -118,11 +118,11 @@ async function testIndependentPages(browser,origin){
   assert.match(await title(page),/مكتبتي/);
   assert.equal(await page.locator('#batch-progress').isVisible(),false,'Guide must not trigger a bulk download');
   await lesson(page).locator('[data-tour-action="home-next"]').click();
-  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-recitations-v6')==='1');
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-recitations-v7')==='1');
   assert.match(page.url(),/recitations\.html$/,'Recitations guide must remain on its page');
   await page.goto(origin+'/library.html');
   await invite(page).waitFor({state:'visible'});
-  assert.match(await invite(page).textContent(),/مكتبتي/);
+  assert.match(await invite(page).textContent(),/المكتبة الصوتية/);
   await invite(page).locator('[data-tour-action="later"]').click();
   assert.equal(await invite(page).isVisible(),false);
   await page.goto(origin+'/adhkar.html');
@@ -185,7 +185,7 @@ async function testAdhkarGuide(browser,origin){
   const y=swipePoint.y;
   await page.locator('#reader-viewport').dispatchEvent('pointerdown',{pointerType:'mouse',pointerId:7,clientX:swipePoint.x,clientY:y,bubbles:true});
   await page.locator('#reader-viewport').dispatchEvent('pointerup',{pointerType:'mouse',pointerId:7,clientX:r.x+r.width*.76,clientY:y,bubbles:true});
-  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-adhkar-v6')==='1');
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-adhkar-v7')==='1');
   assert.equal(await page.locator('#reader').isVisible(),true,'Reader stays open at the next real dhikr');
   assert.notEqual(await page.locator('#reader-position').textContent(),startPosition,'Real reader advances to the next item');
   assert.equal(await page.locator('.ayat-tour-complete').count(),0,'Guide finishes without a toast');
@@ -224,7 +224,7 @@ async function testManualCrossPageLaunch(browser,origin){
   await lesson(page).locator('[data-tour-action="pause"]').click();
 
   for(const [destination,pattern] of [['library',/التلاوات المحفوظة/],['adhkar',/باقي الأذكار موجودة تحت/]]){
-    await page.evaluate(()=>localStorage.setItem('ayat-tour-done-home-v7','1'));
+    await page.evaluate(()=>localStorage.setItem('ayat-tour-done-home-v8','1'));
     await page.goto(origin+'/index.html');
     await page.locator('#home-settings-toggle').click();
     await page.locator('#home-show-tour').click();
@@ -243,7 +243,7 @@ async function testQuranFromSettings(browser,origin){
   page.on('pageerror',error=>securityErrors.push(error.message));
   await page.goto(origin+'/quran.html');
   await page.waitForFunction(()=>document.querySelector('#quran-text')?.dataset.layoutState==='ready');
-  assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'),/tour\.js\?v=62$/);
+  assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'),/tour\.js\?v=64$/);
   await invite(page).waitFor({state:'visible'});
   await invite(page).locator('[data-tour-action="later"]').click();
   const original=await page.evaluate(()=>({
@@ -274,14 +274,6 @@ async function testQuranFromSettings(browser,origin){
   assert.equal(await page.locator('#verse-actions-sheet').getAttribute('aria-hidden'),'false','Real verse action sheet opens');
   assert.ok(await page.locator('.verse-highlight-band').count()>0,'The app highlights the genuinely selected verse');
 
-  // Skip long press: the real verse menu must open before dependent steps.
-  await lesson(page).locator('[data-tour-action="previous"]').click();
-  assert.match(await waitTourTitle(page,/اضغط مطولًا على الآية/),/اضغط مطولًا على الآية/);
-  await lesson(page).locator('[data-tour-action="assist"]').click();
-  assert.match(await waitTourTitle(page,/كل ما تحتاجه للآية/),/كل ما تحتاجه للآية/);
-  assert.equal(await page.locator('#verse-actions-sheet').getAttribute('aria-hidden'),'false',
-    'Skipping must restore the actual verse menu');
-
   await nextQuranNote(page,/التفسير الميسّر/);
   await nextQuranNote(page,/ابدأ الاستماع من هنا/);
   await nextQuranNote(page,/حفظ ونسخ ومشاركة/);
@@ -294,8 +286,8 @@ async function testQuranFromSettings(browser,origin){
   assert.equal(await page.evaluate(()=>localStorage.getItem('quranPageMarkerV1')),original.pageMarker,'Explaining the page marker does not alter it');
   await lesson(page).locator('[data-tour-action="pause"]').click();
   await page.evaluate(()=>{
-    localStorage.setItem('ayat-tour-remind-at-quran-v7','0');
-    localStorage.setItem('ayat-tour-last-shown-quran-v7','0');
+    localStorage.setItem('ayat-tour-remind-at-quran-v8','0');
+    localStorage.setItem('ayat-tour-last-shown-quran-v8','0');
   });
   await page.reload();
   await invite(page).waitFor({state:'visible'});
@@ -311,7 +303,6 @@ async function testQuranFromSettings(browser,origin){
   await page.locator('#audio-open-options').click();
   assert.match(await waitTourTitle(page,/اختيار القارئ/),/اختيار القارئ/);
   assert.equal(await page.locator('#audio-options-sheet').getAttribute('aria-hidden'),'false');
-  assert.equal(await lesson(page).locator('[data-tour-action="quran-next"]').count(),1,'Reader step must use Next only');
   await nextQuranNote(page,/تظليل الآية والكلمة/);
   assert.equal(await page.evaluate(()=>document.getElementById('mushaf-recitation-audio').paused),true,'Choosing a reciter in the lesson never starts audio');
   await nextQuranNote(page,/السورة وآية البداية/);
@@ -319,10 +310,180 @@ async function testQuranFromSettings(browser,origin){
   assert.equal(await page.locator('#audio-download-progress').textContent(),'','Tour never starts a download');
   await nextQuranNote(page,/إدارة الملفات المحمّلة/);
   await lesson(page).locator('[data-tour-action="quran-next"]').click();
-  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-quran-v7')==='1');
+  await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-quran-v8')==='1');
   assert.equal(await page.evaluate(()=>window.mushafReader.getCurrentPage()),original.page,'Tour keeps the reading page unchanged');
   assert.deepEqual(securityErrors,[],'No JavaScript or CSP errors during the Quran lesson');
   await context.close();
+}
+async function testQuranTourSkipAndBack(browser,origin){
+  const {context,page}=await preparePage(browser);
+  await page.goto(origin+'/quran.html');
+  await page.waitForFunction(()=>document.querySelector('#quran-text')?.dataset.layoutState==='ready');
+  await invite(page).waitFor({state:'visible'});
+  await invite(page).locator('[data-tour-action="begin"]').click();
+  assert.match(await waitTourTitle(page,/اضغط مطولًا على الآية/),/اضغط مطولًا على الآية/);
+  // Skipping a long press must open the *real* verse actions sheet.
+  await lesson(page).locator('[data-tour-action="assist"]').click();
+  assert.match(await waitTourTitle(page,/كل ما تحتاجه للآية/),/كل ما تحتاجه للآية/);
+  assert.equal(await page.locator('#verse-actions-sheet').getAttribute('aria-hidden'),'false');
+  assert.ok(await page.evaluate(()=>window.mushafVerseActions.getSelectedVerse()));
+  // Previous returns to the correct page, not a stale sheet.
+  await lesson(page).locator('[data-tour-action="previous"]').click();
+  assert.match(await waitTourTitle(page,/اضغط مطولًا على الآية/),/اضغط مطولًا على الآية/);
+  assert.equal(await page.locator('#verse-actions-sheet').getAttribute('aria-hidden'),'true');
+  await lesson(page).locator('[data-tour-action="assist"]').click();
+  assert.equal(await page.locator('#verse-actions-sheet').getAttribute('aria-hidden'),'false');
+  for(const pattern of [/التفسير الميسّر/,/ابدأ الاستماع/,/حفظ ونسخ/,/افتح الفهرس بنفسك/]){
+    await nextQuranNote(page,pattern);
+  }
+  await lesson(page).locator('[data-tour-action="assist"]').click();
+  assert.match(await waitTourTitle(page,/السور والأجزاء والآيات/),/السور والأجزاء والآيات/);
+  assert.equal(await page.locator('#index-sheet').getAttribute('aria-hidden'),'false');
+  await nextQuranNote(page,/فاصلة الصفحة/);
+  assert.equal(await page.locator('#index-sheet').getAttribute('aria-hidden'),'true');
+  await nextQuranNote(page,/افتح الإعدادات بنفسك/);
+  await lesson(page).locator('[data-tour-action="assist"]').click();
+  assert.match(await waitTourTitle(page,/المحفوظات/),/المحفوظات/);
+  assert.equal(await page.locator('#settings-sheet').getAttribute('aria-hidden'),'false');
+  await lesson(page).locator('[data-tour-action="previous"]').click();
+  assert.match(await waitTourTitle(page,/افتح الإعدادات بنفسك/),/افتح الإعدادات بنفسك/);
+  assert.equal(await page.locator('#settings-sheet').getAttribute('aria-hidden'),'true');
+  await lesson(page).locator('[data-tour-action="assist"]').click();
+  assert.equal(await page.locator('#settings-sheet').getAttribute('aria-hidden'),'false');
+  await nextQuranNote(page,/البحث عن آية/);
+  await nextQuranNote(page,/افتح خيارات التلاوة/);
+  assert.equal(await page.locator('#settings-sheet').getAttribute('aria-hidden'),'true');
+  await lesson(page).locator('[data-tour-action="assist"]').click();
+  assert.match(await waitTourTitle(page,/اختيار القارئ/),/اختيار القارئ/);
+  assert.equal(await page.locator('#audio-options-sheet').getAttribute('aria-hidden'),'false');
+  assert.equal(await lesson(page).locator('[data-tour-action="quran-next"]').count(),1,
+    'Reciter lesson must have Next without requiring a selection');
+  await lesson(page).locator('[data-tour-action="previous"]').click();
+  assert.match(await waitTourTitle(page,/افتح خيارات التلاوة/),/افتح خيارات التلاوة/);
+  assert.equal(await page.locator('#audio-options-sheet').getAttribute('aria-hidden'),'true');
+  await lesson(page).locator('[data-tour-action="assist"]').click();
+  await nextQuranNote(page,/تظليل الآية والكلمة/);
+  assert.equal(await page.locator('#audio-options-sheet').getAttribute('aria-hidden'),'false');
+  await lesson(page).locator('[data-tour-action="pause"]').click();
+  assert.equal(await page.locator('#audio-options-sheet').getAttribute('aria-hidden'),'true');
+  await context.close();
+}
+async function testEditorialBackSkipAndResume(browser,origin){
+  // Home: opening the verse preview is optional, and Back must never leave
+  // a stale modal on top of the previous step.
+  {
+    const {context,page}=await preparePage(browser);
+    await begin(page,origin+'/index.html','الرئيسية');
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    assert.match(await title(page),/آية للتدبّر/);
+    await lesson(page).locator('[data-tour-action="verse-open"]').click();
+    assert.equal(await page.locator('#ayat-tour-root .ayat-tour-verse-sheet').isVisible(),true);
+    await page.locator('[data-tour-action="verse-back"]').click();
+    assert.equal(await page.locator('#ayat-tour-root .ayat-tour-verse-sheet').isVisible(),false);
+    await lesson(page).locator('[data-tour-action="previous"]').click();
+    assert.match(await title(page),/متابعة القراءة/);
+    assert.equal(await page.locator('#ayat-tour-root > .ayat-tour-dialog').isVisible(),false);
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    await lesson(page).locator('[data-tour-action="verse-open"]').click();
+    await page.locator('[data-tour-action="verse-next"]').click();
+    assert.match(await title(page),/الذهاب للآية/);
+    await lesson(page).locator('[data-tour-action="previous"]').click();
+    assert.match(await title(page),/آية للتدبّر/);
+    assert.equal(await page.locator('#ayat-tour-root > .ayat-tour-dialog').isVisible(),false);
+    await lesson(page).locator('[data-tour-action="pause"]').click();
+    assert.equal(await page.locator('#ayat-tour-root').isVisible(),false);
+    await context.close();
+  }
+  // Recitations: selecting a reciter is optional, and Previous must return
+  // to the real catalog instead of a hidden/off-screen picker.
+  {
+    const {context,page}=await preparePage(browser);
+    await begin(page,origin+'/recitations.html','القرّاء');
+    await lesson(page).locator('[data-tour-action="recitations-reveal"]').click();
+    assert.match(await waitTourTitle(page,/اختار القارئ/),/اختار القارئ/);
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    assert.match(await waitTourTitle(page,/اختيار السورة/),/اختيار السورة/);
+    await lesson(page).locator('[data-tour-action="previous"]').click();
+    assert.match(await waitTourTitle(page,/اختار القارئ/),/اختار القارئ/);
+    assert.equal(await page.locator('#reciter-list').isVisible(),true);
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    assert.match(await waitTourTitle(page,/اختيار السورة/),/اختيار السورة/);
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    assert.match(await waitTourTitle(page,/تشغيل التلاوة/),/تشغيل التلاوة/);
+    await lesson(page).locator('[data-tour-action="previous"]').click();
+    assert.match(await waitTourTitle(page,/اختيار السورة/),/اختيار السورة/);
+    await lesson(page).locator('[data-tour-action="pause"]').click();
+    assert.equal(await page.locator('#recitation-audio').evaluate(el=>el.paused),true);
+    await context.close();
+  }
+  // Library: navigating explanations must never touch download storage.
+  {
+    const {context,page}=await preparePage(browser);
+    await begin(page,origin+'/library.html','المكتبة الصوتية');
+    assert.match(await title(page),/التلاوات المحفوظة/);
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    assert.match(await title(page),/البحث في المكتبة/);
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    assert.match(await title(page),/ترتيب التلاوات/);
+    await lesson(page).locator('[data-tour-action="previous"]').click();
+    assert.match(await title(page),/البحث في المكتبة/);
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    assert.match(await title(page),/ملفاتك المحمّلة/);
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    assert.match(await title(page),/حذف التنزيلات/);
+    await lesson(page).locator('[data-tour-action="previous"]').click();
+    assert.match(await title(page),/ملفاتك المحمّلة/);
+    await lesson(page).locator('[data-tour-action="pause"]').click();
+    await context.close();
+  }
+  // Adhkar: Skip must open the genuine morning reader; Back must close it;
+  // resume must restore it; skipping the final gesture must not increment.
+  {
+    const {context,page}=await preparePage(browser);
+    await begin(page,origin+'/adhkar.html','الأذكار');
+    await lesson(page).locator('[data-tour-action="adhkar-reveal"]').click();
+    assert.match(await waitTourTitle(page,/المفضلة أولًا/),/المفضلة أولًا/);
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    assert.match(await waitTourTitle(page,/فهرس الأذكار/),/فهرس الأذكار/);
+    await lesson(page).locator('[data-tour-action="home-next"]').click();
+    assert.match(await waitTourTitle(page,/افتح أذكار الصباح/),/افتح أذكار الصباح/);
+    assert.equal(await lesson(page).locator('[data-tour-action="home-next"]').count(),0);
+    await lesson(page).locator('[data-tour-action="assist"]').click();
+    assert.match(await waitTourTitle(page,/نص الذكر/),/نص الذكر/);
+    assert.equal(await page.locator('#reader').isVisible(),true);
+    const originalPosition=await page.locator('#reader-position').textContent();
+    const originalFavorite=await page.locator('#reader-favorite').getAttribute('aria-pressed');
+    await lesson(page).locator('[data-tour-action="previous"]').click();
+    assert.match(await waitTourTitle(page,/افتح أذكار الصباح/),/افتح أذكار الصباح/);
+    assert.equal(await page.locator('#reader').isVisible(),false,'Back closes real morning reader');
+    await lesson(page).locator('[data-tour-action="assist"]').click();
+    assert.match(await waitTourTitle(page,/نص الذكر/),/نص الذكر/);
+    assert.equal(await page.locator('#reader').isVisible(),true);
+    await lesson(page).locator('[data-tour-action="pause"]').click();
+    assert.equal(await page.locator('#reader').isVisible(),false,'Exit closes tour reader');
+    await page.evaluate(()=>{
+      localStorage.removeItem('ayat-tour-remind-at-adhkar-v7');
+      sessionStorage.removeItem('ayat-tour-remind-at-adhkar-v7');
+    });
+    await page.reload();
+    await invite(page).waitFor({state:'visible'});
+    await invite(page).locator('[data-tour-action="begin"]').click();
+    assert.match(await waitTourTitle(page,/نص الذكر/),/نص الذكر/);
+    assert.equal(await page.locator('#reader').isVisible(),true,'Resume restores real morning reader');
+    for(const pattern of [/عداد التكرار/,/مرجع الذكر/,/القلب للمفضلة/,/قلّب الذكر بإيدك/]){
+      await lesson(page).locator('[data-tour-action="home-next"]').click();
+      assert.match(await waitTourTitle(page,pattern),pattern);
+      assert.equal(await page.locator('#reader').isVisible(),true);
+    }
+    assert.equal(await page.locator('#reader-favorite').getAttribute('aria-pressed'),originalFavorite);
+    assert.equal(await page.locator('#reader-position').textContent(),originalPosition);
+    await lesson(page).locator('[data-tour-action="assist"]').click();
+    await page.waitForFunction(()=>localStorage.getItem('ayat-tour-done-adhkar-v7')==='1');
+    assert.equal(await page.locator('#reader').isVisible(),true,'Finishing preserves real reading surface');
+    assert.equal(await page.locator('#reader-position').textContent(),originalPosition,'Skip does not fake a swipe');
+    await context.close();
+  }
 }
 async function testOfflineNoHandoff(browser,origin){
   const {context,page}=await preparePage(browser);
@@ -349,10 +510,22 @@ async function testOfflineNoHandoff(browser,origin){
   const origin='http://127.0.0.1:'+server.address().port;
   const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
   try{
+    if(process.env.QURAN_TOUR_QA_ONLY==='1'){
+      await testQuranTourSkipAndBack(browser,origin);
+      console.log('Quran tour skip/back/panel synchronization browser test passed.');
+      return;
+    }
+    if(process.env.EDITORIAL_TOUR_QA_ONLY==='1'){
+      await testEditorialBackSkipAndResume(browser,origin);
+      console.log('Home, recitations, library and adhkar Back/Skip/resume tests passed.');
+      return;
+    }
     await testIndependentPages(browser,origin);
     await testAdhkarGuide(browser,origin);
     await testManualCrossPageLaunch(browser,origin);
     await testQuranFromSettings(browser,origin);
+    await testQuranTourSkipAndBack(browser,origin);
+    await testEditorialBackSkipAndResume(browser,origin);
     await testOfflineNoHandoff(browser,origin);
     console.log('Independent page discovery browser tests passed.');
   }finally{await browser.close();server.close();}
