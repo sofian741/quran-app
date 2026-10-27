@@ -528,7 +528,7 @@
     ui.close.addEventListener('click', closeOptions);
     ui.backdrop.addEventListener('click', closeOptions);
     ui.play.addEventListener('click', async () => {
-        if (navigator.onLine === false && engine.audio.paused) {
+        if (engine.audio.paused && await window.AyatConnectivity?.isOffline?.()) {
             ui.status.textContent = 'لا يوجد اتصال بالإنترنت. وصّل الإنترنت لتشغيل التلاوة.';
             showSwitchNotice('لا يوجد اتصال بالإنترنت', 'وصّل الإنترنت ثم اضغط تشغيل مرة أخرى.');
             return;
@@ -700,7 +700,7 @@
     ui.listenAction.addEventListener('click', async () => {
         const selected = window.mushafVerseActions?.getSelectedVerse?.();
         if (!selected) return;
-        if (navigator.onLine === false) {
+        if (await window.AyatConnectivity?.isOffline?.()) {
             window.mushafVerseActions.close();
             ui.status.textContent = 'لا يوجد اتصال بالإنترنت. وصّل الإنترنت للاستماع للآية.';
             showSwitchNotice('لا يوجد اتصال بالإنترنت', 'وصّل الإنترنت ثم اضغط «استماع» مرة أخرى.');
