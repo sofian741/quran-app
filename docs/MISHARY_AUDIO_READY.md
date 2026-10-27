@@ -39,3 +39,8 @@ Rebuild Ayat.apk from the synchronized QA-53 Lite code now shared by main and qa
 ## QA audio continuity and Mushaf index test (2026-10-27)
 
 Build trigger after merging PR #26 to main. Test: synchronized-only Mushaf reciters (Adel excluded), offline message, surah index search, and recitations audio continuing through the movable reading overlay. Verify on Android before declaring release-ready.
+
+
+## Rebuild after corrected QA-53 index-search hash guard
+
+The approved app.js index-search change is now explicitly pinned in tests/qa53-stability.test.cjs; keep all typography, font, and 604-page layout checks. Trigger new main APK build for on-device verification.
