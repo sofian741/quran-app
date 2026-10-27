@@ -530,6 +530,7 @@
     ui.play.addEventListener('click', async () => {
         if (navigator.onLine === false) {
             ui.status.textContent = 'لا يوجد اتصال بالإنترنت. وصّل الإنترنت لتشغيل التلاوة.';
+            showSwitchNotice('لا يوجد اتصال بالإنترنت', 'وصّل الإنترنت ثم اضغط تشغيل مرة أخرى.');
             return;
         }
         if (engine.state.provider === 'mp3quran') {
@@ -702,6 +703,7 @@
         if (navigator.onLine === false) {
             window.mushafVerseActions.close();
             ui.status.textContent = 'لا يوجد اتصال بالإنترنت. وصّل الإنترنت للاستماع للآية.';
+            showSwitchNotice('لا يوجد اتصال بالإنترنت', 'وصّل الإنترنت ثم اضغط «استماع» مرة أخرى.');
             return;
         }
         window.mushafVerseActions.close();
