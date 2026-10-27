@@ -792,6 +792,8 @@
     function openIndex() {
         if (isIndexOpen() || isSettingsOpen()) return;
         clearTimeout(indexCloseTimer);
+        const indexSearch = document.getElementById('index-surah-search');
+        if (indexSearch) indexSearch.value = '';
         renderIndex();
         els.body.classList.add('index-open');
         els.indexBackdrop.hidden = false;
