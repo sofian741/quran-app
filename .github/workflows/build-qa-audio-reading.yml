@@ -253,6 +253,23 @@ jobs:
           strings.write_text(text, encoding='utf-8')
           PY
 
+      - name: Use isolated test application package
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          gradle = Path('android/app/build.gradle')
+          content = gradle.read_text(encoding='utf-8')
+          original = 'applicationId "com.sofian.nooralquran"'
+          assert original in content, 'Expected stable app ID was not found'
+          gradle.write_text(content.replace(original,
+              'applicationId "com.sofian.nooralquran.qa"'), encoding='utf-8')
+          strings = Path('android/app/src/main/res/values/strings.xml')
+          labels = strings.read_text(encoding='utf-8')
+          assert 'آيات | Ayat' in labels
+          strings.write_text(labels.replace('آيات | Ayat',
+              'آيات | Ayat QA'), encoding='utf-8')
+          PY
+
       - name: Build debug APK
         run: |
           chmod +x android/gradlew
