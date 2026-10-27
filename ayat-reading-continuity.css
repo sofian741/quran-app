@@ -1,0 +1,19 @@
+.ayat-reading-layer[hidden] { display:none!important; }
+.ayat-reading-layer { position:fixed; inset:0; z-index:9000; overflow:hidden; background:#f7f8f3; }
+.ayat-reading-frame { display:block; width:100%; height:100%; height:100dvh; border:0; background:#f7f8f3; }
+.ayat-reading-status { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#f7f8f3; color:#176b63; padding:14px; border-radius:14px; pointer-events:none; }
+.ayat-reading-float { box-sizing:border-box; display:flex; align-items:center; direction:rtl; position:fixed; top:58%; left:8px; z-index:9010; width:min(250px,calc(100vw - 16px)); min-height:43px; padding:4px; gap:4px; border-radius:24px; background:rgba(22,76,64,.92); color:#fff; box-shadow:0 6px 18px #0003; transition:opacity .2s,width .2s; }
+.ayat-reading-float button { flex:0 0 auto; border:0; border-radius:50%; width:35px; height:35px; background:#fff2; color:inherit; font-size:17px; display:grid; place-items:center; }
+.ayat-reading-float button:focus-visible { outline:2px solid #eac478; outline-offset:1px; }
+.ayat-reading-float .ayat-reading-grip { color:#173e31; background:#d9c28e; font-size:23px; touch-action:none; user-select:none; cursor:grab; }
+.ayat-reading-info { display:flex; flex:1 1 auto; min-width:0; flex-direction:column; line-height:1.25; gap:2px; }
+.ayat-reading-info strong,.ayat-reading-info small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ayat-reading-info strong { font-size:11px; }
+.ayat-reading-info small { font-size:9px; opacity:.83; }
+.ayat-reading-float.is-collapsed { width:43px; padding:4px; min-height:43px; opacity:.48; box-shadow:none; pointer-events:none; }\n.ayat-reading-float.is-collapsed .ayat-reading-grip { pointer-events:auto; }
+.ayat-reading-float.is-collapsed .ayat-reading-info,
+.ayat-reading-float.is-collapsed .ayat-reading-play,
+.ayat-reading-float.is-collapsed .ayat-reading-next,
+.ayat-reading-float.is-collapsed .ayat-reading-exit { display:none; }
+.ayat-reading-float.is-collapsed:focus-within { opacity:.95; }
+@media(prefers-reduced-motion:reduce) { .ayat-reading-float { transition:none; } }

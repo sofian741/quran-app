@@ -110,17 +110,9 @@
             `aligned:${reciter.id}`, reciter.label || `${reciter.name} • تظليل الكلمات`));
         ui.reciter.appendChild(syncedGroup);
 
-        const mp3Group = document.createElement('optgroup');
-        mp3Group.label = `مكتبة التلاوات (${core.arabicDigits(catalog.length)}) • تسجيلات غير متزامنة`;
-        catalog.forEach(reciter => option(mp3Group,
-            `mp3:${reciter.id}`, `${reciter.name} • يبدأ التسجيل من بدايته`));
-        if (state.provider === 'mp3quran' && !catalog.some(item => item.id === Number(state.reciterId))) {
-            option(mp3Group, selectedValue,
-                `${state.reciterName} • تسجيل غير متزامن`);
-        }
-        if (mp3Group.children.length) ui.reciter.appendChild(mp3Group);
-
-        ui.reciter.value = selectedValue;
+        // Mushaf offers aligned readers only. Full-chapter MP3Quran recordings
+        // remain in recitations.html, where verse timing is not implied.
+        ui.reciter.value = state.provider === 'quran-foundation' ? selectedValue : `aligned:${lastAlignedId}`;
         if (!ui.reciter.value) ui.reciter.selectedIndex = 0;
         const selected = catalog.find(reciter => reciter.id === Number(state.reciterId)) ||
             catalogService.preferred(catalog);
@@ -296,7 +288,7 @@
         if (full) {
             ui.provider.value = state.provider;
             ui.reciterField.hidden = false;
-            ui.moshafField.hidden = state.provider !== 'mp3quran';
+            ui.moshafField.hidden = true;
             ui.speed.value = String(state.speed);
             ui.autoFollow.checked = state.autoFollow;
             ui.repeatMode.value = state.repeat.mode;
@@ -322,7 +314,7 @@
             ui.syncNote.classList.toggle('is-unavailable', state.provider !== 'quran-foundation');
             ui.syncNote.textContent = state.provider === 'quran-foundation'
                 ? alignedDiscoveryStatus
-                : 'القارئ الحالي من مكتبة التلاوات غير المتزامنة: يبدأ التسجيل من بدايته، ولا يدعم تظليل الكلمات أو التشغيل من آية محددة. عند الضغط على «الاستماع» لآية، سيتحول التطبيق تلقائيًا إلى مشاري العفاسي مع تنبيه واضح.';
+                : 'داخل المصحف تتوفر التلاوات المتزامنة فقط؛ تسجيلات الاستماع العادي في مكتبة التلاوات.';
         }
         applyingState = false;
     }
@@ -535,7 +527,20 @@
     });
     ui.close.addEventListener('click', closeOptions);
     ui.backdrop.addEventListener('click', closeOptions);
-    ui.play.addEventListener('click', () => engine.toggle());
+    ui.play.addEventListener('click', async () => {
+        if (navigator.onLine === false && engine.audio.paused) {
+            ui.status.textContent = 'لا يوجد اتصال بالإنترنت. وصّل الإنترنت لتشغيل التلاوة.';
+            showSwitchNotice('لا يوجد اتصال بالإنترنت', 'وصّل الإنترنت ثم اضغط تشغيل مرة أخرى.');
+            return;
+        }
+        if (engine.state.provider === 'mp3quran') {
+            const ready = await engine.selectAligned(lastAlignedId, {
+                surah: Number(engine.state.surah) || 1, ayah: 1, autoplay: false
+            });
+            if (!ready) { ui.status.textContent = engine.error || 'تعذّر تجهيز القارئ المتزامن.'; return; }
+        }
+        await engine.toggle();
+    });
     ui.previous.addEventListener('click', () => engine.previous());
     ui.next.addEventListener('click', () => engine.next());
     ui.seek.addEventListener('input', () => {
@@ -695,6 +700,12 @@
     ui.listenAction.addEventListener('click', async () => {
         const selected = window.mushafVerseActions?.getSelectedVerse?.();
         if (!selected) return;
+        if (navigator.onLine === false) {
+            window.mushafVerseActions.close();
+            ui.status.textContent = 'لا يوجد اتصال بالإنترنت. وصّل الإنترنت للاستماع للآية.';
+            showSwitchNotice('لا يوجد اتصال بالإنترنت', 'وصّل الإنترنت ثم اضغط «استماع» مرة أخرى.');
+            return;
+        }
         window.mushafVerseActions.close();
         listenNotice = '';
         listenNoticeUntil = 0;
@@ -1056,8 +1067,17 @@
         }
     }
 
+    // Prevent legacy MP3Quran selection persisted by older Mushaf builds
+    // from leaking back into the synchronized-reciter picker.
+    if (engine.state.provider === 'mp3quran' ||
+        !alignedReciters.some(item => Number(item.id) === Number(engine.state.reciterId))) {
+        engine.selectAligned(7, {
+            surah: Number(engine.state.surah) || 1, ayah: 1, autoplay: false
+        }).catch(() => { /* Report readiness on explicit playback. */ });
+    }
     applyState(engine.snapshot(), true);
-    loadCatalog();
+    // The full MP3Quran catalog belongs exclusively to the listening library.
+    // Do not fetch hundreds of unrelated readers when opening the Mushaf.
     if (!window.QudAudioRegistry?.reciters?.length) {
         loadAlignedReciters();
     } else if (engine.state.provider === 'quran-foundation' &&
