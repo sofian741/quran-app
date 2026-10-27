@@ -1076,7 +1076,8 @@
         }).catch(() => { /* Report readiness on explicit playback. */ });
     }
     applyState(engine.snapshot(), true);
-    loadCatalog();
+    // The full MP3Quran catalog belongs exclusively to the listening library.
+    // Do not fetch hundreds of unrelated readers when opening the Mushaf.
     if (!window.QudAudioRegistry?.reciters?.length) {
         loadAlignedReciters();
     } else if (engine.state.provider === 'quran-foundation' &&
