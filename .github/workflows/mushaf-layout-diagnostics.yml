@@ -1,0 +1,33 @@
+name: Diagnose Mushaf Small Screens (QA only)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qa/mushaf-small-screen-layout-20261028
+    paths:
+      - scripts/diagnose-mushaf-layout.cjs
+      - .github/workflows/mushaf-layout-diagnostics.yml
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test runner
+        run: |
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+      - name: Diagnose 320-412px layouts without changing reader code
+        run: node scripts/diagnose-mushaf-layout.cjs
+      - name: Save measurements and screenshots even when test fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mushaf-layout-diagnostics
+          path: artifacts/mushaf-layout/
+          if-no-files-found: warn
