@@ -484,6 +484,27 @@
         return true;
     }
 
+    // Cached geometry is an optimization, never an authority over Quran visibility.
+    // Reject a cache hit if actual rendered rows or words leave the printable area.
+    function cachedGeometryFits(container) {
+        const area = container.getBoundingClientRect();
+        const style = getComputedStyle(container);
+        const insetLeft = parseFloat(style.paddingLeft) || 0;
+        const insetRight = parseFloat(style.paddingRight) || 0;
+        const left = area.left + insetLeft - 2;
+        const right = area.right - insetRight + 2;
+        for (const row of container.querySelectorAll('.mushaf-line')) {
+            const rect = row.getBoundingClientRect();
+            if (rect.top < area.top - 2 || rect.bottom > area.bottom + 2) return false;
+            const items = lineTextItems(row);
+            for (const item of items) {
+                const box = item.getBoundingClientRect();
+                if (box.left < left || box.right > right) return false;
+            }
+        }
+        return true;
+    }
+
     function stabilizeStandardPage(container, pageNumber) {
         if (!container || pageNumber <= 2 || !container.clientWidth || !container.clientHeight) return;
         // Height matters on tablets because the responsive type scale is capped by
@@ -497,7 +518,11 @@
         // A pending font must not produce reusable Arabic-shaping measurements.
         const fontReady = !document.fonts?.check || document.fonts.check('24px "Amiri Quran"');
         const cached = fontReady ? layoutMemoryCache.get(key) : null;
-        if (cached && applyCachedStandardLayout(container, pageNumber, layoutWidth, cached)) return;
+        if (cached && applyCachedStandardLayout(container, pageNumber, layoutWidth, cached)) {
+            if (cachedGeometryFits(container)) return;
+            // Same device viewport can still have changed font/text-zoom behavior.
+            container.dataset.layoutState = '';
+        }
         if (cached) {
             layoutMemoryCache.delete(key);
             layoutCacheDiagnostics.invalid++;
