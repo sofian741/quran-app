@@ -179,6 +179,31 @@ jobs:
       - name: Register native audio download support
         run: python3 scripts/register-background-downloads.py
 
+      - name: Align native download plugin package with isolated QA app ID
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          roots = list(Path('android/app/src/main/java').rglob('MainActivity.java'))
+          if len(roots) != 1:
+              raise SystemExit('Expected one QA MainActivity.java')
+          main = roots[0]
+          package_match = re.search(r'^package\s+([\w.]+)\s*;', main.read_text(), re.M)
+          if not package_match:
+              raise SystemExit('MainActivity package declaration missing')
+          package_name = package_match.group(1)
+          plugin = main.parent / 'QuranBackgroundDownloads.java'
+          if not plugin.exists():
+              raise SystemExit('Native download plugin missing')
+          source = plugin.read_text()
+          source, changed = re.subn(r'^package\s+[\w.]+\s*;', 'package ' + package_name + ';', source, count=1, flags=re.M)
+          if changed != 1:
+              raise SystemExit('Could not rewrite native plugin package')
+          plugin.write_text(source)
+          assert package_name == 'com.sofian.ayat.mushafqa', package_name
+          print('QA Java package aligned:', package_name)
+          PY
+
       - name: Restore stable QA signing key
         run: |
           base64 -d android-assets/noor-qa-signing.p12.b64 > android-assets/noor-qa-signing.p12
