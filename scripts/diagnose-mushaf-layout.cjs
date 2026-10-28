@@ -11,7 +11,7 @@ const server=http.createServer((req,res)=>{
  fs.readFile(file,(err,bytes)=>{if(err){res.writeHead(404);return res.end('Not found');}res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'});res.end(bytes);});
 });
 const sizes=[{width:320,height:640},{width:360,height:720},{width:393,height:852},{width:412,height:915}];
-const pages=[1,2,183,184];
+const pages=[1,2,3,4,183,184];
 const reportDir=path.join(root,'artifacts','mushaf-layout');
 const round=n=>Math.round(n*100)/100;
 async function inspect(page){
@@ -33,8 +33,11 @@ async function inspect(page){
    if(gap< -1)collisions.push({first:i,second:i+1,overlapPx:Math.round(-gap*100)/100});
   }
   const horizontal=metrics.filter(x=>x.overflowX.length);
+  const rowStyle=lines.length?getComputedStyle(lines[0]):null;
+  const fontLoaded=document.fonts?.check?.('24px "Amiri Quran"')??null;
+  const rowGeometry=lines.map((line,index)=>({index:index+1,fontSize:getComputedStyle(line).fontSize,transform:getComputedStyle(line).transform,scrollWidth:line.scrollWidth,clientWidth:line.clientWidth,words:[...line.querySelectorAll('.mushaf-word')].length}));
   const css=getComputedStyle(root);
-  return {pageNumber:document.querySelector('#display-page-number')?.textContent,viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},frame:rect(frame),text:bounds,fontFamily:css.fontFamily,fontSize:css.fontSize,lineHeight:css.lineHeight,lines:metrics.length,verticalCollisions:collisions,horizontalOverflow:horizontal,rootScroll:{height:root.scrollHeight,clientHeight:root.clientHeight,width:root.scrollWidth,clientWidth:root.clientWidth},lineBoxes:metrics.map(x=>x.box)};
+  return {pageNumber:document.querySelector('#display-page-number')?.textContent,viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},frame:rect(frame),text:bounds,fontFamily:css.fontFamily,fontSize:css.fontSize,lineHeight:css.lineHeight,fontLoaded,rowLineHeight:rowStyle?.lineHeight,rowMinHeight:rowStyle?.minHeight,layoutState:root.dataset.layoutState,layoutCache:window.mushafLayoutCacheDiagnostics,rows:rowGeometry,lines:metrics.length,verticalCollisions:collisions,horizontalOverflow:horizontal,rootScroll:{height:root.scrollHeight,clientHeight:root.clientHeight,width:root.scrollWidth,clientWidth:root.clientWidth},lineBoxes:metrics.map(x=>x.box)};
  });
 }
 async function main(){
@@ -78,7 +81,7 @@ async function main(){
       await tab.keyboard.press(target>num?'ArrowLeft':'ArrowRight');
       await tab.waitForTimeout(80);
      }
-    } else if(target===2){
+    } else if(target===2 || target===3 || target===4){
      await tab.keyboard.press('ArrowLeft');
     }
     await tab.waitForTimeout(250);
