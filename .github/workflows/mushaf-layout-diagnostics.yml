@@ -6,6 +6,9 @@ on:
       - qa/mushaf-small-screen-layout-20261028
     paths:
       - scripts/diagnose-mushaf-layout.cjs
+      - reader-layout-polish.js
+      - style.css
+      - quran.html
       - .github/workflows/mushaf-layout-diagnostics.yml
 permissions:
   contents: read
