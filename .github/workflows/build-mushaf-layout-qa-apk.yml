@@ -1,0 +1,293 @@
+name: Build Isolated Mushaf Layout QA APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [qa/mushaf-small-screen-layout-20261028]
+    paths:
+      - .github/workflows/build-mushaf-layout-qa-apk.yml
+
+concurrency:
+  group: isolated-mushaf-qa-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK 36
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Install Capacitor dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Check JavaScript syntax and offline audio tests
+        run: |
+          node --check ayat-connectivity.js
+          node --check ayat-reading-continuity.js
+          node --check recitations.js
+          node --check library.js
+          node --check audio-core.js
+          node --check audio-downloads.js
+          node --check offline-mishary.js
+          node --check offline-mishary-sync.js
+          node --check native-background-audio.js
+          node --check qud-audio.js
+          node --check mushaf-keyboard-viewport.js
+          node --check library.js
+          node --check app-update.js
+          node --check android-navigation.js
+          node --check scripts/prepare-android-web.mjs
+          node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs
+
+      - name: Isolate QA package identity and disable production update endpoint
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('capacitor.config.json')
+          config=json.loads(p.read_text(encoding='utf-8'))
+          config['appId']='com.sofian.ayat.mushafqa'
+          config['appName']='آيات QA'
+          p.write_text(json.dumps(config,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+
+      - name: Embed installed build number and update endpoint
+        env:
+          QA_BUILD_NUMBER: ${{ github.run_number }}
+          UPDATE_MANIFEST_URL: ''
+        run: |
+          python3 scripts/write-android-build-info.py
+
+      - name: Prepare bundled web app
+        run: npm run android:prepare
+
+      - name: Verify lightweight Android package (no embedded reciter)
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          out = Path('www')
+          assert not (out / 'offline/mishary').exists(), 'Bundled Mishary audio leaked into APK'
+          for file in ('offline-mishary.js', 'offline-mishary-sync.js'):
+              assert not (out / file).exists(), file + ' must not ship'
+          for page in ('quran.html', 'library.html', 'recitations.html'):
+              expected = '\n'.join(
+                  line for line in Path(page).read_text(encoding='utf-8').split('\n')
+                  if 'src="offline-mishary.js"' not in line
+                  and 'src="offline-mishary-sync.js"' not in line
+              )
+              packaged = (out / page).read_text(encoding='utf-8')
+              assert packaged == expected, page + ' changed beyond deleting offline-audio hooks'
+          for file in ('app.js', 'reader-enhancements.js', 'reader-layout-polish.js',
+                       'mushaf-audio.js', 'audio-core.js', 'audio-downloads.js',
+                       'assets/fonts/amiri-quran-arabic-400-normal.woff2'):
+              assert (out / file).read_bytes() == Path(file).read_bytes(), file + ' was modified'
+          from json import loads
+          qud = out / 'data/qud'
+          docs = sorted(qud.glob('*.word.json'))
+          assert len(docs) == 19, 'Missing one of the 19 synchronized reciters'
+          assert not list(qud.glob('*.word.json.gz')), 'Old compressed QUD data was bundled'
+          for doc in docs:
+              payload = loads(doc.read_text(encoding='utf-8'))
+              assert payload['_meta']['schema_version'] == 3 and payload['_meta']['tier'] == 'word'
+              assert len(payload['rows']) >= 6000, doc.name + ' has insufficient timings'
+          registry = (qud / 'registry.js').read_text(encoding='utf-8')
+          assert registry.count('.word.json"') == 19
+          assert '.word.json.gz' not in registry
+          assert (out / 'mushaf-keyboard-viewport.js').read_bytes() == Path('mushaf-keyboard-viewport.js').read_bytes()
+          assert 'mushaf-keyboard-viewport.js' in (out / 'quran.html').read_text(encoding='utf-8')
+          assert (out / 'qud-audio.js').read_bytes() == Path('qud-audio.js').read_bytes()
+          print('Audio pack removed; mushaf, kashida, font, online player and downloads unchanged.')
+          PY
+
+      - name: Create Android project
+        run: npx cap add android
+
+      - name: Sync web app
+        run: npx cap sync android
+
+      - name: Keep Android screen awake while the app is open
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          files = list(Path('android/app/src/main/java').rglob('MainActivity.java'))
+          if len(files) != 1:
+              raise SystemExit('Expected one Capacitor MainActivity')
+          path = files[0]
+          source = path.read_text()
+          source = source.replace('public class MainActivity extends BridgeActivity {',
+              'public class MainActivity extends BridgeActivity {\n'
+              '  @Override public void onCreate(android.os.Bundle state) {\n'
+              '    super.onCreate(state);\n'
+              '    getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);\n'
+              '    android.webkit.WebSettings ws = getBridge().getWebView().getSettings();\n'
+              '    ws.setMediaPlaybackRequiresUserGesture(false);\n'
+              '    ws.setSupportZoom(true);\n'
+              '    ws.setBuiltInZoomControls(true);\n'
+              '    ws.setDisplayZoomControls(false);\n'
+              '    ws.setUseWideViewPort(true);\n'
+              '  }')
+          path.write_text(source)
+          PY
+
+      - name: Lock Android activity to portrait orientation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          text = manifest.read_text(encoding='utf-8')
+          match = re.search(r'<activity\b[^>]*android:name="\.MainActivity"[^>]*>', text, re.S)
+          if not match:
+              raise SystemExit('Capacitor MainActivity not found in Android manifest')
+          tag = match.group(0)
+          if 'android:screenOrientation=' in tag:
+              tag = re.sub(r'android:screenOrientation="[^"]*"', 'android:screenOrientation="portrait"', tag)
+          else:
+              tag = tag[:-1] + ' android:screenOrientation="portrait">'
+          text = text[:match.start()] + tag + text[match.end():]
+          manifest.write_text(text, encoding='utf-8')
+          assert 'android:screenOrientation="portrait"' in manifest.read_text(encoding='utf-8')
+          PY
+
+      - name: Register native audio download support
+        run: python3 scripts/register-background-downloads.py
+
+      - name: Restore stable QA signing key
+        run: |
+          base64 -d android-assets/noor-qa-signing.p12.b64 > android-assets/noor-qa-signing.p12
+          keytool -list -keystore android-assets/noor-qa-signing.p12 -storetype PKCS12 -storepass android -alias noor-qa >/dev/null
+
+      - name: Set increasing APK version and QA signature
+        env:
+          QA_BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+
+          path = Path('android/app/build.gradle')
+          source = path.read_text(encoding='utf-8')
+          build_number = int(os.environ['QA_BUILD_NUMBER'])
+          source, count = re.subn(r'\bversionCode\s+\d+', f'versionCode {build_number}', source, count=1)
+          if count != 1:
+              raise SystemExit('Could not set Android versionCode')
+          source, count = re.subn(r'\bversionName\s+["\'][^"\']+["\']',
+              f'versionName "0.1.{build_number}"', source, count=1)
+          if count != 1:
+              raise SystemExit('Could not set Android versionName')
+          signing = """
+              signingConfigs {
+                  debug {
+                      storeFile file('../../android-assets/noor-qa-signing.p12')
+                      storePassword 'android'
+                      keyAlias 'noor-qa'
+                      keyPassword 'android'
+                  }
+              }
+          """
+          if 'android {' not in source:
+              raise SystemExit('Missing Android Gradle block')
+          source = source.replace('android {', 'android {' + signing, 1)
+          path.write_text(source, encoding='utf-8')
+          print('QA build versionCode:', build_number)
+          PY
+
+      - name: Prepare approved Ayat app icon
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          source = Path('android-assets/ayat-icon.jpg')
+          if not source.is_file():
+              raise SystemExit('Approved Ayat icon is missing')
+          with Image.open(source) as image:
+              image.convert('RGB').resize((1024, 1024), Image.Resampling.LANCZOS).save(
+                  'android-assets/icon.png', optimize=True
+              )
+          print('Using approved Ayat icon:', source)
+          PY
+
+      - name: Generate Android icon and splash
+        run: |
+          npx @capacitor/assets generate --android \
+            --assetPath android-assets \
+            --iconBackgroundColor '#015e46' \
+            --iconBackgroundColorDark '#015e46' \
+            --splashBackgroundColor '#131d19' \
+            --splashBackgroundColorDark '#131d19'
+
+      - name: Apply Android app label and vibration permission
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          text = manifest.read_text(encoding='utf-8')
+          permission = '<uses-permission android:name="android.permission.VIBRATE" />'
+          if permission not in text:
+              text = text.replace('<application', permission + '\n    <application', 1)
+              manifest.write_text(text, encoding='utf-8')
+
+          strings = Path('android/app/src/main/res/values/strings.xml')
+          text = strings.read_text(encoding='utf-8')
+          text = re.sub(r'<string name="app_name">.*?</string>', '<string name="app_name">آيات QA</string>', text)
+          text = re.sub(r'<string name="title_activity_main">.*?</string>', '<string name="title_activity_main">آيات | Ayat</string>', text)
+          strings.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Build debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Prepare APK artifact
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk "dist/Ayat-Mushaf-QA.apk"
+          sha256sum "dist/Ayat-Mushaf-QA.apk"
+          # Shipping 492 MiB of pre-installed recitations here is forbidden.
+          python3 - <<'PY'
+          from pathlib import Path
+          apk = Path('dist/Ayat-Mushaf-QA.apk')
+          size = apk.stat().st_size
+          print(f'Isolated Mushaf QA APK: {size / (1024 * 1024):.1f} MiB')
+          assert size < 180 * 1024 * 1024, 'Unexpectedly large APK: bundled audio may have leaked'
+          PY
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ayat-Mushaf-QA-APK
+          path: dist/Ayat-Mushaf-QA.apk
+          if-no-files-found: error
+          retention-days: 14
