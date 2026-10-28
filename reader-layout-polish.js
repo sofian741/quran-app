@@ -89,7 +89,7 @@
 
     // Persistent layout cache. A version bump intentionally invalidates old
     // measurements whenever the line-fitting algorithm changes.
-    const LAYOUT_CACHE_VERSION = 'standard-larger-type-v8-20261019';
+    const LAYOUT_CACHE_VERSION = 'font-metrics-aware-v9-20261028';
     const LAYOUT_CACHE_DB = 'quranMushafLayoutCache';
     const LAYOUT_CACHE_STORE = 'layouts';
     const layoutMemoryCache = new Map();
@@ -114,8 +114,21 @@
         return `${Math.round(width)}x${Math.round(height)}`;
     }
 
+    // Layout measurements depend on the rendered font, not only on viewport dimensions.
+    // A device WebView may use different text scaling or glyph metrics at the same size.
+    function fontMetricsFingerprint() {
+        if (document.fonts?.check && !document.fonts.check('24px "Amiri Quran"')) return 'font-pending';
+        try {
+            const probe = document.createElement('canvas').getContext('2d');
+            if (!probe) return 'no-canvas';
+            probe.font = '24px "Amiri Quran"';
+            const sample = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ ۞';
+            return String(Math.round(probe.measureText(sample).width * 100));
+        } catch (_) { return 'measure-unavailable'; }
+    }
+
     function layoutCacheKey(pageNumber, width, height) {
-        return `${LAYOUT_CACHE_VERSION}:${pageNumber}:${layoutProfile(width, height)}`;
+        return `${LAYOUT_CACHE_VERSION}:${pageNumber}:${layoutProfile(width, height)}:${fontMetricsFingerprint()}`;
     }
 
     function openLayoutCacheDb() {
@@ -205,10 +218,11 @@
             return layoutMemoryCache.has(layoutCacheKey(pageNumber, width, height));
         },
         count(width = text.clientWidth, height = text.clientHeight) {
-            const suffix = `:${layoutProfile(width, height)}`;
+            const profilePrefix = `${LAYOUT_CACHE_VERSION}:`;
+            const profileEnd = `:${layoutProfile(width, height)}:${fontMetricsFingerprint()}`;
             let count = 0;
             layoutMemoryCache.forEach((_, key) => {
-                if (key.endsWith(suffix)) count++;
+                if (key.startsWith(profilePrefix) && key.endsWith(profileEnd)) count++;
             });
             return count;
         },
@@ -480,7 +494,9 @@
             container.dataset.layoutState === 'ready') return;
 
         const key = layoutCacheKey(pageNumber, container.clientWidth, container.clientHeight);
-        const cached = layoutMemoryCache.get(key);
+        // A pending font must not produce reusable Arabic-shaping measurements.
+        const fontReady = !document.fonts?.check || document.fonts.check('24px "Amiri Quran"');
+        const cached = fontReady ? layoutMemoryCache.get(key) : null;
         if (cached && applyCachedStandardLayout(container, pageNumber, layoutWidth, cached)) return;
         if (cached) {
             layoutMemoryCache.delete(key);
@@ -590,7 +606,7 @@
         container.dataset.layoutState = 'ready';
         container.dataset.standardLayoutPage = String(pageNumber);
         container.dataset.standardLayoutWidth = layoutWidth;
-        if (!document.fonts?.check || document.fonts.check('24px "Amiri Quran"')) {
+        if (fontReady) {
             persistLayoutRecord(snapshotStandardLayout(container, pageNumber, layoutWidth));
         }
     }
