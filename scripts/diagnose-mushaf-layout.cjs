@@ -25,10 +25,8 @@ async function inspect(page){
    const descendants=[...el.querySelectorAll('*')].filter(x=>x.getClientRects().length);
    const children=descendants.map(x=>({tag:x.tagName,cls:String(x.className||'').slice(0,90),box:rect(x)}));
    const outside=children.filter(x=>x.box.left<bounds.left-tolerance||x.box.right>bounds.right+tolerance);
-   const overlap=i?Math.max(0,metricsPlaceholder(i)):0;
    return {index:i+1,box:b,overflowX:outside.slice(0,8),childCount:children.length};
   });
-  function metricsPlaceholder(){return 0}
   const collisions=[];
   for(let i=1;i<metrics.length;i++){
    const gap=metrics[i].box.top-metrics[i-1].box.bottom;
@@ -52,12 +50,12 @@ async function main(){
    await tab.goto('http://127.0.0.1:'+server.address().port+'/quran.html',{waitUntil:'domcontentloaded'});
    await tab.locator('.mushaf-line').first().waitFor({timeout:30000});
    for(const target of pages){
-    if(target!==1){
+    if(target!==1 && target!==2){
      // The public index supports Juz navigation; juz 10 begins near pages 182-183.
      // Use the actual reader's swipe/keyboard navigation rather than mutating page data.
      await tab.locator('#open-index').click();
      await tab.locator('[data-index-tab="juz"]').click();
-     const rows=tab.locator('#index-list button');
+     const rows=tab.locator('#index-list button.index-entry');
      await rows.nth(9).click();
      await tab.waitForTimeout(300);
      for(let attempt=0;attempt<12;attempt++){
@@ -68,6 +66,8 @@ async function main(){
       await tab.keyboard.press(target>num?'ArrowLeft':'ArrowRight');
       await tab.waitForTimeout(80);
      }
+    } else if(target===2){
+     await tab.keyboard.press('ArrowLeft');
     }
     await tab.waitForTimeout(250);
     const data=await inspect(tab);
