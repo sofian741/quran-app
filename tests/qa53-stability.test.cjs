@@ -5,11 +5,11 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const { execFileSync } = require('node:child_process');
 
-test('original mushaf typography, kashida and canonical 604-page data remain byte-for-byte unchanged (except approved index search)', () => {
+test('approved QA vertical row-spacing fallback preserves pinned Quran data, font, width and kashida sources', () => {
     const expected = {
         'style.css': '5d39e5da6064e62a2402e7be47f5cd5b8829a888',
         'reader-enhancements.js': '8982ac70f1e2d8e22719fe9a7610339d791adb0f',
-        'reader-layout-polish.js': '0d4b45ae5ca27d9d46222e25d4e910fed355ab4a',
+        'reader-layout-polish.js': '10dd517e9a779879679c779baeb7db0a52b845f0',
         'data/mushaf-layout.json': 'c10a1fad7d78c4a5809db88ebb0adb59f8576390',
         'assets/fonts/amiri-quran-arabic-400-normal.woff2': 'e8b4b25708dd8dbc7ebfb3fad24595d0196e40ac'
     };
@@ -21,6 +21,14 @@ test('original mushaf typography, kashida and canonical 604-page data remain byt
     const app = fs.readFileSync('app.js', 'utf8');
     assert.match(app, /index-surah-search/);
     assert.match(app, /normalized\(entry\.label\)/);
+    // QA-only approved change: this one layout file may relax row height and scroll.
+    // Keep it pinned, rather than disabling the integrity guard altogether.
+    const layout = fs.readFileSync('reader-layout-polish.js', 'utf8');
+    assert.match(layout, /function protectVerticalInk\(container\)/);
+    assert.match(layout, /container\.classList\.add\('vertical-relaxed'\)/);
+    assert.match(layout, /const STANDARD_FONT_WIDTH_RATIO = 0\.067/);
+    assert.match(layout, /const MAX_KASHIDAS_PER_WORD = 4/);
+    assert.match(layout, /const MAX_KASHIDAS_PER_LINE = 32/);
     for (const [file, sha] of Object.entries(expected)) {
         assert.equal(execFileSync('git', ['hash-object', file], { encoding: 'utf8' }).trim(),
             sha, file + ' unexpectedly changed');
