@@ -671,6 +671,7 @@
             line.classList.remove('is-full-line', 'is-short-line');
             line.classList.add('is-crowded-line');
         });
+        protectVerticalInk(container);
         container.dataset.layoutState = 'ready';
         container.dataset.standardLayoutPage = String(pageNumber);
         container.dataset.standardLayoutWidth = layoutWidth;
