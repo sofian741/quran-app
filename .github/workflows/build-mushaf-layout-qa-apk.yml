@@ -6,6 +6,8 @@ on:
     branches: [qa/mushaf-small-screen-layout-20261028]
     paths:
       - .github/workflows/build-mushaf-layout-qa-apk.yml
+      - reader-layout-polish.js
+      - tests/qa53-stability.test.cjs
 
 concurrency:
   group: isolated-mushaf-qa-${{ github.ref_name }}
