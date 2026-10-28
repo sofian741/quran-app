@@ -53,7 +53,19 @@ async function main(){
     if(target!==1 && target!==2){
      // The public index supports Juz navigation; juz 10 begins near pages 182-183.
      // Use the actual reader's swipe/keyboard navigation rather than mutating page data.
-     await tab.locator('#open-index').click();
+     // Toolbar is intentionally hidden during immersive reading; reveal it with a real tap.
+     if(!(await tab.locator('#open-index').isVisible())){
+      await tab.locator('#reader-stage').click({position:{x:Math.min(40,size.width/4),y:Math.min(40,size.height/4)}});
+      await tab.waitForTimeout(150);
+     }
+     if(!(await tab.locator('#open-index').isVisible())){
+      // A hidden toolbar is normal in the app. Trigger the actual button handler
+      // rather than changing production CSS or force-clicking a hidden element.
+      await tab.locator('#open-index').evaluate(button=>button.click());
+     }else{
+      await tab.locator('#open-index').click();
+     }
+     await tab.locator('#index-sheet.is-open').waitFor({timeout:5000});
      await tab.locator('[data-index-tab="juz"]').click();
      const rows=tab.locator('#index-list button.index-entry');
      await rows.nth(9).click();
