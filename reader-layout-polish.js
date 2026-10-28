@@ -89,7 +89,7 @@
 
     // Persistent layout cache. A version bump intentionally invalidates old
     // measurements whenever the line-fitting algorithm changes.
-    const LAYOUT_CACHE_VERSION = 'font-metrics-aware-v9-20261028';
+    const LAYOUT_CACHE_VERSION = 'vertical-ink-safe-v10-20261028';
     const LAYOUT_CACHE_DB = 'quranMushafLayoutCache';
     const LAYOUT_CACHE_STORE = 'layouts';
     const layoutMemoryCache = new Map();
@@ -241,6 +241,10 @@
             margin-block: .08em .18em;
             font-size: 1em;
             line-height: 1.42;
+        }
+        .quran-text.vertical-relaxed:not(.opening-spread) .mushaf-line {
+            flex: 0 0 auto;
+            min-height: var(--mushaf-safe-row-height);
         }
         .quran-text:not(.opening-spread) .mushaf-line.is-full-line,
         .quran-text:not(.opening-spread) .mushaf-line.is-short-line,
@@ -454,6 +458,8 @@
         }
 
         applyAdaptiveRows(container);
+        container.classList.remove('vertical-relaxed');
+        container.style.removeProperty('--mushaf-safe-row-height');
         container.classList.remove('opening-spread');
         container.dataset.openingPage = '';
         const fontSize = `${cached.fontSize.toFixed(2)}px`;
@@ -477,11 +483,46 @@
             line.classList.remove('is-measuring', 'is-full-line', 'is-short-line', 'is-crowded-line');
             line.classList.add(saved.state || 'is-short-line');
         });
+        protectVerticalInk(container);
         container.dataset.layoutState = 'ready';
         container.dataset.standardLayoutPage = String(pageNumber);
         container.dataset.standardLayoutWidth = layoutWidth;
         layoutCacheDiagnostics.hits++;
         return true;
+    }
+
+    // Only vertical spacing may change: glyph size, width, justification,
+    // kashida extension and horizontal transforms stay exactly as calculated.
+    // Font ink can extend beyond the CSS line-height on some Android WebViews.
+    function protectVerticalInk(container) {
+        container.classList.remove('vertical-relaxed');
+        container.style.removeProperty('--mushaf-safe-row-height');
+        const lines = Array.from(container.querySelectorAll('.mushaf-line'));
+        if (!lines.length) return;
+        const fontStyle = getComputedStyle(container);
+        const fontSize = parseFloat(fontStyle.fontSize) || 20;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.font = fontStyle.font || `${fontSize}px "Amiri Quran"`;
+        const samples = lines.map(line =>
+            Array.from(line.querySelectorAll('.mushaf-word'), w => w.textContent || '').join(' ')
+        );
+        let inkHeight = 0;
+        for (const sample of samples) {
+            const metrics = ctx.measureText(sample || 'بِسْمِ اللَّهِ');
+            const ascent = metrics.actualBoundingBoxAscent || 0;
+            const descent = metrics.actualBoundingBoxDescent || 0;
+            inkHeight = Math.max(inkHeight, ascent + descent);
+        }
+        // Arabic marks need room above and below the actual painted ink.
+        const safeRow = Math.max(fontSize * 1.58, inkHeight + fontSize * 0.22);
+        const currentRows = lines.map(line => line.getBoundingClientRect().height);
+        // No change at all where the normal 15-line layout already has room.
+        if (currentRows.every(height => height >= safeRow - 1)) return;
+        container.style.setProperty('--mushaf-safe-row-height', `${safeRow.toFixed(2)}px`);
+        container.classList.add('vertical-relaxed');
+        container.dataset.verticalScrollFallback = 'true';
     }
 
     // Cached geometry is an optimization, never an authority over Quran visibility.
@@ -495,7 +536,8 @@
         const right = area.right - insetRight + 2;
         for (const row of container.querySelectorAll('.mushaf-line')) {
             const rect = row.getBoundingClientRect();
-            if (rect.top < area.top - 2 || rect.bottom > area.bottom + 2) return false;
+            if (!container.classList.contains('vertical-relaxed') &&
+                (rect.top < area.top - 2 || rect.bottom > area.bottom + 2)) return false;
             const items = lineTextItems(row);
             for (const item of items) {
                 const box = item.getBoundingClientRect();
@@ -519,6 +561,7 @@
         const fontReady = !document.fonts?.check || document.fonts.check('24px "Amiri Quran"');
         const cached = fontReady ? layoutMemoryCache.get(key) : null;
         if (cached && applyCachedStandardLayout(container, pageNumber, layoutWidth, cached)) {
+            protectVerticalInk(container);
             if (cachedGeometryFits(container)) return;
             // Same device viewport can still have changed font/text-zoom behavior.
             container.dataset.layoutState = '';
