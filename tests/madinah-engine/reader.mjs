@@ -235,7 +235,7 @@ async function init(){
   const hash=new URLSearchParams(location.hash.slice(1)),v=hash.get('verse');
   const saved=read(STORAGE,{}).displayPage,initial=v&&maps[v]?maps[v].pages[0]:Number.isInteger(saved)&&saved>=1&&saved<=604?saved:1;
   if(!await navigate(initial,v))throw new Error('Initial page failed');
-  emit('mushaf:data-ready',{});$('loading-screen')?.remove();
+  emit('mushaf:data-ready',{});$('loading-screen')?.remove();metrics.ready=true;
   if(v&&hash.get('action')==='tafsir')window.mushafTafsir?.open({surah:+v.split(':')[0],ayah:+v.split(':')[1],verseKey:v});
   // Cold install is local inside Android. Web offline is explicit after first visit;
   // pages already visited are cached; full corpus installation is a separate test.

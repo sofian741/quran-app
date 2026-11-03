@@ -11,7 +11,7 @@ let browser;
  const page=await context.newPage();page.setDefaultTimeout(10000);page.on('pageerror',e=>report.pageErrors.push(e.message));
  await page.addInitScript(()=>{localStorage.setItem('ayat-tour-done-quran-v8','1');localStorage.setItem('ayat-tour-optout-quran-v8','1');HTMLElement.prototype.setPointerCapture=function(){};});
  async function check(name,fn){try{const detail=await fn();report.results.push({name,pass:true,detail});fs.writeFileSync(path.join(out,'browser-progress.json'),JSON.stringify(report,null,2));console.log('PASS',name);}catch(e){report.failures.push({name,error:e.message});console.log('FAIL',name,e.message);}}
- await page.goto(base+'/quran.html');await page.waitForFunction(()=>window.madinahLab?.getGeometry());
+ await page.goto(base+'/quran.html');await page.waitForFunction(()=>window.madinahLab?.metrics.ready);
  await check('all 604 pages load, word hit boxes match pinned geometry and cache stays bounded',async()=>{
   const result=await page.evaluate(async()=>{
    const errors=[],times=[];let words=0;
@@ -64,7 +64,7 @@ let browser;
   await page.locator('#open-index').evaluate(n=>n.click());await page.locator('#index-surah-search').fill('البقرة');assert.equal(await page.locator('#index-list .index-entry').count(),1);await page.locator('#close-index').click();
   await page.locator('#open-quran-search').evaluate(n=>n.click());await page.locator('#quran-search-input').fill('الحمد');await page.waitForFunction(()=>document.querySelectorAll('.quran-search-result').length>0);await page.locator('#close-quran-search').click();
   await page.evaluate(()=>madinahLab.navigate(208));await page.locator('#toggle-page-marker').evaluate(n=>n.click());assert.equal(await page.evaluate(()=>JSON.parse(localStorage.quranPageMarkerV1)),208);
-  await page.reload();await page.waitForFunction(()=>window.mushafReader?.getCurrentPage()===208&&window.madinahLab?.getGeometry()?.number===208);
+  await page.reload();await page.waitForFunction(()=>window.mushafReader?.getCurrentPage()===208&&window.madinahLab?.metrics.ready&&window.madinahLab?.getGeometry()?.number===208);
  });
  await check('zoom simulation suppresses page turns and supports reverse navigation',async()=>{
   await page.evaluate(()=>madinahLab.navigate(4));
@@ -89,8 +89,8 @@ let browser;
  await check('old engine remains separately runnable',async()=>{const old=await context.newPage();await old.goto(base+'/legacy-quran.html');await old.waitForFunction(()=>document.querySelector('#quran-text .mushaf-word')&&window.mushafReader);assert.equal(await old.locator('.madinah-frame').count(),0);await old.screenshot({path:path.join(out,'legacy-390x844.png')});await old.close();});
  await context.close();
  await check('complete local shell and all 604 pages reopen with browser network offline',async()=>{
-  const c=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'allow'});await c.route('https://**/*',r=>r.abort());const p=await c.newPage();await p.goto(base+'/quran.html');await p.waitForFunction(()=>window.madinahLab?.installOffline);await p.evaluate(()=>navigator.serviceWorker.ready);const installed=await p.evaluate(()=>madinahLab.installOffline());
-  await p.reload();await p.waitForFunction(()=>navigator.serviceWorker.controller&&window.madinahLab?.getGeometry());await c.setOffline(true);await p.reload();await p.waitForFunction(()=>window.madinahLab?.getGeometry());
+  const c=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'allow'});await c.route('https://**/*',r=>r.abort());const p=await c.newPage();await p.goto(base+'/quran.html');await p.waitForFunction(()=>window.madinahLab?.metrics.ready);await p.evaluate(()=>navigator.serviceWorker.ready);const installed=await p.evaluate(()=>madinahLab.installOffline());
+  await p.reload();await p.waitForFunction(()=>navigator.serviceWorker.controller&&window.madinahLab?.getGeometry());await c.setOffline(true);await p.reload();await p.waitForFunction(()=>window.madinahLab?.metrics.ready);
   const all=await p.evaluate(async()=>{let count=0;for(let n=1;n<=604;n++)if(await madinahLab.navigate(n))count++;return count;});assert.equal(all,604);await c.close();return {...installed,offlinePages:all};
  });
  await browser.close();report.completed=true;fs.writeFileSync(path.join(out,'browser.json'),JSON.stringify(report,null,2));assert.deepEqual(report.failures,[]);assert.deepEqual(report.pageErrors,[]);

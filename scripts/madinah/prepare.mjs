@@ -22,7 +22,10 @@ for (const name of ['qvp','svg']) {
 const raw = await fs.readFile(root+'/data/quran-uthmani.txt','utf8');
 if (sha(raw)!==pins.tanzilSha256) throw new Error('Tanzil changed');
 const verses = parseTanzil(raw), byVerse = new Map(), pages = [], files = {}, sizes = {qvp:0, svg:0, sidecars:0};
-const version = JSON.parse(await fs.readFile(qvp+'/VERSION.json'));
+const qvpVersion=await fs.readFile(qvp+'/VERSION.json'),svgVersion=await fs.readFile(svgDir+'/VERSION.json'),checksumBytes=await fs.readFile(svgDir+'/CHECKSUMS.txt');
+if(sha(qvpVersion)!==pins.qvp.versionSha256||sha(svgVersion)!==pins.svg.versionSha256||sha(checksumBytes)!==pins.svg.checksumsSha256)throw new Error('Untrusted extracted manifest');
+const svgDigests=new Map(checksumBytes.toString().trim().split('\n').map(line=>[line.slice(66),line.slice(0,64)]));
+const version = JSON.parse(qvpVersion);
 if(version.source_version!=='v1.1.2'||version.pages!==604) throw new Error('Wrong data edition');
 await fs.mkdir(out,{recursive:true});
 // Copy the existing UI and its local collaborators. The lab replaces only renderer entry scripts.
@@ -75,7 +78,9 @@ for(let n=1;n<=604;n++) {
   }
   fragments+=g.ayahs.length;
   const source=await fs.readFile(svgDir+'/pages/'+id+'.svg');
-  const index=JSON.parse(await fs.readFile(svgDir+'/index/by-page/'+id+'.json'));
+  const indexBytes=await fs.readFile(svgDir+'/index/by-page/'+id+'.json');
+  if(sha(source)!==svgDigests.get('pages/'+id+'.svg')||sha(indexBytes)!==svgDigests.get('index/by-page/'+id+'.json'))throw new Error('SVG reference integrity '+id);
+  const index=JSON.parse(indexBytes);
   if(index.words.length!==g.words.length||index.words.some((w,i)=>w.word_key!==keys[i]||w.line!==g.lines[g.words[i].lineIndex].lineNumber)) throw new Error('SVG/QVP word or line disagreement '+id);
   const svgRows=(source.toString().match(/class="line"/g)||[]).length;
   if(svgRows!==g.lines.length)throw new Error('SVG/QVP rows '+id);
