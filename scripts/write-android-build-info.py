@@ -9,7 +9,7 @@ if url and not url.startswith("https://"):
     raise SystemExit("Update manifest must use HTTPS")
 Path("android-build-info.js").write_text(
     "window.NOOR_ANDROID_BUILD = " +
-    json.dumps({"versionCode": version, "updateManifestUrl": url}) +
+    json.dumps({"versionCode": version, "updateManifestUrl": url, "qaMode": os.environ.get("AYAT_ISOLATED_QA") == "1"}) +
     ";\n",
     encoding="utf-8",
 )
