@@ -32,6 +32,8 @@ const catalog = { reciters: [
                 return state.get(el);
             };
             Object.defineProperties(HTMLMediaElement.prototype, {
+                // A mocked player must not start a real network media request.
+                src: {configurable:true,get(){return mediaState(this).src||'';},set(value){mediaState(this).src=String(value);}},
                 paused: { configurable: true, get() { return mediaState(this).paused; } },
                 currentTime: {
                     configurable: true,

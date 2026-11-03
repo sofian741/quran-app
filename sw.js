@@ -1,9 +1,9 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v72-qvp';
+const APP_CACHE = 'quran-reader-shell-v73-qvp';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
-    './mushaf-engine-loader.js', './mushaf-qvp/reader.js', './mushaf-qvp/reader.css',
+    './mushaf-engine-loader.js', './mushaf-qvp/reader.js', './mushaf-qvp/reader.css', './mushaf-qvp/integrity.js',
     './mushaf-qvp/vendor/LICENSE', './mushaf-qvp/text-map.js', './mushaf-qvp/subwords.js', './mushaf-qvp/vendor/lite.js', './mushaf-qvp/vendor/lite-path.js',
     './data/qvp/manifest.json', './data/qvp/word-map.json',
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',

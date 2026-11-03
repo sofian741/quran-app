@@ -1,5 +1,6 @@
 import {decodeGeometry, QvpLitePage} from './vendor/lite.js';
 import {buildPath} from './vendor/lite-path.js';
+import {sha256} from './integrity.js';
 import {SUBWORDS, subwordBox} from './subwords.js';
 import {parseTanzil, timingRange} from './text-map.js';
 
@@ -27,7 +28,7 @@ async function load(number){
     const id=String(number).padStart(3,'0'), response=await fetch('data/qvp/pages/'+id+'.qvp');
     if(!response.ok)throw new Error('Page HTTP '+response.status);
     const bytes=await response.arrayBuffer();
-    const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
+    const digest=await sha256(bytes);
     if(digest!==manifest.files[id+'.qvp'].sha256)throw new Error('Page integrity '+number);
     const geometry=decodeGeometry(bytes);if(geometry.number!==number)throw new Error('Page identity');
     const item={geometry,paint:new QvpLitePage(geometry)};cache.set(number,item);evict();return item;

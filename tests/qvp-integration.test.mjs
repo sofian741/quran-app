@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import {decodeGeometry} from '../mushaf-qvp/vendor/lite.js';
 import {timingRange} from '../mushaf-qvp/text-map.js';
 import {SUBWORDS,subwordBox} from '../mushaf-qvp/subwords.js';
+import {sha256Fallback} from '../mushaf-qvp/integrity.js';
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url));
 const json=p=>JSON.parse(read(p));
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
@@ -13,11 +14,18 @@ test('604 pinned pages, 6236 markers, 114 headings and 112 basmalas remain compl
  assert.equal(manifest.pages.length,604);assert.equal(Object.keys(maps).length,6236);
  for(let page=1;page<=604;page++){
   const name=String(page).padStart(3,'0')+'.qvp',bytes=read('data/qvp/pages/'+name);assert.equal(sha(bytes),manifest.files[name].sha256);
+  assert.equal(sha256Fallback(bytes),manifest.files[name].sha256,'LAN hash '+name);
   const g=decodeGeometry(bytes);assert.equal(g.number,page);assert.equal(g.lines.length,page<=2?8:15);words+=g.words.length;
   for(const w of g.words){const key=w.surah+':'+w.ayah+':'+w.word;assert.ok(!seen.has(key));seen.add(key);assert.ok(maps[w.surah+':'+w.ayah].pages.includes(page));}
   for(const d of g.decorations){if(d.decoration===0)markers++;if(d.decoration===1)headers++;if(d.decoration===2){basmalas++;assert.ok(![1,9].includes(d.surah));assert.ok(g.lines[d.lineIndex]);}}
  }
  assert.deepEqual({words,markers,headers,basmalas},{words:77432,markers:6236,headers:114,basmalas:112});
+});
+test('portable SHA-256 handles empty, padding boundaries, UTF-8 and offset buffers',()=>{
+ for(const size of [0,1,55,56,63,64,65,127,128,1000]){
+  const data=crypto.randomBytes(size+17).subarray(17);assert.equal(sha256Fallback(data),sha(data));
+ }
+ const arabic=Buffer.from('القرآن الكريم');assert.equal(sha256Fallback(arabic),sha(arabic));
 });
 test('15:7 subword paths form an exhaustive, nonduplicated partition and keep later ordinals correct',()=>{
  const g=decodeGeometry(read('data/qvp/pages/262.qvp')),w=g.words.find(w=>w.surah===15&&w.ayah===7&&w.word===1),parts=SUBWORDS['15:7:1'];
