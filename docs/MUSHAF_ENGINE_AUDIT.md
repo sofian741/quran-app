@@ -82,6 +82,9 @@ Replacing just the facade does not preserve compatibility.
   The new engine must never copy Quran text from stretched DOM.
 * Verse markers and surah bands are original local CSS/SVG designs; chapter names
   are shaped text. They are not a facsimile of printed decorations.
+* `offline-reciter-catalog.js` ليس كتالوجًا فقط: يحقن أيضًا text-stroke بقيمة
+  .28px وبديل text-shadow على كلمات المصحف؛ هذا أثر غير مباشر في سمك الحبر.
+  عارض Canvas لا يعيد استخدام هذا الرسم النصي، والنسخة الأصلية محفوظة.
 * Fit caches: app memory cache (48 entries), layout memory and IndexedDB
   `quranMushafLayoutCache` / `layouts`, version `standard-larger-type-v8-20261019`.
   Cached records contain rendered word strings and geometry; only version, range
