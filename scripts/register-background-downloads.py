@@ -9,6 +9,7 @@ source = main.read_text()
 needle = "super.onCreate(state);"
 if needle not in source:
     raise SystemExit("MainActivity onCreate missing")
-source = source.replace(needle, "registerPlugin(QuranBackgroundDownloads.class);\n    " + needle, 1)
+source = source.replace(needle, "registerPlugin(MushafTextScale.class);\n    registerPlugin(QuranBackgroundDownloads.class);\n    " + needle, 1)
 main.write_text(source)
 copyfile("android-native/QuranBackgroundDownloads.java", main.parent / "QuranBackgroundDownloads.java")
+copyfile("android-native/MushafTextScale.java", main.parent / "MushafTextScale.java")
