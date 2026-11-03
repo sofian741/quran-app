@@ -33,7 +33,7 @@ npm run test:tour:qvp
 وتوقيتات الكلمات المحلية. ملفات الصوت تُنزّل عند الطلب كما في التطبيق الحالي.
 [تفاصيل الدمج ونتائجه وحدوده](docs/QVP_PRODUCTION_INTEGRATION.md).
 
-## التحقق السريع
+## اختبارات مرجع النص والمحرك السابق
 
 ```bash
 node tests/content.cjs
@@ -43,7 +43,7 @@ node tests/audio-core.cjs
 يفحص الاختبار تغطية 6236 آية و77881 كلمة مرة واحدة وبالترتيب عبر الصفحات الـ604،
 ويتحقق من بقاء بصمة ملف Tanzil الأصلية دون تغيير.
 
-لاختبار عينات العرض في Chromium بعد تثبيت Playwright:
+الأوامر التالية اختبارات تاريخية للمحرك السابق. اختبارات QVP الحالية هي `npm run test:qvp` و`npm run test:tour:qvp` المذكورة أعلاه:
 
 ```bash
 QURAN_BROWSER_PATH=/usr/bin/chromium node tests/reader.cjs

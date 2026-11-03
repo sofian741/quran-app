@@ -1,0 +1,20 @@
+{
+  "appId": "com.sofian.nooralquran",
+  "versionCode": 96,
+  "signerSha256": "e79b45a412017c114403b96fe0f978647cedd18596da74cdcc63dfd1f9833479",
+  "stableQaSignatureVerified": true,
+  "pages": 604,
+  "allPageHashesVerified": true,
+  "legacyRetained": true,
+  "bytes": 67139905,
+  "sha256": "afe37007f49ac1db8d77d2cb9fa518a91f3d3d8f4204ba418089f3f492d3c5f4",
+  "applicationCommit": "e9f8af5e1f271c1fa64c35f7c1c69e7872e6bd70",
+  "runId": 41720304531,
+  "runUrl": "https://github.com/sofian741/quran-app/actions/runs/41720304531",
+  "artifactId": 13272051782,
+  "artifactUrl": "https://github.com/sofian741/quran-app/actions/runs/41720304531/artifacts/13272051782",
+  "artifactZipSha256": "3bda0a8a1b9b643e0663ddde6ba5a9c0e2481742300deafec847865735274d3f",
+  "artifactExpiresAt": "2026-11-17T21:22:01Z",
+  "physicalAndroidUpgradeTested": false,
+  "publishedToPublicFeed": false
+}

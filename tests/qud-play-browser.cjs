@@ -60,7 +60,7 @@ const executablePath = process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium';
         await page.evaluate(()=>{window.AyatConnectivity={isOffline:async()=>false};});
 
         // Different recordings/providers: quranicaudio, tarteel, TVQuran, archive.org.
-        const reciterIds = process.env.QUD_RECITER_ID ? [Number(process.env.QUD_RECITER_ID)] : [9000, 9001, 9016, 9017];
+        const reciterIds = process.env.QUD_RECITER_IDS ? process.env.QUD_RECITER_IDS.split(',').map(Number) : process.env.QUD_RECITER_ID ? [Number(process.env.QUD_RECITER_ID)] : [9000, 9001, 9016, 9017];
         for (const id of reciterIds) {
             if(id===9017){
                 assert.equal(await page.locator('#audio-reciter option[value="aligned:9017"]').count(),0,'Previously excluded unreliable timing stays excluded');
