@@ -89,7 +89,7 @@
 
     // Persistent layout cache. A version bump intentionally invalidates old
     // measurements whenever the line-fitting algorithm changes.
-    const LAYOUT_CACHE_VERSION = 'vertical-ink-safe-v10-20261028';
+    const LAYOUT_CACHE_VERSION = 'problem-device-fit-v11-20261103';
     const LAYOUT_CACHE_DB = 'quranMushafLayoutCache';
     const LAYOUT_CACHE_STORE = 'layouts';
     const layoutMemoryCache = new Map();
@@ -483,7 +483,29 @@
             line.classList.remove('is-measuring', 'is-full-line', 'is-short-line', 'is-crowded-line');
             line.classList.add(saved.state || 'is-short-line');
         });
-        protectVerticalInk(container);
+        fitHorizontalLines();
+        const hasHorizontalOverflow = () => {
+            const rect = container.getBoundingClientRect();
+            const css = getComputedStyle(container);
+            const left = rect.left + (parseFloat(css.paddingLeft) || 0) - 1;
+            const right = rect.right - (parseFloat(css.paddingRight) || 0) + 1;
+            return lines.some(line => lineTextItems(line).some(item => {
+                const box = item.getBoundingClientRect();
+                return box.left < left || box.right > right;
+            }));
+        };
+        if (hasHorizontalOverflow()) {
+            fontSize *= 0.90;
+            applyFontSize();
+            lines.forEach(line => {
+                restoreLineWords(line);
+                line.style.transform = '';
+                line.style.columnGap = '';
+                line.classList.remove('is-crowded-line');
+                line.classList.add(line.dataset.lineRole === 'surah-end' ? 'is-short-line' : 'is-full-line');
+            });
+            fitHorizontalLines();
+        }
         container.dataset.layoutState = 'ready';
         container.dataset.standardLayoutPage = String(pageNumber);
         container.dataset.standardLayoutWidth = layoutWidth;
@@ -491,11 +513,18 @@
         return true;
     }
 
-    // Only vertical spacing may change: glyph size, width, justification,
-    // kashida extension and horizontal transforms stay exactly as calculated.
+    // Keep regular devices untouched. Some Android vendors report misleading
+    // font metrics, so their WebViews need extra ink clearance and a modest
+    // width safety margin before kashida is calculated.
     // Font ink can extend beyond the CSS line-height on some Android WebViews.
+    function isProblemWebView() {
+        return /Android/i.test(navigator.userAgent || '') &&
+            /Infinix|TECNO|itel/i.test(navigator.userAgent || '');
+    }
+
     function protectVerticalInk(container) {
         container.classList.remove('vertical-relaxed');
+        container.dataset.verticalScrollFallback = 'false';
         container.style.removeProperty('--mushaf-safe-row-height');
         const lines = Array.from(container.querySelectorAll('.mushaf-line'));
         if (!lines.length) return;
@@ -516,10 +545,12 @@
             inkHeight = Math.max(inkHeight, ascent + descent);
         }
         // Arabic marks need room above and below the actual painted ink.
-        const safeRow = Math.max(fontSize * 1.58, inkHeight + fontSize * 0.22);
+        const safeRow = isProblemWebView()
+            ? Math.max(fontSize * 2.05, inkHeight + fontSize * 0.50)
+            : Math.max(fontSize * 1.70, inkHeight + fontSize * 0.32);
         const currentRows = lines.map(line => line.getBoundingClientRect().height);
         // No change at all where the normal 15-line layout already has room.
-        if (currentRows.every(height => height >= safeRow - 1)) return;
+        if (!isProblemWebView() && currentRows.every(height => height >= safeRow - 1)) return;
         container.style.setProperty('--mushaf-safe-row-height', `${safeRow.toFixed(2)}px`);
         container.classList.add('vertical-relaxed');
         container.dataset.verticalScrollFallback = 'true';
@@ -602,6 +633,7 @@
                 TABLET_FONT_MAX
             )
             : phoneFontSize;
+        if (isProblemWebView() && usableTextWidth < 480) fontSize *= 0.91;
         const lineHeight = parseFloat(getComputedStyle(container).lineHeight) /
             Math.max(1, parseFloat(getComputedStyle(container).fontSize)) || 1.42;
         const applyFontSize = () => {
@@ -625,33 +657,9 @@
             line.classList.add(isFull ? 'is-full-line' : 'is-short-line');
         });
 
-        // Multiple full-width surah ornaments leave less vertical room on a
-        // short phone. Fit only pages that would otherwise scroll past the
-        // printed-page boundary; ordinary pages keep the width-based size.
-        const hasRowOverflow = () => {
-            const bounds = container.getBoundingClientRect();
-            return Array.from(container.children).some(row => {
-                const rect = row.getBoundingClientRect();
-                return rect.top < bounds.top - 1 || rect.bottom > bounds.bottom + 1;
-            });
-        };
-        for (let pass = 0; pass < 2 && hasRowOverflow(); pass++) {
-            const headingHeight = Array.from(container.querySelectorAll('.surah-heading'))
-                .reduce((sum, heading) => sum + heading.getBoundingClientRect().height, 0);
-            const scalableHeight = Math.max(1, container.scrollHeight - headingHeight);
-            const availableScalableHeight = Math.max(1, container.clientHeight - headingHeight);
-            const nextSize = clamp(
-                fontSize * availableScalableHeight / scalableHeight * 0.995,
-                STANDARD_FONT_MIN,
-                fontSize
-            );
-            if (Math.abs(nextSize - fontSize) < 0.02) break;
-            fontSize = nextSize;
-            applyFontSize();
-        }
-
+        // Short pages may scroll; never crush line height to fit the frame.
         const availableWidth = Math.max(1, (lines[0]?.clientWidth || usableTextWidth) - 4);
-        lines.forEach(line => {
+        const fitHorizontalLines = () => lines.forEach(line => {
             const shouldFill = line.dataset.lineRole !== 'surah-end' && lineTextItems(line).length >= 3;
             setBoundedGap(line, availableWidth, fontSize);
 
