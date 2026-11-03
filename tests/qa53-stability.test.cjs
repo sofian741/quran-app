@@ -29,7 +29,8 @@ test('original mushaf typography, kashida and canonical 604-page data remain byt
 
 test('all reciter metadata remain available and keyboard guard is included only in reader page', () => {
     const html = fs.readFileSync('quran.html', 'utf8');
-    assert.match(html, /src="reader-layout-polish\.js"/);
+    assert.match(html, /src="mushaf-engine-loader\.js"/);
+    assert.match(fs.readFileSync('mushaf-engine-loader.js', 'utf8'), /'reader-layout-polish\.js'/);
     assert.match(html, /src="mushaf-keyboard-viewport\.js"/);
     assert.match(html, /src="qud-audio\.js"/);
     const registry = fs.readFileSync('data/qud/registry.js', 'utf8');

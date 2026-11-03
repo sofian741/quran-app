@@ -1,4 +1,4 @@
-name: Verify larger Quran typography
+name: Verify retained legacy Quran typography
 on:
   push:
     branches: [main]

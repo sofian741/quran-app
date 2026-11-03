@@ -382,6 +382,7 @@
     }
 
     function syncHighlight(state) {
+        if (window.mushafReader?.engine === 'qvp') return window.mushafQvp.syncAudio(state);
         if (!state.playing || state.provider !== 'quran-foundation' || !state.timing) {
             if (renderedVerse || activeWordElement) clearHighlights();
             return;
@@ -482,6 +483,7 @@
     }
 
     function followVerse(state) {
+        if (window.mushafReader?.engine === 'qvp') return window.mushafQvp.follow(state);
         if (!state.playing || !state.autoFollow || state.provider !== 'quran-foundation') return;
         const reader = window.mushafReader;
         const page = reader?.findVersePage(state.surah, state.ayah);

@@ -1,4 +1,4 @@
-name: Madinah engine isolated validation and APK
+name: Historical Madinah lab (pre-integration)
 on:
   push:
     branches: [feature/madinah-mushaf-engine]
@@ -14,6 +14,9 @@ concurrency:
   cancel-in-progress: true
 jobs:
   validate-and-build:
+    # Its byte-frozen baseline is historical; the production integration has
+    # its own coverage in Build Android APK and must not use this old gate.
+    if: github.ref == 'refs/heads/feature/madinah-mushaf-engine'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

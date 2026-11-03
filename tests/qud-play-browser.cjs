@@ -21,6 +21,8 @@ const executablePath = process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium';
                 return states.get(el);
             };
             Object.defineProperties(HTMLMediaElement.prototype, {
+                // A mocked player must not start a real network media request.
+                src: {configurable:true,get(){return getState(this).src||'';},set(value){getState(this).src=String(value);}},
                 paused: { configurable: true, get() { return getState(this).paused; } },
                 currentTime: {
                     configurable: true,
@@ -51,13 +53,19 @@ const executablePath = process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium';
             status: 200, contentType: 'application/json', body: JSON.stringify({ reciters: [] })
         }));
         await page.goto(base + '/quran.html', { waitUntil: 'domcontentloaded' });
-        await page.waitForFunction(() => window.QuranQud?.reciters?.length === 22 &&
+        await page.waitForFunction(() => window.QuranQud?.reciters?.length === window.QudAudioRegistry?.reciters?.filter(r=>Number(r.id)!==9017).length + 3 &&
             window.quranAudioEngine && document.querySelector('#audio-reciter option[value="aligned:9000"]'),
             null, { timeout: 30000 });
 
+        await page.evaluate(()=>{window.AyatConnectivity={isOffline:async()=>false};});
+
         // Different recordings/providers: quranicaudio, tarteel, TVQuran, archive.org.
-        const reciterIds = process.env.QUD_RECITER_ID ? [Number(process.env.QUD_RECITER_ID)] : [9000, 9001, 9016, 9017];
+        const reciterIds = process.env.QUD_RECITER_IDS ? process.env.QUD_RECITER_IDS.split(',').map(Number) : process.env.QUD_RECITER_ID ? [Number(process.env.QUD_RECITER_ID)] : [9000, 9001, 9016, 9017];
         for (const id of reciterIds) {
+            if(id===9017){
+                assert.equal(await page.locator('#audio-reciter option[value="aligned:9017"]').count(),0,'Previously excluded unreliable timing stays excluded');
+                console.log('PASS: 9017 remains excluded from the synchronized picker');continue;
+            }
             await page.evaluate(id => {
                 window.quranAudioEngine.pause();
                 const picker = document.getElementById('audio-reciter');
@@ -78,8 +86,12 @@ const executablePath = process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium';
                 'Metadata for ' + id + ': ' + JSON.stringify(prepared));
             assert.ok(/^https:\/\//.test(prepared.track), 'real chapter stream URL available: ' + id);
             await page.evaluate(() => document.getElementById('audio-play').click());
-            await page.waitForFunction(() =>
+            try { await page.waitForFunction(() =>
                 window.quranAudioEngine.status === 'playing', null, { timeout: 10000 });
+            } catch(error) {
+                console.error('Playback diagnostics',await page.evaluate(()=>({state:quranAudioEngine.state,status:quranAudioEngine.status,error:quranAudioEngine.error,paused:quranAudioEngine.audio.paused,time:quranAudioEngine.audio.currentTime,intent:quranAudioEngine.intentToPlay,notice:document.getElementById('audio-mini-status').textContent})));
+                throw error;
+            }
             assert.equal(await page.locator('#audio-play').getAttribute('aria-label'), 'إيقاف مؤقت');
             console.log('PASS Chrome Play button for', id, prepared.reciter);
         }

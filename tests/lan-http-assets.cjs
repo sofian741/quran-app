@@ -51,7 +51,11 @@ const pages = [
                 const pageErrors = [];
                 const consoleErrors = [];
                 page.on('requestfailed', request => {
-                    if (new URL(request.url()).hostname === 'lan.quran.test') {
+                    // The source checkout retains an optional historical audio-pack probe.
+                    // Android staging omits its hooks and the pack is not shipped.
+                    const url=new URL(request.url());
+                    const absentOptionalPack=url.pathname==='/offline/mishary/manifest.json' && !fs.existsSync(path.join(root,'offline/mishary/manifest.json'));
+                    if (url.hostname === 'lan.quran.test' && !absentOptionalPack) {
                         failed.push(`${request.url()} ${request.failure()?.errorText || ''}`);
                     }
                 });
@@ -63,7 +67,9 @@ const pages = [
                 });
                 page.on('pageerror', error => pageErrors.push(error.message));
                 page.on('console', message => {
-                    if (message.type() === 'error') consoleErrors.push(message.text());
+                    const source=message.location().url||'';
+                    const optional=source.endsWith('/offline/mishary/manifest.json') && !fs.existsSync(path.join(root,'offline/mishary/manifest.json'));
+                    if (message.type() === 'error' && !optional) consoleErrors.push(message.text()+' '+source);
                 });
                 await page.goto(`http://lan.quran.test:${port}/${filename}`, { waitUntil: 'domcontentloaded' });
                 if (filename === 'quran.html') {
@@ -76,11 +82,13 @@ const pages = [
                     const icon = document.querySelector(selector);
                     const rect = icon?.getBoundingClientRect();
                     return {
+                        engine:window.mushafReader?.engine,
                         stylesheets: [...document.styleSheets].map(sheet => sheet.href).filter(Boolean),
                         icon: rect ? { width: rect.width, height: rect.height } : null,
                         horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
                     };
                 }, iconSelector);
+                if(filename==='quran.html')assert.equal(result.engine,'qvp','LAN must retain the new renderer without WebCrypto');
                 assert.deepEqual(failed, [], `${filename} ${viewport.width}px failed local assets`);
                 assert.deepEqual(pageErrors, [], `${filename} ${viewport.width}px page errors`);
                 assert.deepEqual(consoleErrors, [], `${filename} ${viewport.width}px console errors`);
