@@ -32,3 +32,7 @@ KFGQPC V4، طبعة 1441هـ. هذه صور تشغيل عند390×844، ولي�
 [التراخيص](../../docs/MUSHAF_LICENSING.md) ·
 [التشغيل والكود والاختبارات](../../tests/madinah-engine/README.md) ·
 [الأدلة الآلية](../../docs/mushaf-evidence)
+
+[APK المختبر المستقل — Actions Artifact](https://github.com/sofian741/quran-app/actions/runs/41708825945/artifacts/13266747377)
+— بُني بنجاح؛ الحزمة نحو 65.14 MiB وتشمل النتائج؛ متاحة حتى 17 نوفمبر 2026.
+لم تُختبر على جهاز، ولا تستبدل التطبيق الحالي.

@@ -1,0 +1,11 @@
+{
+  "headers": 114,
+  "uniqueHeaderSurahs": 114,
+  "basmalas": 112,
+  "uniqueBasmalaSurahs": 112,
+  "basmalaExceptions": true,
+  "markers": 6236,
+  "markerReferencesWithoutWords": [],
+  "markerLineMetadataUnavailable": 6236,
+  "note": "Ayah markers are global decorations with lineIndex -1; the renderer associates them by exact verse key, not by absent line metadata. No line-equality claim is made."
+}

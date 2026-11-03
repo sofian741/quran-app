@@ -1,0 +1,16 @@
+{
+  "runId": 41708825945,
+  "runUrl": "https://github.com/sofian741/quran-app/actions/runs/41708825945",
+  "sourceCommit": "d6b0b31a0283b5241ae32005680504106f1aa7f7",
+  "conclusion": "success",
+  "applicationId": "com.sofian.nooralquran.madinahlab",
+  "productionReady": false,
+  "artifactId": 13266747377,
+  "artifactUrl": "https://github.com/sofian741/quran-app/actions/runs/41708825945/artifacts/13266747377",
+  "archiveBytes": 68304193,
+  "archiveSha256": "5232b4f2e668a2a504f34b438ea1e7f9e09859901954aa6b2fc55e0628c342ca",
+  "expiresAt": "2026-11-17T20:09:16Z",
+  "apkSha256": "Included as Ayat-Madinah-Lab.apk.sha256 inside the verified Actions artifact; not separately read in this session",
+  "apkInstalledOnDevice": false,
+  "delivery": "Actions artifact only. No GitHub Release, production update, merge or pull request."
+}
