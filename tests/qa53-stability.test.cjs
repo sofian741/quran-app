@@ -9,7 +9,7 @@ test('approved QA vertical row-spacing fallback preserves pinned Quran data, fon
     const expected = {
         'style.css': '5d39e5da6064e62a2402e7be47f5cd5b8829a888',
         'reader-enhancements.js': '8982ac70f1e2d8e22719fe9a7610339d791adb0f',
-        'reader-layout-polish.js': '10dd517e9a779879679c779baeb7db0a52b845f0',
+        'reader-layout-polish.js': '2aa2ef2b0a323191c9eddc93309063e6f926b5c8',
         'data/mushaf-layout.json': 'c10a1fad7d78c4a5809db88ebb0adb59f8576390',
         'assets/fonts/amiri-quran-arabic-400-normal.woff2': 'e8b4b25708dd8dbc7ebfb3fad24595d0196e40ac'
     };
@@ -27,6 +27,9 @@ test('approved QA vertical row-spacing fallback preserves pinned Quran data, fon
     assert.match(layout, /function protectVerticalInk\(container\)/);
     assert.match(layout, /container\.classList\.add\('vertical-relaxed'\)/);
     assert.match(layout, /const STANDARD_FONT_WIDTH_RATIO = 0\.067/);
+    assert.match(layout, /const fitHorizontalLines =/);
+    assert.match(layout, /fontSize \*= 0\.91/);
+    assert.match(layout, /fontSize \* 2\.05/);
     assert.match(layout, /const MAX_KASHIDAS_PER_WORD = 4/);
     assert.match(layout, /const MAX_KASHIDAS_PER_LINE = 32/);
     for (const [file, sha] of Object.entries(expected)) {
