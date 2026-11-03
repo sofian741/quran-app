@@ -58,6 +58,19 @@ jobs:
           npx cap sync android
       - name: Preserve native Text Zoom and isolate Android package
         run: python3 scripts/madinah/android.py --project "$RUNNER_TEMP/work/madinah-android" --configure
+      - name: Keep the approved Ayat icon for the isolated app
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 - <<'PYICON'
+          from pathlib import Path
+          from PIL import Image
+          import os
+          target = Path(os.environ['RUNNER_TEMP']) / 'work/madinah-android/android-assets'
+          with Image.open(target / 'ayat-icon.jpg') as image:
+              image.convert('RGB').resize((1024,1024), Image.Resampling.LANCZOS).save(target / 'icon.png')
+          PYICON
+          cd "$RUNNER_TEMP/work/madinah-android"
+          npx @capacitor/assets generate --android --assetPath android-assets --iconBackgroundColor '#015e46' --iconBackgroundColorDark '#015e46' --splashBackgroundColor '#131d19' --splashBackgroundColorDark '#131d19'
       - name: Install Android SDK
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true

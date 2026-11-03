@@ -1,0 +1,94 @@
+{
+  "browser": "Chromium desktop; Android behavior simulated only",
+  "results": [
+    {
+      "name": "all 604 pages load, word hit boxes match pinned geometry and cache stays bounded",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "words": 77432,
+        "p50": 26.800000000046566,
+        "p95": 42.89999999990687,
+        "max": 79.60000000009313,
+        "cache": 3,
+        "heap": 48765866
+      }
+    },
+    {
+      "name": "five viewports retain exact printed geometry on varied pages",
+      "pass": true,
+      "detail": {
+        "cases": 60
+      }
+    },
+    {
+      "name": "word tap and genuine long-press menu, favorites, copy, tafsir and sharing",
+      "pass": true
+    },
+    {
+      "name": "word and verse highlighting use timed words, fused mapping, gaps and multi-line verses",
+      "pass": true,
+      "detail": {
+        "first": [
+          "15:7:1"
+        ],
+        "gap": 0,
+        "third": [
+          "15:7:2"
+        ],
+        "stopped": 0,
+        "bands": 15
+      }
+    },
+    {
+      "name": "real AudioEngine event pipeline produces word cues with local mocked media",
+      "pass": true
+    },
+    {
+      "name": "index, offline search, marker and restore after reload",
+      "pass": true
+    },
+    {
+      "name": "zoom simulation suppresses page turns and supports reverse navigation",
+      "pass": true
+    },
+    {
+      "name": "adjacent page preview, themes, verse marker, saved panel and normalized index search",
+      "pass": true
+    },
+    {
+      "name": "failed and out-of-order page loads preserve last accepted position",
+      "pass": true
+    },
+    {
+      "name": "old engine remains separately runnable",
+      "pass": true
+    },
+    {
+      "name": "complete local shell and all 604 pages reopen with browser network offline",
+      "pass": true,
+      "detail": {
+        "files": 738,
+        "pages": 604,
+        "offlinePages": 604
+      }
+    }
+  ],
+  "screenshots": [
+    "page-001-390x844.png",
+    "page-004-390x844.png",
+    "page-048-390x844.png",
+    "page-077-390x844.png",
+    "page-187-390x844.png",
+    "page-208-390x844.png",
+    "page-262-390x844.png",
+    "page-282-390x844.png",
+    "page-428-390x844.png",
+    "page-451-390x844.png",
+    "page-602-390x844.png",
+    "page-604-390x844.png"
+  ],
+  "failures": [],
+  "pageErrors": [],
+  "completed": true
+}
