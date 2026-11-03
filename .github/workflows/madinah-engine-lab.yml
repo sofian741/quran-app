@@ -1,0 +1,82 @@
+name: Madinah engine isolated validation and APK
+on:
+  push:
+    branches: [feature/madinah-mushaf-engine]
+    paths:
+      - 'tests/madinah-engine/**'
+      - 'scripts/madinah/**'
+      - '.github/workflows/madinah-engine-lab.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: madinah-lab-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install test and Capacitor dependencies
+        run: |
+          npm install --no-audit --no-fund --no-package-lock
+          npm install --no-save --no-package-lock playwright@1.56.1
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq chromium
+      - name: Preserve production and test mapping failures
+        run: |
+          node --test tests/madinah-engine/unit.test.mjs
+          node tests/content.cjs
+          node tests/data-integrity.cjs
+          node tests/audio-core.cjs
+          node --test tests/offline-audio.test.cjs tests/offline-mishary-sync.test.cjs tests/qa53-stability.test.cjs
+      - name: Fetch checksum-pinned research assets
+        run: python3 scripts/madinah/fetch-assets.py --cache "$RUNNER_TEMP/work/madinah-assets"
+      - name: Build the isolated prototype
+        run: node scripts/madinah/prepare.mjs --cache "$RUNNER_TEMP/work/madinah-assets" --out "$RUNNER_TEMP/work/madinah-site"
+      - name: Validate all pages, browser interaction and full offline corpus
+        env:
+          LAB_RESULTS: ${{ runner.temp }}/work/madinah-results
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory "$RUNNER_TEMP/work/madinah-site" >"$RUNNER_TEMP/work/server.log" 2>&1 &
+          node tests/madinah-engine/browser.cjs
+          node tests/madinah-engine/visual.cjs
+      - name: Stage a separate application
+        run: |
+          python3 scripts/madinah/android.py --site "$RUNNER_TEMP/work/madinah-site" --project "$RUNNER_TEMP/work/madinah-android"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/work/madinah-android/node_modules"
+          cd "$RUNNER_TEMP/work/madinah-android"
+          npx cap add android
+          npx cap sync android
+      - name: Preserve native Text Zoom and isolate Android package
+        run: python3 scripts/madinah/android.py --project "$RUNNER_TEMP/work/madinah-android" --configure
+      - name: Install Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+      - name: Build isolated debug APK (no publishing)
+        run: |
+          cd "$RUNNER_TEMP/work/madinah-android/android"
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/work/Ayat-Madinah-Lab.apk"
+          sha256sum "$RUNNER_TEMP/work/Ayat-Madinah-Lab.apk" > "$RUNNER_TEMP/work/Ayat-Madinah-Lab.apk.sha256"
+      - name: Upload review artifacts only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ayat-Madinah-Lab
+          path: |
+            ${{ runner.temp }}/work/Ayat-Madinah-Lab.apk*
+            ${{ runner.temp }}/work/madinah-results/
+            ${{ runner.temp }}/work/madinah-site/lab/validation-data.json
+          if-no-files-found: warn
+          retention-days: 14

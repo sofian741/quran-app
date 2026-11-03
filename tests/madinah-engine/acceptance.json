@@ -1,0 +1,9 @@
+{
+  "productionIntegrationAllowed": false,
+  "referenceEdition": "KFGQPC Hafs V4 1441H",
+  "independentAuthorizedPrintVerified": false,
+  "allExistingFeaturesCertified": false,
+  "individualLegacyWordInk15_7Certified": false,
+  "realAndroidDeviceTestsPassed": false,
+  "reason": "Research prototype only. Two source timing tokens at 15:7 currently share one printed hit/highlight element; do not replace production without a reviewed ink mapping and complete parity approval."
+}
