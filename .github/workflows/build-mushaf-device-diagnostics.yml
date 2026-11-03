@@ -62,6 +62,7 @@ jobs:
           node --check native-background-audio.js
           node --check qud-audio.js
           node --check mushaf-keyboard-viewport.js
+          node --check mushaf-device-diagnostic.js
           node --check library.js
           node --check app-update.js
           node --check android-navigation.js
@@ -185,6 +186,31 @@ jobs:
           plugin.write_text(source)
           assert package_name == 'com.sofian.ayat.mushafdiag', package_name
           print('QA Java package aligned:', package_name)
+          PY
+
+      - name: Register QA-only Android WebView text zoom A/B control
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          roots = list(Path('android/app/src/main/java').rglob('MainActivity.java'))
+          assert len(roots) == 1, 'Expected one MainActivity'
+          main = roots[0]
+          original = main.read_text(encoding='utf-8')
+          needle = 'registerPlugin(QuranBackgroundDownloads.class);'
+          assert original.count(needle) == 1, 'Background plugin not registered'
+          modified = original.replace(needle, 'registerPlugin(MushafTextZoom.class);\\n    ' + needle, 1)
+          main.write_text(modified, encoding='utf-8')
+          match = re.search(r'^package\\s+([\\w.]+)\\s*;', modified, flags=re.M)
+          assert match, 'Missing MainActivity package'
+          package_name = match.group(1)
+          assert package_name == 'com.sofian.ayat.mushafdiag', package_name
+          source = Path('android-native/MushafTextZoom.java').read_text(encoding='utf-8')
+          source, count = re.subn(r'^package\\s+[\\w.]+\\s*;', 'package ' + package_name + ';', source, count=1, flags=re.M)
+          assert count == 1, 'QA plugin package declaration not found'
+          (main.parent / 'MushafTextZoom.java').write_text(source, encoding='utf-8')
+          assert 'registerPlugin(MushafTextZoom.class);' in modified
+          print('Diagnostic-only native WebView zoom plugin registered')
           PY
 
       - name: Restore stable QA signing key
