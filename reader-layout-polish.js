@@ -89,7 +89,8 @@
 
     // Persistent layout cache. A version bump intentionally invalidates old
     // measurements whenever the line-fitting algorithm changes.
-    const LAYOUT_CACHE_VERSION = 'standard-larger-type-v8-20261019';
+    // QA-only: invalidate old cached line geometry and partition A/B experiments by actual WebView font scale.
+    const LAYOUT_CACHE_VERSION = 'standard-larger-type-v8-textzoom-ab-20261103';
     const LAYOUT_CACHE_DB = 'quranMushafLayoutCache';
     const LAYOUT_CACHE_STORE = 'layouts';
     const layoutMemoryCache = new Map();
@@ -115,7 +116,11 @@
     }
 
     function layoutCacheKey(pageNumber, width, height) {
-        return `${LAYOUT_CACHE_VERSION}:${pageNumber}:${layoutProfile(width, height)}`;
+        // System text zoom can change independently of CSS viewport dimensions.
+        // Do not replay stretched Quran words/scaleX values from the other A/B mode.
+        const actualBaseTextSize = parseFloat(getComputedStyle(document.body).fontSize) || 16;
+        const textZoomProfile = Math.round(actualBaseTextSize * 100);
+        return `${LAYOUT_CACHE_VERSION}:${textZoomProfile}:${pageNumber}:${layoutProfile(width, height)}`;
     }
 
     function openLayoutCacheDb() {
