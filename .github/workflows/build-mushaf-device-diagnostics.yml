@@ -199,14 +199,14 @@ jobs:
           original = main.read_text(encoding='utf-8')
           needle = 'registerPlugin(QuranBackgroundDownloads.class);'
           assert original.count(needle) == 1, 'Background plugin not registered'
-          modified = original.replace(needle, 'registerPlugin(MushafTextZoom.class);\\n    ' + needle, 1)
+          modified = original.replace(needle, 'registerPlugin(MushafTextZoom.class);\n    ' + needle, 1)
           main.write_text(modified, encoding='utf-8')
-          match = re.search(r'^package\\s+([\\w.]+)\\s*;', modified, flags=re.M)
+          match = re.search(r'^package\s+([\w.]+)\s*;', modified, flags=re.M)
           assert match, 'Missing MainActivity package'
           package_name = match.group(1)
           assert package_name == 'com.sofian.ayat.mushafdiag', package_name
           source = Path('android-native/MushafTextZoom.java').read_text(encoding='utf-8')
-          source, count = re.subn(r'^package\\s+[\\w.]+\\s*;', 'package ' + package_name + ';', source, count=1, flags=re.M)
+          source, count = re.subn(r'^package\s+[\w.]+\s*;', 'package ' + package_name + ';', source, count=1, flags=re.M)
           assert count == 1, 'QA plugin package declaration not found'
           (main.parent / 'MushafTextZoom.java').write_text(source, encoding='utf-8')
           assert 'registerPlugin(MushafTextZoom.class);' in modified
