@@ -1,6 +1,13 @@
 /* Read-only Mushaf device geometry probe. No Quran text/layout mutations. */
 (() => {
   'use strict';
+  const nativeZoom = () => window.Capacitor?.Plugins?.MushafTextZoom || null;
+  const nativeZoomStatus = async () => {
+    const plugin = nativeZoom();
+    if (!plugin?.getStatus) return {error:'QA native zoom plugin missing; this APK is not the updated diagnostic build'};
+    try { return await plugin.getStatus(); }
+    catch (error) { return {error:String(error)}; }
+  };
   const round = v => Number.isFinite(v) ? Math.round(v * 100) / 100 : null;
   const rect = element => {
     if (!element) return null;
@@ -84,10 +91,17 @@
           descent:round(m.actualBoundingBoxDescent), width:round(m.width)};
       }
     } catch (e) { canvas = {error:String(e)}; }
+    const zoomStatus = await nativeZoomStatus();
+    const requestedSize = parseFloat(root.style.fontSize);
+    const computedSize = parseFloat(rootStyle.fontSize);
     const result = {
-      diagnostic:'Ayat Mushaf geometry v1', capturedAt:new Date().toISOString(),
+      diagnostic:'Ayat Mushaf geometry v2', capturedAt:new Date().toISOString(),
       pageNumber:document.getElementById('display-page-number')?.textContent?.trim() || '',
       pageSurah:document.getElementById('page-surah')?.textContent?.trim() || '',
+      nativeZoom:zoomStatus,
+      textInflation:{requestedInlineFontSize:round(requestedSize), computedFontSize:round(computedSize),
+        ratio:round(computedSize / requestedSize),
+        bodyFontSize:getComputedStyle(document.body).fontSize},
       navigator:{userAgent:navigator.userAgent, platform:navigator.platform,
         language:navigator.language, deviceMemory:navigator.deviceMemory || null,
         hardwareConcurrency:navigator.hardwareConcurrency || null},
@@ -111,8 +125,9 @@
       adjacentTextRangeOverlaps:adjacentTextRangeOverlap,
       horizontallyOutsideRows:rowRecords.filter(x => x.outsideWordCount || x.outsideRangeCount)
         .map(x=>({row:x.index,words:x.outsideWordCount,ranges:x.outsideRangeCount})),
-      canvasMetrics:canvas, rows:rowRecords,
-      notes:'Range bounds are NOT actual painted diacritic ink. No Quran words or layout styles were changed by this diagnostic.'
+      canvasMetrics:canvas,
+      rows:rowRecords.map(({wordBounds, textRangeBounds, ...summary}) => summary),
+      notes:'Range rects are NOT painted ink. Word-level boxes removed to keep report shareable. Fixed-mode changes only native WebView text zoom, not Quran words or CSS layout.'
     };
     return result;
   }
@@ -128,7 +143,16 @@
   const panel = document.createElement('section');
   panel.style.cssText = 'height:100%;max-width:690px;margin:auto;overflow:auto;background:#fff;color:#17231f;border-radius:14px;padding:14px;box-sizing:border-box;font:15px sans-serif;display:flex;flex-direction:column;gap:10px';
   const title = document.createElement('strong');
-  title.textContent = 'فحص المصحف: قياسات فقط، بدون تعديل التنسيق';
+  title.textContent = 'تجربة A/B: تكبير الخط على Android WebView';
+  const zoomInfo = document.createElement('div');
+  zoomInfo.style.cssText = 'padding:7px 10px;background:#e5f3ee;border-radius:8px;font:600 14px sans-serif';
+  zoomInfo.textContent = 'جاري قراءة تكبير النص من Android…';
+  async function refreshZoomInfo() {
+    const info = await nativeZoomStatus();
+    zoomInfo.textContent = info.error ? ('⚠️ ' + info.error) :
+      (info.mode === 'fixed' ? '✅ الإصلاح مفعّل: ' : '↩️ وضع النظام الأصلي: ') +
+      `الآن ${info.appliedTextZoom}% | إعداد الجهاز ${info.systemTextZoom}%`;
+  }
   const status = document.createElement('div');
   status.textContent = 'افتح الصفحة اللي فيها المشكلة، ثم اضغط «قياس الصفحة».';
   const area = document.createElement('textarea');
@@ -149,13 +173,24 @@
     return b;
   };
   let latestText = '';
+  const switchMode = async mode => {
+    const plugin = nativeZoom();
+    if (!plugin?.setMode) { status.textContent = '⚠️ تحديث آيات فحص مطلوب: مفيش إضافة التكبير الأصلية.'; return; }
+    status.textContent = 'جارٍ تغيير وضع التكبير وإعادة فتح الصفحة…';
+    try {
+      await plugin.setMode({mode});
+      location.reload(); // Reconstruct all Quran line measurements from the new native zoom.
+    } catch (error) { status.textContent = 'فشل تغيير الوضع: ' + String(error); }
+  };
+  makeButton('✅ وضع الإصلاح (100%)', () => switchMode('fixed'));
+  makeButton('↩️ وضع النظام (قبل الإصلاح)', () => switchMode('system'));
   makeButton('📏 قياس الصفحة', async () => {
     status.textContent = 'بنجمع القياسات…';
     try {
       const report = await collect();
       latestText = JSON.stringify(report, null, 2);
       area.value = latestText;
-      status.textContent = `صفحة ${report.pageNumber} | سطور ${report.lineCount} | تداخل صناديق السطور ${report.rowBoxOverlaps.length} | تداخل نطاق النص ${report.adjacentTextRangeOverlaps.length} | خروج أفقي ${report.horizontallyOutsideRows.length}`;
+      status.textContent = `صفحة ${report.pageNumber} | تكبير ${report.nativeZoom.appliedTextZoom || '?'}% | نسبة الحجم ${report.textInflation.ratio || '?'} | سطور ${report.lineCount} | تداخل النص ${report.adjacentTextRangeOverlaps.length} | خروج أفقي ${report.horizontallyOutsideRows.length}`;
     } catch (error) { status.textContent = 'خطأ في القياس: ' + error.message; }
   });
   makeButton('📋 نسخ التقرير', async () => {
@@ -180,9 +215,9 @@
     status.textContent = 'اتطلب حفظ ملف JSON. لو التنزيل مش شغال استخدم النسخ.';
   });
   makeButton('إغلاق', () => { shade.hidden = true; shade.style.display = 'none'; });
-  panel.append(title,status,controls,area);
+  panel.append(title,zoomInfo,status,controls,area);
   shade.append(panel);
-  button.addEventListener('click', () => { shade.hidden = false; shade.style.display = 'block'; });
+  button.addEventListener('click', () => { shade.hidden = false; shade.style.display = 'block'; refreshZoomInfo(); });
   document.body.append(button,shade);
   window.ayatMushafDiagnostic = {collect};
 })();
