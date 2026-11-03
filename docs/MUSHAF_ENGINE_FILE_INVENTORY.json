@@ -1,0 +1,1005 @@
+{
+  "baseline": "8cf64b0865a37f8bf7a4ec019450d1a2e0cd0350",
+  "files": [
+    {
+      "path": ".github/workflows/build-android-apk.yml",
+      "blob": "f75705ddeafb291579b4b254590b64bb1d22a7f0",
+      "bytes": 13321
+    },
+    {
+      "path": ".github/workflows/build-qa-audio-reading.yml",
+      "blob": "69f04febb7f7a2f95340d8395df1050e5c23a3ea",
+      "bytes": 12745
+    },
+    {
+      "path": ".github/workflows/prepare-mishary-audio.yml",
+      "blob": "1a0764098165a7b78c20e324861cee8657e7c0f1",
+      "bytes": 6683
+    },
+    {
+      "path": ".github/workflows/sync-qud-audio.yml",
+      "blob": "8344e7afa7f72e94ca9eb6497d6069f9e93973b6",
+      "bytes": 6089
+    },
+    {
+      "path": ".github/workflows/test-mishary-sync.yml",
+      "blob": "64ae34777c7b88aac1b4cf7252787182d7dc3f01",
+      "bytes": 635
+    },
+    {
+      "path": ".github/workflows/verify-adhkar.yml",
+      "blob": "2d3ac9e5996c6c9b2aeb74b512cda6497fe4c885",
+      "bytes": 749
+    },
+    {
+      "path": ".github/workflows/verify-app-ui.yml",
+      "blob": "dbec70eb7add7185dca6bcf880186332ed3800ca",
+      "bytes": 1857
+    },
+    {
+      "path": ".github/workflows/verify-foundation-audio.yml",
+      "blob": "c03e3a233190b497870cae6593a4b316c2f5c135",
+      "bytes": 671
+    },
+    {
+      "path": ".github/workflows/verify-mushaf-font.yml",
+      "blob": "0665aa76855a49cc96568bde5acda0b5134681f6",
+      "bytes": 1189
+    },
+    {
+      "path": ".github/workflows/verify-mushaf-reciter-switch.yml",
+      "blob": "11c7e4dd2513cc0d9081720224ca37f26f62117c",
+      "bytes": 3068
+    },
+    {
+      "path": ".github/workflows/verify-release-audit.yml",
+      "blob": "7c68bc3be11483817b6cdb2f685f963cdfc863a7",
+      "bytes": 927
+    },
+    {
+      "path": ".gitignore",
+      "blob": "3a1567bb3d79bf9ecea6715099d143b42f4b5d44",
+      "bytes": 319
+    },
+    {
+      "path": "AI_CONTEXT.md",
+      "blob": "91887bdac10e08cc64d96a7336a72abf8cf03531",
+      "bytes": 24481
+    },
+    {
+      "path": "ANDROID_BUILD.md",
+      "blob": "ca60fc81862ef8b52b6f634bfa09099294eaa2c2",
+      "bytes": 6520
+    },
+    {
+      "path": "CHANGELOG.md",
+      "blob": "83e0800695154c2d515afb882420a4ae24416624",
+      "bytes": 12385
+    },
+    {
+      "path": "MUSHAF_PROGRESS.md",
+      "blob": "438a2f94f404f5f41a761295b94848902dd6e2b1",
+      "bytes": 4788
+    },
+    {
+      "path": "README.md",
+      "blob": "85c59cf4bcaf7bc067845e4c7ca5d46314a1a55d",
+      "bytes": 6624
+    },
+    {
+      "path": "RELEASE_AUDIT/ANDROID_CONVERSION.md",
+      "blob": "97234f8af4fae92c86bd1675abae28917a3a0ade",
+      "bytes": 4375
+    },
+    {
+      "path": "RELEASE_AUDIT/AUDIT_REPORT.md",
+      "blob": "211214fb26ea6dca071310a15c8887c0439c6d20",
+      "bytes": 10109
+    },
+    {
+      "path": "RELEASE_AUDIT/CHANGELOG.md",
+      "blob": "0c4bab5b3b6f2c4ae40ad477530613ce13fa6869",
+      "bytes": 2066
+    },
+    {
+      "path": "RELEASE_AUDIT/GOOGLE_PLAY_READINESS.md",
+      "blob": "06061861eb433cf00f42f81f762893ae250386de",
+      "bytes": 6783
+    },
+    {
+      "path": "RELEASE_AUDIT/PRIVACY_POLICY_DRAFT.md",
+      "blob": "338f6502d17b0331d49f4786e43e34ab42de5bb2",
+      "bytes": 2191
+    },
+    {
+      "path": "RELEASE_AUDIT/RELEASE_CHECKLIST.md",
+      "blob": "fb4ab882c6336766791f55803d5631ba74de6f44",
+      "bytes": 2966
+    },
+    {
+      "path": "RELEASE_AUDIT/SECURITY_REPORT.md",
+      "blob": "f7b37a9c915130481187ba63b62b2b3b8bb4cc13",
+      "bytes": 5953
+    },
+    {
+      "path": "RELEASE_AUDIT/SOURCES_AND_LICENSES.md",
+      "blob": "43432c5570a5a9949ca811eea78b551fdcb4470b",
+      "bytes": 5273
+    },
+    {
+      "path": "SOURCES.md",
+      "blob": "2a9883a4dab2f0086c8e773d27c231cdaa286dbb",
+      "bytes": 10753
+    },
+    {
+      "path": "adhkar-focus.css",
+      "blob": "a5bca3f1aea58febc32487875fed7bf397834008",
+      "bytes": 2559
+    },
+    {
+      "path": "adhkar-polish.css",
+      "blob": "0ca2631cabf857695487269fbc8fb78c31f3f902",
+      "bytes": 2323
+    },
+    {
+      "path": "adhkar.css",
+      "blob": "0199f5c1ef5d99bdb5bad2d7f0cdcc4c87815e59",
+      "bytes": 18624
+    },
+    {
+      "path": "adhkar.html",
+      "blob": "6a25503c9e755367d9dbbbbe3f0499454190f52b",
+      "bytes": 15125
+    },
+    {
+      "path": "adhkar.js",
+      "blob": "f5d00873d117ae49e8dbf2dfeaaddb9a0feb7eb8",
+      "bytes": 21981
+    },
+    {
+      "path": "android-assets/ayat-icon.jpg",
+      "blob": "1c3c1085ac40f19dd3f7386e319f28e986611fc3",
+      "bytes": 24874
+    },
+    {
+      "path": "android-assets/icon-b64/00a.part",
+      "blob": "0cfde9e4288a066e293903585cef1ad986906555",
+      "bytes": 2000
+    },
+    {
+      "path": "android-assets/icon-b64/00b.part",
+      "blob": "ffc2140ba08aab6902622cf9edf88be75b68260d",
+      "bytes": 2000
+    },
+    {
+      "path": "android-assets/icon-b64/01.part",
+      "blob": "37eacfda9b97ac11913f9e54c74673eb94a3813e",
+      "bytes": 4000
+    },
+    {
+      "path": "android-assets/icon-b64/02.part",
+      "blob": "3f57cf84a11182e85f9545f604423695306403da",
+      "bytes": 4000
+    },
+    {
+      "path": "android-assets/icon-b64/03.part",
+      "blob": "696dcbe446a7a0f6b5723947de72dc25a5a4956a",
+      "bytes": 4000
+    },
+    {
+      "path": "android-assets/icon-b64/04.part",
+      "blob": "4f6d8645924789f65700f038b6b4739a6a5da69f",
+      "bytes": 4000
+    },
+    {
+      "path": "android-assets/icon-b64/05.part",
+      "blob": "5272aca48f179096f521af3aef2318f01a9241a7",
+      "bytes": 788
+    },
+    {
+      "path": "android-assets/icon-source.jpg",
+      "blob": "513e4d79f2fb6033cca19ff6bfb0d942441a3daa",
+      "bytes": 6925
+    },
+    {
+      "path": "android-assets/noor-qa-signing.p12.b64",
+      "blob": "26256793ff203979158d9411ceddb5b293c876cb",
+      "bytes": 3556
+    },
+    {
+      "path": "android-build-info.js",
+      "blob": "e69561a62ab8c011e1e9ff48c85fdca9360bf90b",
+      "bytes": 71
+    },
+    {
+      "path": "android-native/MushafTextScale.java",
+      "blob": "548b706196695d38ac31e1d69fecb2f53904c83c",
+      "bytes": 748
+    },
+    {
+      "path": "android-native/QuranBackgroundDownloads.java",
+      "blob": "9850840ad49086e647be854b4a58001000e32e91",
+      "bytes": 3705
+    },
+    {
+      "path": "android-navigation.js",
+      "blob": "b7cef65947f074a7e1b585fbe5d01aac83d0cb7c",
+      "bytes": 2667
+    },
+    {
+      "path": "app-update.js",
+      "blob": "b0973f3a892b187b61fa8cf9bd5fafad1a6c5685",
+      "bytes": 3196
+    },
+    {
+      "path": "app.js",
+      "blob": "76e22e2c4d7926146b3d7e6723b62eb27fc90fc9",
+      "bytes": 55974
+    },
+    {
+      "path": "artifacts/mushaf-screenshots/page-001-fatihah-final-320x568.png",
+      "blob": "38cab49dbec44940c10466c4b985ccbbd4743b22",
+      "bytes": 50656
+    },
+    {
+      "path": "artifacts/mushaf-screenshots/page-001-fatihah-final-393x852.png",
+      "blob": "c0a3719b150a1921c3dc7173f5476f58d88c031d",
+      "bytes": 76764
+    },
+    {
+      "path": "artifacts/mushaf-screenshots/page-002-baqarah-reference-393x852.png",
+      "blob": "6a6a9500b622b31683c20633cd5ce543c940e0fc",
+      "bytes": 86102
+    },
+    {
+      "path": "artifacts/mushaf-screenshots/page-207-before-yunus-390x844.png",
+      "blob": "c8f84d2957824f0ea44d5e1b143c5e59c38d232c",
+      "bytes": 112168
+    },
+    {
+      "path": "artifacts/mushaf-screenshots/page-208-yunus-start-390x844.png",
+      "blob": "82af77330359953818000b8213eb0356f08b91a3",
+      "bytes": 133200
+    },
+    {
+      "path": "artifacts/mushaf-screenshots/page-223-long-surah-390x844.png",
+      "blob": "ffab9f3a95201772c25aba83759214e816a5bbb1",
+      "bytes": 115579
+    },
+    {
+      "path": "artifacts/mushaf-screenshots/page-602-multiple-surahs-390x844.png",
+      "blob": "2949bc4426289527baf9f9777efaf223cd812ab6",
+      "bytes": 156914
+    },
+    {
+      "path": "artifacts/regression/home-lan-desktop-1365x768.png",
+      "blob": "d0f7ab78e19b0efb21900ebd50d58b6e70dde7b8",
+      "bytes": 467652
+    },
+    {
+      "path": "artifacts/regression/home-lan-mobile-390x844.png",
+      "blob": "13d6b9a7f4b65b0b2809ab6993496d8427ce6c05",
+      "bytes": 228805
+    },
+    {
+      "path": "assets/fonts/amiri-quran-LICENSE.txt",
+      "blob": "4ab3459971f27c5a9c886b0134ca46e6db52487e",
+      "bytes": 4385
+    },
+    {
+      "path": "assets/fonts/amiri-quran-arabic-400-normal.woff2",
+      "blob": "e8b4b25708dd8dbc7ebfb3fad24595d0196e40ac",
+      "bytes": 45680
+    },
+    {
+      "path": "audio-bulk-download.js",
+      "blob": "c88f41a2c962a785513df61a380a091fb5c25785",
+      "bytes": 2859
+    },
+    {
+      "path": "audio-core.js",
+      "blob": "8a0402dff8f053bc3b5e51e994ee796a2451649a",
+      "bytes": 41361
+    },
+    {
+      "path": "audio-downloads.js",
+      "blob": "421697db8d0012df37ec66f19700dbad5a67c050",
+      "bytes": 26649
+    },
+    {
+      "path": "audio-library.js",
+      "blob": "249866e90b2a82d44d19395362e7873a9e90e6d5",
+      "bytes": 6315
+    },
+    {
+      "path": "audio-player.css",
+      "blob": "20899b455f59784ecbff01f0cba15e63a78a43f9",
+      "bytes": 29053
+    },
+    {
+      "path": "ayat-connectivity.js",
+      "blob": "75626a3694e77df83317079b5023802d91ca7418",
+      "bytes": 1278
+    },
+    {
+      "path": "ayat-reading-continuity.css",
+      "blob": "612c4760db65f41804730af644dd88c9fa1d500e",
+      "bytes": 2803
+    },
+    {
+      "path": "ayat-reading-continuity.js",
+      "blob": "2a38fbbb0c7c5d20183358499400ba485cae7e1d",
+      "bytes": 8729
+    },
+    {
+      "path": "capacitor.config.json",
+      "blob": "6f872ca4c3d6f6290bada177c63aaebef88dd046",
+      "bytes": 171
+    },
+    {
+      "path": "data/adhkar-LICENSE.md",
+      "blob": "a35b9925cd2c90c38bc43a1af0de41374de2a578",
+      "bytes": 1072
+    },
+    {
+      "path": "data/adhkar-source.json",
+      "blob": "2bfebec0c33dfea74eae7c4eeb33c972e26a8059",
+      "bytes": 295
+    },
+    {
+      "path": "data/adhkar.json",
+      "blob": "09621699b43688b04146fd5d45e199b307d63eaa",
+      "bytes": 200688
+    },
+    {
+      "path": "data/mushaf-layout-LICENSE.txt",
+      "blob": "afcd6f131e69ee97772a2a4c45b582dc35ce96b7",
+      "bytes": 899
+    },
+    {
+      "path": "data/mushaf-layout.json",
+      "blob": "c10a1fad7d78c4a5809db88ebb0adb59f8576390",
+      "bytes": 160506
+    },
+    {
+      "path": "data/qud/LICENSE.md",
+      "blob": "7b210b20a222c1968409673738b022dfb2e8dee8",
+      "bytes": 785
+    },
+    {
+      "path": "data/qud/abdulbasit_abdulsamad_mujawwad_tarteel.catalog.json",
+      "blob": "5303f7c79f46c332a05a736c678b7d1244dc26eb",
+      "bytes": 9369
+    },
+    {
+      "path": "data/qud/abdulbasit_abdulsamad_mujawwad_tarteel.word.json.gz",
+      "blob": "d4280ea5db8e0aff9e7a3b8fc93734aafa8eb038",
+      "bytes": 587877
+    },
+    {
+      "path": "data/qud/abdullah_al_mattrod_qdc.catalog.json",
+      "blob": "b59d32a2ce2539c59270564805c7ab1c442f16fd",
+      "bytes": 8438
+    },
+    {
+      "path": "data/qud/abdullah_al_mattrod_qdc.word.json.gz",
+      "blob": "2593f2fdaea897fdacf77a9010cada0d86aa6810",
+      "bytes": 556883
+    },
+    {
+      "path": "data/qud/abdur_rashid_sufi_qdc.catalog.json",
+      "blob": "cc8f229d2b4e5730a0e38105ecf8c3df413da12b",
+      "bytes": 8432
+    },
+    {
+      "path": "data/qud/abdur_rashid_sufi_qdc.word.json.gz",
+      "blob": "be7474c5bb2d67dd6be44a1619467ea499b3a079",
+      "bytes": 564523
+    },
+    {
+      "path": "data/qud/abu_bakr_al_shatri_tarteel.catalog.json",
+      "blob": "7596cc37fd289e7e7ab0c7995e99698958349d1e",
+      "bytes": 9915
+    },
+    {
+      "path": "data/qud/abu_bakr_al_shatri_tarteel.word.json.gz",
+      "blob": "7a9e436af016adfaba653e1e8a4f7fc9e2599b6b",
+      "bytes": 604914
+    },
+    {
+      "path": "data/qud/adel_al_karbalaei_archive_v2.catalog.json",
+      "blob": "525c61a764fa8ab92630e5da79b628f643c0df90",
+      "bytes": 11550
+    },
+    {
+      "path": "data/qud/adel_al_karbalaei_archive_v2.word.json.gz",
+      "blob": "fd07cfaa5980cb615d609bf8b9a1b275d5687da1",
+      "bytes": 548614
+    },
+    {
+      "path": "data/qud/ahmed_amer_tvquran.catalog.json",
+      "blob": "14bc02c28eda239cd2be1eceb39e33172b3da7bd",
+      "bytes": 8520
+    },
+    {
+      "path": "data/qud/ahmed_amer_tvquran.word.json.gz",
+      "blob": "39bdae4d6c0215a51e9051c8d13ea4dad17512a3",
+      "bytes": 566950
+    },
+    {
+      "path": "data/qud/ahmed_nuayna_qdc.catalog.json",
+      "blob": "65161e19b37943ce49a1048543d8f45aca75cfc6",
+      "bytes": 7957
+    },
+    {
+      "path": "data/qud/ahmed_nuayna_qdc.word.json.gz",
+      "blob": "a95340b6a35492306546958d132ed21b0b0f185d",
+      "bytes": 551523
+    },
+    {
+      "path": "data/qud/ahmed_shaheen_mp3quran.catalog.json",
+      "blob": "b62320c82f588f47b0364ec3b9c03ac9f30e4217",
+      "bytes": 8888
+    },
+    {
+      "path": "data/qud/ahmed_shaheen_mp3quran.word.json.gz",
+      "blob": "47910705374303fca5d0ebf7291755dd72278083",
+      "bytes": 572252
+    },
+    {
+      "path": "data/qud/ali_al_huthaifi_mp3quran.catalog.json",
+      "blob": "affdf2b5a29875f9237a9390099ddfaffe3542a3",
+      "bytes": 5939
+    },
+    {
+      "path": "data/qud/ali_al_huthaifi_mp3quran.word.json.gz",
+      "blob": "25677b0cba04b62b7e902206dc033623d6ec6cf3",
+      "bytes": 570355
+    },
+    {
+      "path": "data/qud/haitham_al_dukhain_mp3quran.catalog.json",
+      "blob": "e330bdcbbfe77cc5b97d161f85dbde7579557a01",
+      "bytes": 9112
+    },
+    {
+      "path": "data/qud/haitham_al_dukhain_mp3quran.word.json.gz",
+      "blob": "3d63e49e7a291c800580a723a65307627085e6ed",
+      "bytes": 561345
+    },
+    {
+      "path": "data/qud/imad_zuhair_hafez_mp3quran.catalog.json",
+      "blob": "9042edbc5d87d3122b19cf98ba4a83650e8e2e72",
+      "bytes": 5809
+    },
+    {
+      "path": "data/qud/imad_zuhair_hafez_mp3quran.word.json.gz",
+      "blob": "59ae48fd6ccf7fcaf7355f1ec7eccfab9c84fe0a",
+      "bytes": 565814
+    },
+    {
+      "path": "data/qud/khalifa_al_tunaiji_tarteel.catalog.json",
+      "blob": "e4b20b1ac040fdbe5196bec8862f5a75c01f4de8",
+      "bytes": 10026
+    },
+    {
+      "path": "data/qud/khalifa_al_tunaiji_tarteel.word.json.gz",
+      "blob": "ac5fdd8c4ac18745c741b29e8324e8800296dd88",
+      "bytes": 562848
+    },
+    {
+      "path": "data/qud/maher_al_muaiqly_qdc.catalog.json",
+      "blob": "01d7bee0a64d00f70c712207fbdb32575a4f6dae",
+      "bytes": 9453
+    },
+    {
+      "path": "data/qud/maher_al_muaiqly_qdc.word.json.gz",
+      "blob": "f052801e00a7a5949f4969e97ce0e4bf2f382800",
+      "bytes": 560720
+    },
+    {
+      "path": "data/qud/mahmoud_abdul_hakam_mp3quran.catalog.json",
+      "blob": "a7eb33b4aba0c414d0a88de69b2eba329fb48cb5",
+      "bytes": 9462
+    },
+    {
+      "path": "data/qud/mahmoud_abdul_hakam_mp3quran.word.json.gz",
+      "blob": "2c96477fb7a43906dd09f8289e090a59d9637271",
+      "bytes": 576309
+    },
+    {
+      "path": "data/qud/mahmoud_ali_al_banna_qdc.catalog.json",
+      "blob": "5e382e5e35302d8038384708a76501f855c0f887",
+      "bytes": 8666
+    },
+    {
+      "path": "data/qud/mahmoud_ali_al_banna_qdc.word.json.gz",
+      "blob": "ab26a3020c8ad17c54f6c9c6ab29b6949ef7bec4",
+      "bytes": 561914
+    },
+    {
+      "path": "data/qud/mahmoud_khalil_al_husary_qdc_128k.catalog.json",
+      "blob": "8c8c4db800f6058f45d65daa45124057cee18b37",
+      "bytes": 10279
+    },
+    {
+      "path": "data/qud/mahmoud_khalil_al_husary_qdc_128k.word.json.gz",
+      "blob": "3ad058cb63444797859e8abe0f972a66fe462f79",
+      "bytes": 549203
+    },
+    {
+      "path": "data/qud/manifest.json",
+      "blob": "4171ecd8656a94df12fd98c8814af57d121c12d5",
+      "bytes": 7038
+    },
+    {
+      "path": "data/qud/mohammed_alghazali_archive.catalog.json",
+      "blob": "bdae5286793b0581d4d67354c975385d718c35ad",
+      "bytes": 8889
+    },
+    {
+      "path": "data/qud/mohammed_alghazali_archive.word.json.gz",
+      "blob": "7a8b3697df04604320daee20ea9bc9241f490ec9",
+      "bytes": 598470
+    },
+    {
+      "path": "data/qud/mohammed_siddiq_al_minshawi_mp3quran.catalog.json",
+      "blob": "1babee18a3d80dc3691fd8e4bcd860bb685c7409",
+      "bytes": 6065
+    },
+    {
+      "path": "data/qud/mohammed_siddiq_al_minshawi_mp3quran.word.json.gz",
+      "blob": "8792c121a6d77a941ca62e06d54ba29f2f8cac0a",
+      "bytes": 567913
+    },
+    {
+      "path": "data/qud/mustafa_ismail_mp3quran.catalog.json",
+      "blob": "4739384c0e92212fe2e98f85503c80c8a6400412",
+      "bytes": 6144
+    },
+    {
+      "path": "data/qud/mustafa_ismail_mp3quran.word.json.gz",
+      "blob": "802e3928dec2250fb714aa942a6c8de369f55875",
+      "bytes": 563786
+    },
+    {
+      "path": "data/qud/registry.js",
+      "blob": "eb0f6b7d266ce2102063dd13d4d0dd0b6ff271d2",
+      "bytes": 5710
+    },
+    {
+      "path": "data/quran-uthmani.txt",
+      "blob": "e8930e98e2094f9d0fb115c1cfc1b98f84d4aede",
+      "bytes": 1409970
+    },
+    {
+      "path": "docs/MISHARY_AUDIO_READY.md",
+      "blob": "8a72f6bd4cbdf09b61fc1af788e5bd44b35207fd",
+      "bytes": 4243
+    },
+    {
+      "path": "global-theme.js",
+      "blob": "6a2698feab3c56899db0830bd6dbc296d4ac5dda",
+      "bytes": 451
+    },
+    {
+      "path": "home-settings.js",
+      "blob": "7fd97042ff2cc803fc78416effff8623716906cc",
+      "bytes": 1959
+    },
+    {
+      "path": "home.css",
+      "blob": "84365fba491b8012e26db1faf9d5ed7aea3c7fa9",
+      "bytes": 18994
+    },
+    {
+      "path": "home.js",
+      "blob": "7bc7db2fde17f61d58f49eee5fba6bc8ed25b7c2",
+      "bytes": 20370
+    },
+    {
+      "path": "index.html",
+      "blob": "3b19cb7edba3b77e50eb0f64cdcf8bb3e9cf5d90",
+      "bytes": 17513
+    },
+    {
+      "path": "legal.css",
+      "blob": "f3a03d3f7d55c5e9fd0639693032931776879f09",
+      "bytes": 1551
+    },
+    {
+      "path": "library.css",
+      "blob": "8d05b12a224a4733b1f113d42709ad27d94617e1",
+      "bytes": 10163
+    },
+    {
+      "path": "library.html",
+      "blob": "edab5463ad23453bb4e5efb013c6c14f28c8f2a2",
+      "bytes": 6634
+    },
+    {
+      "path": "library.js",
+      "blob": "d074a258c7ac9f94d34472dddc551a62537b8e58",
+      "bytes": 13105
+    },
+    {
+      "path": "licenses.html",
+      "blob": "fdfa8f4072f6c11fe89d5aba1d0d04c6d65700f1",
+      "bytes": 6749
+    },
+    {
+      "path": "mushaf-audio.js",
+      "blob": "f56064a913d7aff46278e29d95cb156a7dcb6978",
+      "bytes": 58804
+    },
+    {
+      "path": "mushaf-keyboard-viewport.js",
+      "blob": "10952d3da25ff381ac4172c298fc431c3a8a2c52",
+      "bytes": 3725
+    },
+    {
+      "path": "mushaf-layout-prewarm-worker.js",
+      "blob": "209a8f2b455f426e293c80e662bc387a04757e54",
+      "bytes": 13119
+    },
+    {
+      "path": "native-background-audio.js",
+      "blob": "14a2431cd1a0c3f5a416126211e54a75b50d71e3",
+      "bytes": 6088
+    },
+    {
+      "path": "offline-mishary-sync.js",
+      "blob": "48b8eda0046c7f5a8e3548b7ec03f3796605d2e5",
+      "bytes": 9235
+    },
+    {
+      "path": "offline-mishary.js",
+      "blob": "55e93b9b08eca94867b2ef6b734aa3f12b63c74e",
+      "bytes": 9416
+    },
+    {
+      "path": "offline-reciter-catalog.js",
+      "blob": "fb1e1041336ae45fce0a3760186e60c1ce7c5c95",
+      "bytes": 2266
+    },
+    {
+      "path": "onboarding.css",
+      "blob": "16bfa596969da7d7f01a7bceee9a9699e9bdceb4",
+      "bytes": 3468
+    },
+    {
+      "path": "onboarding.js",
+      "blob": "ac86ecc9017c7d372817e1bea764eb699eb5895f",
+      "bytes": 3081
+    },
+    {
+      "path": "package.json",
+      "blob": "aac26d5d79888750af6959bd87ce9bb0950c4400",
+      "bytes": 554
+    },
+    {
+      "path": "qud-audio.js",
+      "blob": "c2def01b414929cd6e0b734de499facb5f4befdc",
+      "bytes": 27338
+    },
+    {
+      "path": "quran-search.js",
+      "blob": "c8e152795c429d240105f717ad4704fd5b129d3d",
+      "bytes": 13369
+    },
+    {
+      "path": "quran.html",
+      "blob": "88b53f59eab9ca7ad7bab74c9b0025e588cd040d",
+      "bytes": 34560
+    },
+    {
+      "path": "reader-enhancements.css",
+      "blob": "a9c5a4508240c11dbfa97197d7f328b152db15ac",
+      "bytes": 23765
+    },
+    {
+      "path": "reader-enhancements.js",
+      "blob": "8982ac70f1e2d8e22719fe9a7610339d791adb0f",
+      "bytes": 25256
+    },
+    {
+      "path": "reader-layout-polish.js",
+      "blob": "0d4b45ae5ca27d9d46222e25d4e910fed355ab4a",
+      "bytes": 36764
+    },
+    {
+      "path": "recitations-library-link.js",
+      "blob": "33f065b4a3185ebabaf0b909e8b4a3f12aa66912",
+      "bytes": 1122
+    },
+    {
+      "path": "recitations-overrides.css",
+      "blob": "a306c76a9794d5281f658e882888565d7a6e35fa",
+      "bytes": 3015
+    },
+    {
+      "path": "recitations.css",
+      "blob": "50ffd88877a32557f530b68c840ed25017ed0a93",
+      "bytes": 24080
+    },
+    {
+      "path": "recitations.html",
+      "blob": "944cb192b301b70e8c7ce7af4e881fadd9727f34",
+      "bytes": 13330
+    },
+    {
+      "path": "recitations.js",
+      "blob": "3e7dddae7a428cc75e0259645872d4df5e3517f7",
+      "bytes": 14069
+    },
+    {
+      "path": "scripts/build-mushaf-layout.cjs",
+      "blob": "9cbf09e418e856335f84b063489d08e479c46829",
+      "bytes": 6585
+    },
+    {
+      "path": "scripts/build-synced-mishary.py",
+      "blob": "c67425368e2a4d428414ded4e2873544b9a04492",
+      "bytes": 17907
+    },
+    {
+      "path": "scripts/build_verified_qud.py",
+      "blob": "75bbf1d3eebb837071f5c7af8ed5ac65ff85f233",
+      "bytes": 10860
+    },
+    {
+      "path": "scripts/download_tafsir_muyassar.py",
+      "blob": "f9e55c78ce0055fd171269e30a1fa4b07e21cb09",
+      "bytes": 4300
+    },
+    {
+      "path": "scripts/fetch-mishary-audio.py",
+      "blob": "ab62d152726c75729dd375ec0e3e453b4bcfebfc",
+      "bytes": 8084
+    },
+    {
+      "path": "scripts/prepare-android-web.mjs",
+      "blob": "7abb95e10255379eef2c5aa2f14b04961906a5a6",
+      "bytes": 4963
+    },
+    {
+      "path": "scripts/register-background-downloads.py",
+      "blob": "8a59c75a107999cbdb5adedcad193f2eca578553",
+      "bytes": 718
+    },
+    {
+      "path": "scripts/sync_qud_audio.py",
+      "blob": "f57924be80a44f85f1a9c79bfc8775bc88598644",
+      "bytes": 16527
+    },
+    {
+      "path": "scripts/tafsir_muyassar.json",
+      "blob": "33ab2618e3d04e29e3a51978258b687ee3183d81",
+      "bytes": 4423814
+    },
+    {
+      "path": "scripts/test_foundation_audio.cjs",
+      "blob": "4434f262523cf2d40ad3a608782a6fba0cfdd516",
+      "bytes": 3191
+    },
+    {
+      "path": "scripts/write-android-build-info.py",
+      "blob": "a1fa7175dc0f6320ff25640f1f4360fe146f9461",
+      "bytes": 641
+    },
+    {
+      "path": "service-worker-register.js",
+      "blob": "ea769006e456129414a6652068466b85aa6a57d3",
+      "bytes": 575
+    },
+    {
+      "path": "style.css",
+      "blob": "5d39e5da6064e62a2402e7be47f5cd5b8829a888",
+      "bytes": 25494
+    },
+    {
+      "path": "sw.js",
+      "blob": "7fd81588431ae3d5137e0eaffddef84880027a60",
+      "bytes": 4788
+    },
+    {
+      "path": "tafsir.js",
+      "blob": "e71d91608bae0a3611085452207570b3430c9c59",
+      "bytes": 16613
+    },
+    {
+      "path": "tests/adhkar-browser.cjs",
+      "blob": "34320ab1d51bdafc82c8ad8848a2fa1455d610c0",
+      "bytes": 2274
+    },
+    {
+      "path": "tests/adhkar-data.cjs",
+      "blob": "d3574f75e46089426478f05f4ff528a43ac20e57",
+      "bytes": 2846
+    },
+    {
+      "path": "tests/all-pages.cjs",
+      "blob": "50e5fb51730300ba53701eeb235d56d9c33a8a63",
+      "bytes": 11733
+    },
+    {
+      "path": "tests/audio-browser.cjs",
+      "blob": "2f93898aafee10718be002f3018d13f212e9431e",
+      "bytes": 10193
+    },
+    {
+      "path": "tests/audio-core.cjs",
+      "blob": "2df2914d2eb833547fe1db40b4c5642f37bdbd7b",
+      "bytes": 4704
+    },
+    {
+      "path": "tests/bundled-mishary.test.cjs",
+      "blob": "5dc7477614d8628f308580fa7cb6ffd9957c1508",
+      "bytes": 5991
+    },
+    {
+      "path": "tests/capture-samples.cjs",
+      "blob": "d13c4640218f775b240ff8bef9237c18826f4b92",
+      "bytes": 2631
+    },
+    {
+      "path": "tests/content.cjs",
+      "blob": "2ae8b0e2291992adadfaf7e3833787d53318f2bf",
+      "bytes": 6527
+    },
+    {
+      "path": "tests/continuous-sync-regression.cjs",
+      "blob": "c856458940f58e4ce6a358d256e65ce858aecb28",
+      "bytes": 3206
+    },
+    {
+      "path": "tests/data-integrity.cjs",
+      "blob": "5eb13c40c7f1723eba4c24f050f2200281f54322",
+      "bytes": 4684
+    },
+    {
+      "path": "tests/fatihah-layout.cjs",
+      "blob": "a76c957b63a663a09fcb90a5c8835d6169d06c8a",
+      "bytes": 6178
+    },
+    {
+      "path": "tests/home.cjs",
+      "blob": "7823c6468eb6e82022f7db29705956f253d9e987",
+      "bytes": 4884
+    },
+    {
+      "path": "tests/lan-http-assets.cjs",
+      "blob": "bebece9d3ddb1cf099e0678afba93ec524390363",
+      "bytes": 5656
+    },
+    {
+      "path": "tests/mushaf-larger-font.cjs",
+      "blob": "2dd8aa66a0c03129043edecfe5bbd3d8a88935c6",
+      "bytes": 5878
+    },
+    {
+      "path": "tests/mushaf-reciter-switch.cjs",
+      "blob": "de2da4a9dab866849b7391ae05cb9d705458fc2b",
+      "bytes": 7747
+    },
+    {
+      "path": "tests/offline-audio.test.cjs",
+      "blob": "3f85409e9d2539af7455a57eec77b84aea82a9d0",
+      "bytes": 3106
+    },
+    {
+      "path": "tests/offline-browser.cjs",
+      "blob": "24c283fa337882aeecdbbbe8a812ebf73647ecc1",
+      "bytes": 4848
+    },
+    {
+      "path": "tests/offline-mishary-sync.test.cjs",
+      "blob": "5ec9685d9233f36bd4f6d1fc8231741d8b2655eb",
+      "bytes": 4288
+    },
+    {
+      "path": "tests/qa53-stability.test.cjs",
+      "blob": "c7fb9ebc00110bf3ae7328f750f4275133743159",
+      "bytes": 4498
+    },
+    {
+      "path": "tests/qud-play-browser.cjs",
+      "blob": "9e32586fde619ed776ba193d9bc3d158f52eb64d",
+      "bytes": 4850
+    },
+    {
+      "path": "tests/qud-real-media-browser.cjs",
+      "blob": "5e1617e6b7e20091e085a76d05e0afde96e9ae40",
+      "bytes": 2131
+    },
+    {
+      "path": "tests/quran-features.cjs",
+      "blob": "e7e626e88ef3a4cf5b5c5cdda1bf543934c0655c",
+      "bytes": 6078
+    },
+    {
+      "path": "tests/reader.cjs",
+      "blob": "0e20b538443e8976ae6bbce53b79b14cffcd2dd7",
+      "bytes": 8218
+    },
+    {
+      "path": "tests/recitations-browser.cjs",
+      "blob": "dda7b0054ecca09e215736cb5795039889428a6e",
+      "bytes": 4756
+    },
+    {
+      "path": "tests/reflection.cjs",
+      "blob": "89bec08530d736314895a303871a7a87d056ed9e",
+      "bytes": 2015
+    },
+    {
+      "path": "tests/security-static.cjs",
+      "blob": "6772975252cd0c6de0e6f421d086dd5506c6e3ec",
+      "bytes": 3047
+    },
+    {
+      "path": "tests/swipe-performance.cjs",
+      "blob": "00b0c201abb351481d7dee271e2d63d5f4af6dea",
+      "bytes": 8799
+    },
+    {
+      "path": "tests/tour-navigation-browser.cjs",
+      "blob": "90893d9be635af15ab593310f0755558e88e5bf3",
+      "bytes": 36468
+    },
+    {
+      "path": "tests/ui-pages.cjs",
+      "blob": "512fdad4f9bbcbbd8f52096e719a17e3c0db2828",
+      "bytes": 3896
+    },
+    {
+      "path": "tests/zoom-guard.cjs",
+      "blob": "deb08871c9d2c7ef106f00ef2f21885e4e29ed2a",
+      "bytes": 2908
+    },
+    {
+      "path": "tour-home.css",
+      "blob": "24676ba531576a86c9dff3584996b8cb36c01ece",
+      "bytes": 25706
+    },
+    {
+      "path": "tour.css",
+      "blob": "de82999e8583949c481a3e29c3ed11d0e8a79191",
+      "bytes": 13563
+    },
+    {
+      "path": "tour.js",
+      "blob": "c4a1fdf4322b75b210d69e1583c4971f3a5c35ff",
+      "bytes": 61282
+    },
+    {
+      "path": "unified-nav.css",
+      "blob": "3e88c57ce2fe62076449c80343ba209e76c60dbd",
+      "bytes": 2524
+    },
+    {
+      "path": "verse-actions.js",
+      "blob": "d6a70eeca57697096219adec831aaf5b1b63f89a",
+      "bytes": 9434
+    },
+    {
+      "path": "verse-tools.js",
+      "blob": "047094fb44b6e59da1950e7366b5b17ab1fe6852",
+      "bytes": 23183
+    },
+    {
+      "path": "welcome-boot.js",
+      "blob": "81d1dae1e066bb23f9d6cfead22084081974c9e6",
+      "bytes": 561
+    },
+    {
+      "path": "welcome.css",
+      "blob": "29160e82b8968c0a9e8ddc45cb12013d25bb5b14",
+      "bytes": 4341
+    },
+    {
+      "path": "welcome.js",
+      "blob": "9eb9ae63aacb7d97053fdfb2f6499b8643ec81e6",
+      "bytes": 3605
+    }
+  ]
+}
