@@ -6,7 +6,11 @@
   "scripts": {
     "android:prepare": "node scripts/prepare-android-web.mjs",
     "android:sync": "npm run android:prepare && npx cap sync android",
-    "test:tour": "node tests/tour-navigation-browser.cjs"
+    "test:tour": "node tests/tour-navigation-browser.cjs",
+    "qvp:prepare": "node scripts/qvp/bootstrap.mjs",
+    "dev": "node scripts/dev-server.mjs",
+    "test:qvp": "node --test tests/qvp-integration.test.mjs && node tests/qvp-production-browser.cjs",
+    "test:tour:qvp": "node scripts/qvp/test-tour.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.2",

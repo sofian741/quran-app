@@ -17,3 +17,9 @@ __pycache__/
 # Generated web bundle and local dependencies.
 www/
 node_modules/
+
+# Verified QVP data is generated from pinned upstream archives.
+.cache/
+data/qvp/
+data/tafsir_muyassar.json
+artifacts/

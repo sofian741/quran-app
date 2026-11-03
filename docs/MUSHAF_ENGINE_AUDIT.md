@@ -1,5 +1,10 @@
 # Mushaf engine audit — phase zero
 
+> تحديث مرحلة الدمج: أذن المستخدم باعتماد QVP كأساس داخل التطبيق الأصلي مع بقاء المشكلات المعلنة.
+> راجع [تنفيذ الدمج الحالي واختباراته والرجوع](QVP_PRODUCTION_INTEGRATION.md).
+> نتائج/بوابات المختبر أدناه سجل تاريخي، وليست وصفًا بأن التطبيق الحالي ما زال يستخدم العرض القديم.
+
+
 Audit baseline: `sofian741/quran-app`, latest fetched `main` commit
 `8cf64b0865a37f8bf7a4ec019450d1a2e0cd0350` (2026-11-03).
 Work branch: `feature/madinah-mushaf-engine`. This audit was written **before

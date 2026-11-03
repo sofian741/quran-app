@@ -1,0 +1,19 @@
+{
+  "baseline": "8cf64b0865a37f8bf7a4ec019450d1a2e0cd0350",
+  "edition": "KFGQPC Madani mushaf, Hafs, V4 1441H",
+  "engineCommit": "7f8db8387df0268aa1a6348e27902e0873e66e78",
+  "svg": {
+    "url": "https://github.com/quran-ws/quran-svg-elements/releases/download/v1.1.2/quran-svg-elements-hafs-kfgqpc.tar.gz",
+    "sha256": "52279fd3031f5fc8d0fc314cff880a333d5d8e4e9307a065bc064009e20e8b74",
+    "root": "quran-svg-elements-hafs-kfgqpc",
+    "versionSha256": "09c40d5a0f9cefbbc3db9b252aa96d15b9ec12fc319057947414f89c36440d17",
+    "checksumsSha256": "e7c16401107956d8664a9aaa041519f4f986fa372f303cddcba89acd0f3dfd96"
+  },
+  "qvp": {
+    "url": "https://github.com/quran-ws/quran-engine/releases/download/data-v0.5.0/quran-engine-pages-hafs-kfgqpc.tar.gz",
+    "sha256": "ffc2f4f86893357ad82b864a09e7813d604760596b84202bdab1dd47cad569db",
+    "root": "quran-engine-pages-hafs-kfgqpc",
+    "versionSha256": "06187645c3b1e2afa96caedc0c25fdf0d8bd3506d1f64bbb2e067b796990c4c1"
+  },
+  "tanzilSha256": "aa0bf9278a177a12e6d9bef621ce37a1d24fa35168b5ae9c13ebcbe01e3686cf"
+}

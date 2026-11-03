@@ -1,8 +1,11 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v71-library-seek';
+const APP_CACHE = 'quran-reader-shell-v72-qvp';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
+    './mushaf-engine-loader.js', './mushaf-qvp/reader.js', './mushaf-qvp/reader.css',
+    './mushaf-qvp/vendor/LICENSE', './mushaf-qvp/text-map.js', './mushaf-qvp/subwords.js', './mushaf-qvp/vendor/lite.js', './mushaf-qvp/vendor/lite-path.js',
+    './data/qvp/manifest.json', './data/qvp/word-map.json',
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',
     './style.css', './home.css', './home.js', './welcome.css', './welcome-boot.js', './welcome.js', './tour.css?v=57', './tour-home.css?v=59', './tour.js?v=64', './onboarding.css', './onboarding.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
     './recitations-overrides.css', './ayat-reading-continuity.css', './unified-nav.css', './global-theme.js', './library.css', './adhkar.css', './legal.css',
@@ -18,6 +21,12 @@ const APP_SHELL = [
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(APP_CACHE).then(async cache => {
         await cache.addAll(APP_SHELL);
+        // Bounded concurrency avoids 604 simultaneous transfers. On Android
+        // these URLs are already APK assets, including on the first offline run.
+        let next = 1;
+        await Promise.all(Array.from({length:4}, async () => {
+            while (next <= 604) await cache.add('./data/qvp/pages/' + String(next++).padStart(3,'0') + '.qvp');
+        }));
         await self.skipWaiting();
     }));
 });

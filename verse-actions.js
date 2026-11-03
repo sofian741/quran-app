@@ -133,7 +133,7 @@
         cancelPending();
         if (isOpen() || (event.pointerType === 'mouse' && event.button !== 0)) return;
         if (document.querySelector('.settings-sheet.is-open, .index-sheet.is-open')) return;
-        const verse = verseFromTarget(event.target);
+        const verse = verseFromTarget(window.mushafQvp?.wordFromPoint(event.clientX, event.clientY) || event.target);
         if (!verse) return;
         const pointer = { id: event.pointerId, type: event.pointerType };
         pending = {

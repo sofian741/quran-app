@@ -73,40 +73,24 @@ const catalog = { reciters: [
             });
         });
         await page.goto(`${base}/quran.html`, { waitUntil: 'domcontentloaded' });
-        await page.waitForFunction(() => !!document.querySelector('#audio-reciter option[value="mp3:123"]'));
-        const groupInfo = await page.evaluate(() => {
-            const select = document.getElementById('audio-reciter');
-            return {
-                labels: [...select.querySelectorAll('optgroup')].map(group => group.label),
-                mp3Options: [...select.options].filter(option => option.value.startsWith('mp3:')).length,
-                alignedOptions: [...select.options].filter(option => option.value.startsWith('aligned:')).length
-            };
-        });
-        assert.equal(groupInfo.labels.length, 2, 'two clearly separated reader groups');
-        assert.equal(groupInfo.mp3Options, 2);
-        assert.equal(groupInfo.alignedOptions, 23);
-        assert.match(groupInfo.labels[0], /المتزامنون/);
-        assert.match(groupInfo.labels[1], /غير متزامنة/);
-
-        // The Quran page can keep its reader loading overlay visible while
-        // unrelated remote Quran text loads. Exercise the audio controls
-        // directly without requiring the entire reader layout to finish.
-        await page.evaluate(() => {
-            document.getElementById('audio-open-options').click();
-            document.getElementById('audio-reciter-trigger').click();
-        });
-        await page.waitForFunction(() => !!document.querySelector('.audio-picker-group-heading'));
-        assert.equal(await page.locator('.audio-picker-group-heading').count(), 2);
-        assert.match(await page.locator('.audio-picker-group-caption').textContent(), /التحويل تلقائيًا/);
-        await page.evaluate(() => {
-            const select = document.getElementById('audio-reciter');
-            select.value = 'mp3:123';
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-        });
+        await page.waitForFunction(() => !!document.querySelector('#audio-reciter option[value="aligned:7"]'));
+        const groupInfo = await page.evaluate(() => ({
+            groups:document.querySelectorAll('#audio-reciter optgroup').length,
+            options:[...document.querySelectorAll('#audio-reciter option')].map(o=>o.value),
+            expected:QuranAudio.ALIGNED_RECITERS.length
+        }));
+        assert.equal(groupInfo.groups,1,'Mushaf keeps the existing synchronized-only picker');
+        assert.equal(groupInfo.options.length,groupInfo.expected);
+        assert.ok(groupInfo.options.every(value=>value.startsWith('aligned:')));
+        // Simulate a retained legacy MP3 selection from the listening library.
+        await page.evaluate(()=>quranAudioEngine.selectMp3(
+            {id:123,name:'قارئ تجريبي غير متزامن'},
+            {id:321,name:'حفص عن عاصم',server:'https://server.mp3quran.net/afs/',surahs:[1,2,3]},
+            {surah:1,autoplay:false}));
         await page.waitForFunction(() => window.quranAudioEngine.state.provider === 'mp3quran');
         assert.equal(await page.evaluate(() => window.quranAudioEngine.state.reciterName),
             'قارئ تجريبي غير متزامن');
-        assert.match(await page.locator('#audio-sync-note').textContent(), /سيتحول التطبيق تلقائيًا/);
+        await page.evaluate(()=>{window.AyatConnectivity={isOffline:async()=>false};});
         await page.evaluate(() => {
             window.mushafVerseActions = {
                 getSelectedVerse: () => ({ surah: 1, ayah: 3, verseKey: '1:3' }),
@@ -132,7 +116,7 @@ const catalog = { reciters: [
         assert.equal(await page.locator('#audio-switch-notice').isHidden(), true);
         assert.deepEqual(errors, [], 'no browser errors');
         await page.close();
-        console.log('PASS: 23 synchronized + full MP3Quran library groups, explicit automatic Mishary verse playback notice');
+        console.log('PASS: synchronized Mushaf picker retained; legacy library selection switches explicitly to timed verse playback');
     } finally {
         await browser.close();
     }

@@ -20,7 +20,7 @@ const executablePath = process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium';
             });
             const errors = [];
             page.on('pageerror', error => errors.push(error.message));
-            await page.goto(base + '/quran.html', { waitUntil: 'domcontentloaded' });
+            await page.goto(base + '/quran.html?engine=legacy', { waitUntil: 'domcontentloaded' });
             await page.waitForFunction(() =>
                 !!window.mushafReader && document.querySelector('#quran-text .mushaf-word') &&
                 document.querySelector('#quran-text').dataset.layoutState === 'ready', null, { timeout: 30000 });

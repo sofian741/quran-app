@@ -51,13 +51,19 @@ const executablePath = process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium';
             status: 200, contentType: 'application/json', body: JSON.stringify({ reciters: [] })
         }));
         await page.goto(base + '/quran.html', { waitUntil: 'domcontentloaded' });
-        await page.waitForFunction(() => window.QuranQud?.reciters?.length === 22 &&
+        await page.waitForFunction(() => window.QuranQud?.reciters?.length === window.QudAudioRegistry?.reciters?.filter(r=>Number(r.id)!==9017).length + 3 &&
             window.quranAudioEngine && document.querySelector('#audio-reciter option[value="aligned:9000"]'),
             null, { timeout: 30000 });
+
+        await page.evaluate(()=>{window.AyatConnectivity={isOffline:async()=>false};});
 
         // Different recordings/providers: quranicaudio, tarteel, TVQuran, archive.org.
         const reciterIds = process.env.QUD_RECITER_ID ? [Number(process.env.QUD_RECITER_ID)] : [9000, 9001, 9016, 9017];
         for (const id of reciterIds) {
+            if(id===9017){
+                assert.equal(await page.locator('#audio-reciter option[value="aligned:9017"]').count(),0,'Previously excluded unreliable timing stays excluded');
+                console.log('PASS: 9017 remains excluded from the synchronized picker');continue;
+            }
             await page.evaluate(id => {
                 window.quranAudioEngine.pause();
                 const picker = document.getElementById('audio-reciter');

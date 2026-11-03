@@ -2,12 +2,16 @@ import { cp, mkdir, readdir, rm, readFile, writeFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 
+// Preparation is mandatory: a fresh checkout cannot silently build a reader
+// with missing pages. Pins, all 604 pages and all 19 ordinal corpora are checked.
+await import('./qvp/bootstrap.mjs');
+
 const root = process.cwd();
 const out = join(root, 'www');
 
 const blockedDirs = new Set([
   '.git', '.github', 'android', 'ios', 'node_modules', 'www',
-  'tests', 'scripts', 'artifacts', 'RELEASE_AUDIT', 'android-assets'
+  'tests', 'scripts', 'artifacts', 'RELEASE_AUDIT', 'android-assets', 'docs', 'work'
 ]);
 
 const blockedFiles = new Set([
@@ -112,6 +116,13 @@ if (!names.has('index.html')) {
 }
 
 console.log('Prepared Android web bundle in www/');
+
+const qvpManifest = JSON.parse(await readFile(join(out, 'data/qvp/manifest.json')));
+const qvpPages = await readdir(join(out, 'data/qvp/pages'));
+if (qvpManifest.pages.length !== 604 || qvpPages.length !== 604 ||
+    !(await readFile(join(out, 'quran.html'), 'utf8')).includes('mushaf-engine-loader.js')) {
+  throw new Error('Android requires QVP as default and all 604 local pages');
+}
 
 // Historical QA-53 audio bundles are deliberately NOT inserted into www.
 // Users can stream or download their chosen reciter on demand.

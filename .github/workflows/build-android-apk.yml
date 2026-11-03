@@ -2,13 +2,27 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_update:
+        description: 'Publish to the public in-app update feed (main only)'
+        type: boolean
+        default: false
   push:
-    branches: [main, qa/test-stable-53]
+    branches: [main, qa/test-stable-53, feature/qvp-production-integration]
     paths:
       - docs/MISHARY_AUDIO_READY.md
       - .github/workflows/build-android-apk.yml
       - scripts/register-background-downloads.py
       - android-native/MushafTextScale.java
+      - mushaf-qvp/**
+      - mushaf-engine-loader.js
+      - scripts/qvp/**
+      - scripts/prepare-android-web.mjs
+      - quran.html
+      - mushaf-audio.js
+      - verse-actions.js
+      - tests/qvp*
+      - sw.js
 
 concurrency:
   group: qa-apk-${{ github.ref_name }}
@@ -69,6 +83,37 @@ jobs:
           node --check scripts/prepare-android-web.mjs
           node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs tests/qa53-stability.test.cjs
 
+      - name: Verify QVP integration and app tours in Chromium
+        env:
+          QURAN_BROWSER_PATH: /usr/bin/chromium
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq chromium
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npm run qvp:prepare
+          npm run test:qvp
+          npm run test:tour:qvp
+          node tests/content.cjs
+          node tests/data-integrity.cjs
+          node tests/security-static.cjs
+          node tests/ui-pages.cjs
+          node tests/continuous-sync-regression.cjs
+          node scripts/dev-server.mjs >/tmp/ayat-qvp-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID"' EXIT
+          node tests/mushaf-reciter-switch.cjs
+          QUD_RECITER_ID=9000 node tests/qud-play-browser.cjs
+          node tests/zoom-guard.cjs
+
+      - name: Upload QVP validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: QVP-validation
+          path: artifacts/qvp
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Embed installed build number and update endpoint
         env:
           QA_BUILD_NUMBER: ${{ github.run_number }}
@@ -114,7 +159,9 @@ jobs:
           assert (out / 'mushaf-keyboard-viewport.js').read_bytes() == Path('mushaf-keyboard-viewport.js').read_bytes()
           assert 'mushaf-keyboard-viewport.js' in (out / 'quran.html').read_text(encoding='utf-8')
           assert (out / 'qud-audio.js').read_bytes() == Path('qud-audio.js').read_bytes()
-          print('Audio pack removed; mushaf, kashida, font, online player and downloads unchanged.')
+          assert len(list((out / 'data/qvp/pages').glob('*.qvp'))) == 604
+          assert 'mushaf-engine-loader.js' in (out / 'quran.html').read_text()
+          print('All 604 QVP pages local; legacy engine and original audio/download modules retained.')
           PY
 
       - name: Create Android project
@@ -200,6 +247,7 @@ jobs:
           path = Path('android/app/build.gradle')
           source = path.read_text(encoding='utf-8')
           build_number = int(os.environ['QA_BUILD_NUMBER'])
+          assert build_number > 94, 'Update must be newer than installed QA-94'
           source, count = re.subn(r'\bversionCode\s+\d+', f'versionCode {build_number}', source, count=1)
           if count != 1:
               raise SystemExit('Could not set Android versionCode')
@@ -279,7 +327,10 @@ jobs:
         run: |
           mkdir -p dist
           cp android/app/build/outputs/apk/debug/app-debug.apk "dist/Ayat.apk"
-          sha256sum "dist/Ayat.apk"
+          sha256sum "dist/Ayat.apk" > dist/Ayat.apk.sha256
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging dist/Ayat.apk > dist/package.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs dist/Ayat.apk > dist/signature.txt
+          python3 scripts/qvp/verify-apk.py dist/Ayat.apk | tee dist/qvp-apk-verification.json
           # Shipping 492 MiB of pre-installed recitations here is forbidden.
           python3 - <<'PY'
           from pathlib import Path
@@ -293,16 +344,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Ayat-APK
-          path: dist/Ayat.apk
+          path: dist/*
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish temporary QA-53 in-app update
+      - name: Publish explicitly approved in-app update
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_update && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: qa-${{ github.run_number }}
-          name: Ayat 0.1.${{ github.run_number }} | Mushaf font scaling fix
+          name: Ayat 0.1.${{ github.run_number }} | QVP mushaf
           files: dist/Ayat.apk
           make_latest: true
           generate_release_notes: false
-          body: Fixes Quran Mushaf line overlap on Android devices with enlarged system text by stabilizing WebView text zoom. Keeps Quran pagination and kashida unchanged. Test update, not a Google Play release.
+          body: QVP mushaf integration with 604 local pages, original application identity and stable QA signature. Test update, not a Google Play release.
