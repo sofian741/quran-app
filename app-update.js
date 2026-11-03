@@ -9,6 +9,13 @@
   const build = Number(window.NOOR_ANDROID_BUILD?.versionCode || 0);
   const source = window.NOOR_ANDROID_BUILD?.updateManifestUrl || '';
   const isNative = !!window.Capacitor?.isNativePlatform?.();
+  const isolatedQA = window.NOOR_ANDROID_BUILD?.qaMode === true;
+  if (isolatedQA) {
+    button.disabled = true;
+    button.hidden = true;
+    show('نسخة آيات QA تجريبية. التحديث من ملف APK الجديد فقط.');
+    return;
+  }
 
   if (build) show('الإصدار الحالي: 0.1.' + build);
   else show('التحديثات من داخل التطبيق متاحة لنسخة Android فقط.');
