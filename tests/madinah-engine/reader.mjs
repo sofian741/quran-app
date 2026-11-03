@@ -11,7 +11,8 @@ const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fa
 const emit=(name,detail)=>window.dispatchEvent(new CustomEvent(name,{detail}));
 let current=1, revision=0, active=null, manifest, maps, verses, verseIndex, theme=read(SETTINGS,'paper');
 let drag=null, suppress=false, pendingTarget=null, lastAudio=null, audioSignature='';
-const pointers=new Set(), cache=new Map(), pending=new Map(), maxPages=3;
+const pointers=new Set(), cache=new Map(), pending=new Map(), prepared=new Map(), maxPages=3;
+let preview=null,targetTimer=null;
 const metrics={pageLoads:[],cacheLimit:maxPages,cachePages:0,wordTaps:0,errors:[],timingSpace:'tanzil-spoken',productionReady:false};
 const status=document.createElement('p');status.className='madinah-status';status.setAttribute('role','status');document.body.append(status);
 const rollback=document.createElement('a');rollback.className='madinah-lab-link';rollback.href='legacy-quran.html';rollback.textContent='مختبر 1441هـ · المحرك القديم';document.body.append(rollback);
@@ -57,37 +58,51 @@ function build(item){
   }
   return {frame,canvas,nodes,rows,...item};
 }
-function fit(){
-  if(!active||!text.clientWidth||!text.clientHeight)return;
-  const scale=Math.min(text.clientWidth/345,text.clientHeight/550), x=(text.clientWidth-345*scale)/2,y=(text.clientHeight-550*scale)/2;
-  active.frame.style.transform=`translate(${x}px,${y}px) scale(${scale})`;
+function fitItem(item,container){
+  if(!item||!container.clientWidth||!container.clientHeight)return;
+  const scale=Math.min(container.clientWidth/345,container.clientHeight/550), x=(container.clientWidth-345*scale)/2,y=(container.clientHeight-550*scale)/2;
+  item.frame.style.transform=`translate(${x}px,${y}px) scale(${scale})`;
   // DPR adapts to pinch magnification, with a bounded 3M-pixel backing store.
   const ratio=Math.min(8,Math.max(2,devicePixelRatio*(visualViewport?.scale||1))), desired=scale*ratio;
   const backing=Math.min(desired,Math.sqrt(3000000/(345*550)));
-  active.canvas.width=Math.ceil(345*backing);active.canvas.height=Math.ceil(550*backing);
-  active.paint.draw(active.canvas.getContext('2d'),{scale:active.canvas.width/345,ink:getComputedStyle(document.body).getPropertyValue('--page-text').trim()||'#231f20'});
-  metrics.canvasPixels=active.canvas.width*active.canvas.height;
-  audioSignature='';if(lastAudio)syncAudio(lastAudio);
+  item.canvas.width=Math.ceil(345*backing);item.canvas.height=Math.ceil(550*backing);
+  item.paint.draw(item.canvas.getContext('2d'),{scale:item.canvas.width/345,ink:getComputedStyle(document.body).getPropertyValue('--page-text').trim()||'#231f20'});
 }
+function fit(){fitItem(active,text);if(active)metrics.canvasPixels=active.canvas.width*active.canvas.height;audioSignature='';if(lastAudio)syncAudio(lastAudio);}
 async function navigate(number,target=null){
   if(!Number.isInteger(number)||number<1||number>604)return false;
   const ticket=++revision,start=performance.now();pendingTarget=target;
   try{
     const item=await load(number);if(ticket!==revision)return false;
+    removePreview();prepared.clear();clearTimeout(targetTimer);
     const built=build(item);current=number;active=built;audioSignature='';evict();
     text.replaceChildren(built.frame);text.classList.add('madinah-text');text.dataset.layoutState='ready';text.dataset.page=String(number);
     $('display-page-number').textContent=digits(number);
     const s=[...new Set(item.geometry.words.map(w=>w.surah))], title=s.map(n=>window.QuranAudio.SURAH_NAMES[n-1]).join('، ');
     $('page-surah').textContent=title;$('toolbar-surah').textContent=title;
     const part='الجزء '+digits(juz.filter(n=>n<=number).length);$('page-range').textContent=part;$('toolbar-range').textContent=part;
-    try{localStorage.setItem(STORAGE,JSON.stringify({displayPage:number}));}catch{}
+    try{localStorage.setItem(STORAGE,JSON.stringify({displayPage:number,surah:item.geometry.words[0].surah,ayah:item.geometry.words[0].ayah}));}catch{}
     fit();emit('mushaf:page-changed',{page:number});emit('mushaf:page-ready',{page:number});
-    if(pendingTarget){for(const node of built.nodes.values())node.classList.toggle('is-search-target',node.dataset.verse===pendingTarget);pendingTarget=null;}
+    if(pendingTarget){for(const node of built.nodes.values())node.classList.toggle('is-search-target',node.dataset.verse===pendingTarget);pendingTarget=null;targetTimer=setTimeout(()=>text.querySelectorAll('.is-search-target').forEach(n=>n.classList.remove('is-search-target')),5500);}
     metrics.pageLoads.push({page:number,ms:performance.now()-start});if(metrics.pageLoads.length>604)metrics.pageLoads.shift();
     message('نموذج تجريبي · حفص 1441هـ · المطابقة النهائية قيد المراجعة');
-    for(const n of [number+1,number-1])if(n>=1&&n<=604)load(n).catch(()=>{});
+    for(const n of [number+1,number-1])if(n>=1&&n<=604)load(n).then(item=>{if(number===current)preparePreview(n,item);}).catch(()=>{});
     return true;
   }catch(e){if(ticket===revision)error(e);return false;}
+}
+function removePreview(){preview?.remove();preview=null;$('mushaf-page').style.transform='';}
+function preparePreview(number,item){
+  if(drag||preview||prepared.has(number)||Math.abs(number-current)!==1)return;
+  const shell=$('mushaf-page').cloneNode(true);shell.removeAttribute('id');shell.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));
+  shell.classList.add('swipe-preview');shell.setAttribute('aria-hidden','true');
+  const rect=$('mushaf-page').getBoundingClientRect(),sr=stage.getBoundingClientRect();
+  Object.assign(shell.style,{position:'absolute',width:rect.width+'px',height:rect.height+'px',left:(rect.left-sr.left)+'px',top:(rect.top-sr.top)+'px',visibility:'hidden',pointerEvents:'none'});
+  const container=shell.querySelector('.quran-text'),built=build(item);container.replaceChildren(built.frame);
+  const label=shell.querySelector('.display-page-number');if(label)label.textContent=digits(number);
+  const names=[...new Set(item.geometry.words.map(w=>w.surah))].map(n=>window.QuranAudio.SURAH_NAMES[n-1]).join('، ');
+  const heading=shell.querySelector('.page-heading span');if(heading)heading.textContent=names;
+  const part=shell.querySelector('.page-heading span:last-child');if(part)part.textContent='الجزء '+digits(juz.filter(n=>n<=number).length);
+  stage.append(shell);fitItem(built,container);shell.remove();shell.style.visibility='';prepared.set(number,shell);
 }
 function bands(verseKey,cls){
   text.querySelectorAll('.'+cls).forEach(n=>n.remove());if(!active)return;
@@ -159,6 +174,7 @@ async function installOffline(){
   return {files:done,pages:604};
 }
 function settings(){
+  prepared.clear();
   if(!THEMES[theme])theme='paper';const [paper,ink]=THEMES[theme];
   document.body.dataset.theme=theme;document.body.style.setProperty('--page-paper',paper);document.body.style.setProperty('--page-text',ink);document.body.style.setProperty('--reader-accent',theme==='dark'?'#76c8b9':'#176b63');
   for(const b of document.querySelectorAll('[data-theme-choice]'))b.classList.toggle('is-active',b.dataset.themeChoice===theme);
@@ -166,15 +182,16 @@ function settings(){
 }
 function closePanels(){return !!document.querySelector('#settings-sheet.is-open,#index-sheet.is-open,#verse-actions-sheet.is-open');}
 function panel(id,open){const sheet=$(id+'-sheet'),back=$(id+'-backdrop');sheet.classList.toggle('is-open',open);sheet.setAttribute('aria-hidden',String(!open));back.hidden=!open;back.classList.toggle('is-open',open);document.body.classList.toggle(id+'-open',open);}
+const foldIndex=value=>String(value).replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).trim();
 function index(tab='surahs'){
-  const list=$('index-list'),q=($('index-surah-search')?.value||'').replace(/[أإآٱ]/g,'ا');list.replaceChildren();
+  const list=$('index-list'),q=foldIndex($('index-surah-search')?.value||'');list.replaceChildren();
   const entries=tab==='juz'?juz.map((page,i)=>({label:'الجزء '+digits(i+1),page})):window.QuranAudio.SURAH_NAMES.map((name,i)=>({label:name,page:maps[(i+1)+':1'].pages[0],surah:i+1}));
-  for(const e of entries){if(q&&!e.label.replace(/[أإآٱ]/g,'ا').includes(q)&&String(e.surah)!==q)continue;
+  for(const e of entries){if(q&&!foldIndex(e.label).includes(q)&&String(e.surah)!==q)continue;
     const wrapper=document.createElement('div'),button=document.createElement('button');button.className='index-entry';button.textContent=e.label+' · '+digits(e.page);button.onclick=()=>{panel('index',false);navigate(e.page);};wrapper.append(button);
     if(e.surah){const toggle=document.createElement('button');toggle.className='index-ayah-toggle';toggle.textContent='⌄';toggle.setAttribute('aria-label','آيات '+e.label);
       const area=document.createElement('div');area.hidden=true;toggle.onclick=()=>{area.hidden=!area.hidden;if(area.childNodes.length)return;
         const input=document.createElement('input');input.type='search';input.className='index-ayah-search';input.placeholder='رقم الآية أو جزء من نصها';area.append(input);const results=document.createElement('div');area.append(results);
-        const paint=()=>{results.replaceChildren();for(const v of verses.filter(v=>v.surah===e.surah&&(!input.value||String(v.ayah)===input.value||v.text.includes(input.value))).slice(0,120)){const b=document.createElement('button');b.className='index-ayah-result';b.textContent=digits(v.ayah)+' '+v.text.slice(0,85);b.onclick=()=>{panel('index',false);navigate(maps[v.key].pages[0],v.key);};results.append(b);}};input.oninput=paint;paint();};wrapper.append(toggle,area);}
+        const paint=()=>{results.replaceChildren();for(const v of verses.filter(v=>v.surah===e.surah&&(!input.value||String(v.ayah)===foldIndex(input.value)||foldIndex(v.text).includes(foldIndex(input.value)))).slice(0,120)){const b=document.createElement('button');b.className='index-ayah-result';b.textContent=digits(v.ayah)+' '+v.text.slice(0,85);b.onclick=()=>{panel('index',false);navigate(maps[v.key].pages[0],v.key);};results.append(b);}};input.oninput=paint;paint();};wrapper.append(toggle,area);}
     list.append(wrapper);
   }
   for(const b of document.querySelectorAll('[data-index-tab]'))b.classList.toggle('is-active',b.dataset.indexTab===tab);
@@ -189,14 +206,16 @@ function wire(){
   stage.addEventListener('keydown',e=>{const w=e.target.closest('.madinah-word');if(w&&(e.key==='Enter'||e.key===' ')){e.preventDefault();window.mushafVerseActions.openForVerse(...w.dataset.verse.split(':').map(Number));}});
   stage.addEventListener('pointerdown',e=>{
     if(e.pointerType==='touch')pointers.add(e.pointerId);
-    if(pointers.size>1||(visualViewport?.scale||1)>=1.01||closePanels()){drag=null;return;}
+    if(pointers.size>1||(visualViewport?.scale||1)>=1.01||closePanels()){drag=null;removePreview();return;}
     if(e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0};
   });
-  stage.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){drag=null;return;}if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.2){drag.dx=dx;$('mushaf-page').style.transform=`translateX(${dx}px)`;suppress=true;}});
-  const release=e=>{pointers.delete(e.pointerId);if(!drag||drag.id!==e.pointerId)return;const dx=drag.dx;drag=null;$('mushaf-page').style.transform='';if(e.type==='pointerup'&&Math.abs(dx)>Math.min(85,stage.clientWidth*.2))navigate(current+(dx>0?1:-1));};
+  stage.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){drag=null;removePreview();return;}if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.2){drag.dx=dx;const direction=dx>0?1:-1;
+    if(preview?.dataset.target!==String(current+direction)){removePreview();preview=prepared.get(current+direction)||null;if(preview){preview.dataset.target=String(current+direction);stage.append(preview);}}
+    $('mushaf-page').style.transform=`translateX(${dx}px)`;if(preview)preview.style.transform=`translateX(${dx-direction*$('mushaf-page').clientWidth}px)`;suppress=true;}});
+  const release=e=>{pointers.delete(e.pointerId);if(!drag||drag.id!==e.pointerId)return;const dx=drag.dx;drag=null;removePreview();if(e.type==='pointerup'&&Math.abs(dx)>Math.min(85,stage.clientWidth*.2))navigate(current+(dx>0?1:-1));};
   stage.addEventListener('pointerup',release);stage.addEventListener('pointercancel',release);
-  window.addEventListener('keydown',e=>{if(e.target.closest('input,textarea')||closePanels())return;if(e.key==='ArrowLeft')navigate(current+1);if(e.key==='ArrowRight')navigate(current-1);});
-  const zoom=()=>{const value=(visualViewport?.scale||1)>=1.01;document.body.classList.toggle('is-pinch-panning',value);if(value){drag=null;$('mushaf-page').style.transform='';}fit();};
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'){panel('index',false);panel('settings',false);return;}if(e.target.closest('input,textarea')||closePanels())return;if(e.key==='ArrowLeft')navigate(current+1);if(e.key==='ArrowRight')navigate(current-1);});
+  const zoom=()=>{const value=(visualViewport?.scale||1)>=1.01;document.body.classList.toggle('is-pinch-panning',value);if(value){drag=null;removePreview();}prepared.clear();fit();};
   visualViewport?.addEventListener('resize',zoom);visualViewport?.addEventListener('scroll',zoom);
   new ResizeObserver(fit).observe(text);
 }
@@ -211,7 +230,7 @@ async function init(){
     goToVerse:(s,a,p)=>{const key=s+':'+a,v=maps[key];if(closePanels()||!v)return false;navigate(v.pages.includes(p)?p:v.pages[0],key);return true;},
     fitElement:fit, clearFitCache(){}, turnPageInstant:d=>{if(![1,-1].includes(d)||current+d<1||current+d>604)return false;navigate(current+d);return true;}
   };
-  window.madinahLab={metrics,navigate,syncAudio,follow,wordFromPoint,installOffline,getGeometry:()=>active?.geometry,getMapping:key=>maps[key],getManifest:()=>manifest,drawReference:()=>active?.paint};
+  window.madinahLab={metrics,navigate,syncAudio,follow,wordFromPoint,installOffline,getPreparedPages:()=>[...prepared.keys()],getGeometry:()=>active?.geometry,getMapping:key=>maps[key],getManifest:()=>manifest,drawReference:()=>active?.paint};
   settings();wire();
   const hash=new URLSearchParams(location.hash.slice(1)),v=hash.get('verse');
   const saved=read(STORAGE,{}).displayPage,initial=v&&maps[v]?maps[v].pages[0]:Number.isInteger(saved)&&saved>=1&&saved<=604?saved:1;

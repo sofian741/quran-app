@@ -64,13 +64,21 @@ let browser;
   await page.locator('#open-index').evaluate(n=>n.click());await page.locator('#index-surah-search').fill('البقرة');assert.equal(await page.locator('#index-list .index-entry').count(),1);await page.locator('#close-index').click();
   await page.locator('#open-quran-search').evaluate(n=>n.click());await page.locator('#quran-search-input').fill('الحمد');await page.waitForFunction(()=>document.querySelectorAll('.quran-search-result').length>0);await page.locator('#close-quran-search').click();
   await page.evaluate(()=>madinahLab.navigate(208));await page.locator('#toggle-page-marker').evaluate(n=>n.click());assert.equal(await page.evaluate(()=>JSON.parse(localStorage.quranPageMarkerV1)),208);
-  await page.reload();await page.waitForFunction(()=>mushafReader?.getCurrentPage()===208&&madinahLab.getGeometry()?.number===208);
+  await page.reload();await page.waitForFunction(()=>window.mushafReader?.getCurrentPage()===208&&window.madinahLab?.getGeometry()?.number===208);
  });
  await check('zoom simulation suppresses page turns and supports reverse navigation',async()=>{
   await page.evaluate(()=>madinahLab.navigate(4));
   const drag=()=>page.evaluate(()=>{const stage=document.querySelector('#reader-stage');for(const [type,x]of [['pointerdown',50],['pointermove',250],['pointerup',250]])stage.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerType:'touch',pointerId:12,clientX:x,clientY:350,button:0}));});
   await page.evaluate(()=>{Object.defineProperty(visualViewport,'scale',{configurable:true,get:()=>1.5});visualViewport.dispatchEvent(new Event('resize'));});await drag();assert.equal(await page.evaluate(()=>mushafReader.getCurrentPage()),4);
   await page.evaluate(()=>{Object.defineProperty(visualViewport,'scale',{configurable:true,get:()=>1});visualViewport.dispatchEvent(new Event('resize'));});await drag();await page.waitForFunction(()=>mushafReader.getCurrentPage()===5);await page.evaluate(()=>madinahLab.navigate(4));
+ });
+ await check('adjacent page preview, themes, verse marker, saved panel and normalized index search',async()=>{
+  await page.evaluate(()=>madinahLab.navigate(4));await page.waitForFunction(()=>madinahLab.getPreparedPages().includes(5));
+  const preview=await page.evaluate(()=>{const s=document.querySelector('#reader-stage');for(const [type,x]of [['pointerdown',50],['pointermove',110]])s.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerType:'touch',pointerId:15,clientX:x,clientY:350,button:0}));const shown=!!document.querySelector('.swipe-preview canvas');s.dispatchEvent(new PointerEvent('pointercancel',{bubbles:true,pointerType:'touch',pointerId:15}));return shown;});assert.equal(preview,true);
+  await page.locator('#open-settings').evaluate(n=>n.click());await page.locator('[data-theme-choice="dark"]').click();assert.equal(await page.locator('body').getAttribute('data-theme'),'dark');await page.locator('[data-theme-choice="paper"]').click();await page.locator('#close-settings').click();
+  await page.evaluate(()=>mushafVerseActions.openForVerse(2,17));await page.locator('[data-verse-action="reading-marker"]').click();assert.equal(await page.evaluate(()=>JSON.parse(localStorage.quranReadingMarkerV1).ayah),17);await page.evaluate(()=>mushafVerseActions.close());
+  await page.locator('#open-saved').evaluate(n=>n.click());assert.ok(await page.locator('#saved-list').textContent());await page.locator('#close-saved').click();
+  await page.locator('#open-index').evaluate(n=>n.click());await page.locator('#index-surah-search').fill('البقرة');await page.locator('.index-ayah-toggle').click();await page.locator('.index-ayah-search').fill('مثلهم');assert.equal(await page.locator('.index-ayah-result').count(),1);await page.locator('#close-index').click();
  });
  await check('failed and out-of-order page loads preserve last accepted position',async()=>{
   await page.evaluate(()=>madinahLab.navigate(4));await page.route('**/lab/pages/050.qvp',r=>r.fulfill({status:503,body:'unavailable'}));

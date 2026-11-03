@@ -31,6 +31,7 @@ for(const entry of await fs.readdir(root,{withFileTypes:true})) {
 }
 for(const dir of ['data','assets']) await fs.cp(root+'/'+dir,out+'/'+dir,{recursive:true});
 await fs.copyFile(root+'/scripts/tafsir_muyassar.json',out+'/data/tafsir_muyassar.json');
+const home=await fs.readFile(out+'/home.js','utf8');await fs.writeFile(out+'/home.js',home.replaceAll("'quranReaderState'","'madinahLabReaderStateV1'"));
 // Match production Android's local QUD compatibility path without mutating original timings.
 for(const name of await fs.readdir(out+'/data/qud')) if(name.endsWith('.gz')) {
   await fs.writeFile(out+'/data/qud/'+name.slice(0,-3),zlib.gunzipSync(await fs.readFile(out+'/data/qud/'+name)));
