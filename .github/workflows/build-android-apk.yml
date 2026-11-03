@@ -7,6 +7,8 @@ on:
     paths:
       - docs/MISHARY_AUDIO_READY.md
       - .github/workflows/build-android-apk.yml
+      - scripts/register-background-downloads.py
+      - android-native/MushafTextScale.java
 
 concurrency:
   group: qa-apk-${{ github.ref_name }}
@@ -168,6 +170,20 @@ jobs:
       - name: Register native audio download support
         run: python3 scripts/register-background-downloads.py
 
+      - name: Verify production text zoom is fixed before WebView page load
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          mains = list(Path('android/app/src/main/java').rglob('MainActivity.java'))
+          assert len(mains) == 1
+          main = mains[0].read_text(encoding='utf-8')
+          assert main.index('registerPlugin(MushafTextScale.class);') < main.index('super.onCreate(state);')
+          plugin = (mains[0].parent / 'MushafTextScale.java').read_text(encoding='utf-8')
+          assert 'settings.setTextZoom(100);' in plugin
+          assert 'registerPlugin(QuranBackgroundDownloads.class);' in main
+          print('Stable Android WebView text scale registered before content load')
+          PY
+
       - name: Restore stable QA signing key
         run: |
           base64 -d android-assets/noor-qa-signing.p12.b64 > android-assets/noor-qa-signing.p12
@@ -285,8 +301,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: qa-${{ github.run_number }}
-          name: Ayat QA-53 Lite 0.1.${{ github.run_number }}
+          name: Ayat 0.1.${{ github.run_number }} | Mushaf font scaling fix
           files: dist/Ayat.apk
           make_latest: true
           generate_release_notes: false
-          body: Lightweight QA-53 comparison. No audio reciter is bundled; online playback and optional downloads remain. Temporary in-app test, not a Google Play release.
+          body: Fixes Quran Mushaf line overlap on Android devices with enlarged system text by stabilizing WebView text zoom. Keeps Quran pagination and kashida unchanged. Test update, not a Google Play release.
