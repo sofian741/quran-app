@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: mushaf-diagnostics-${{ github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -282,13 +282,13 @@ jobs:
         run: |
           mkdir -p dist
           cp android/app/build/outputs/apk/debug/app-debug.apk "dist/Ayat-Mushaf-Diagnostics.apk"
-          sha256sum "dist/Ayat-Mushaf-QA.apk"
+          sha256sum "dist/Ayat-Mushaf-Diagnostics.apk"
           # Shipping 492 MiB of pre-installed recitations here is forbidden.
           python3 - <<'PY'
           from pathlib import Path
-          apk = Path('dist/Ayat-Mushaf-QA.apk')
+          apk = Path('dist/Ayat-Mushaf-Diagnostics.apk')
           size = apk.stat().st_size
-          print(f'Isolated Mushaf QA APK: {size / (1024 * 1024):.1f} MiB')
+          print(f'Isolated Mushaf diagnostic APK: {size / (1024 * 1024):.1f} MiB')
           assert size < 180 * 1024 * 1024, 'Unexpectedly large APK: bundled audio may have leaked'
           PY
 
@@ -296,6 +296,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Ayat-Mushaf-Diagnostics-APK
-          path: dist/Ayat-Mushaf-QA.apk
+          path: dist/Ayat-Mushaf-Diagnostics.apk
           if-no-files-found: error
           retention-days: 14
