@@ -1,0 +1,13 @@
+{
+  "successfulSample": {
+    "page": 4,
+    "verses": 8,
+    "words": 134,
+    "endMarkers": 8,
+    "puaCodesPresent": true,
+    "fontRendered": false
+  },
+  "client": "curl",
+  "source": "https://api.quran.com/api/v4/verses/by_page/4?words=true&word_fields=code_v2,text_uthmani,line_number&per_page=50",
+  "subsequentUrllibRequests": "13 HTTP 403 errors, Cloudflare code 1010; not data results"
+}

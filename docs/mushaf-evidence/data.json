@@ -1,0 +1,235 @@
+{
+  "edition": "KFGQPC Madani mushaf, Hafs, V4 1441H",
+  "pages": 604,
+  "verses": 6236,
+  "words": 77432,
+  "fragments": 13489,
+  "markers": 6236,
+  "headers": 114,
+  "basmalas": 112,
+  "changes": [
+    {
+      "verse": "15:7",
+      "source": [
+        "لَّوْ",
+        "مَا",
+        "تَأْتِينَا",
+        "بِٱلْمَلَـٰٓئِكَةِ",
+        "إِن",
+        "كُنتَ",
+        "مِنَ",
+        "ٱلصَّـٰدِقِينَ"
+      ],
+      "printed": [
+        "لَّوْمَا",
+        "تَأْتِينَا",
+        "بِٱلْمَلَٰٓئِكَةِ",
+        "إِن",
+        "كُنتَ",
+        "مِنَ",
+        "ٱلصَّٰدِقِينَ"
+      ],
+      "groups": [
+        {
+          "source": [
+            0,
+            2
+          ],
+          "printed": [
+            0,
+            1
+          ]
+        },
+        {
+          "source": [
+            2,
+            3
+          ],
+          "printed": [
+            1,
+            2
+          ]
+        },
+        {
+          "source": [
+            3,
+            4
+          ],
+          "printed": [
+            2,
+            3
+          ]
+        },
+        {
+          "source": [
+            4,
+            5
+          ],
+          "printed": [
+            3,
+            4
+          ]
+        },
+        {
+          "source": [
+            5,
+            6
+          ],
+          "printed": [
+            4,
+            5
+          ]
+        },
+        {
+          "source": [
+            6,
+            7
+          ],
+          "printed": [
+            5,
+            6
+          ]
+        },
+        {
+          "source": [
+            7,
+            8
+          ],
+          "printed": [
+            6,
+            7
+          ]
+        }
+      ]
+    }
+  ],
+  "sizes": {
+    "qvp": 81218468,
+    "svg": 440943322,
+    "sidecars": 11033166
+  },
+  "timing": [
+    {
+      "name": "abdulbasit_abdulsamad_mujawwad_tarteel.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "abdullah_al_mattrod_qdc.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "abdur_rashid_sufi_qdc.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "abu_bakr_al_shatri_tarteel.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "adel_al_karbalaei_archive_v2.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "ahmed_amer_tvquran.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "ahmed_nuayna_qdc.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "ahmed_shaheen_mp3quran.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "ali_al_huthaifi_mp3quran.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "haitham_al_dukhain_mp3quran.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "imad_zuhair_hafez_mp3quran.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "khalifa_al_tunaiji_tarteel.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "maher_al_muaiqly_qdc.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "mahmoud_abdul_hakam_mp3quran.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "mahmoud_ali_al_banna_qdc.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "mahmoud_khalil_al_husary_qdc_128k.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "mohammed_alghazali_archive.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "mohammed_siddiq_al_minshawi_mp3quran.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    },
+    {
+      "name": "mustafa_ismail_mp3quran.word.json.gz",
+      "canonicalVerses": 6236,
+      "ordinalRangeFailures": [],
+      "lexicalTimingProof": false
+    }
+  ],
+  "textValidation": "All verse letter skeletons aligned uniquely; not a diacritic or authoritative print certification",
+  "productionReady": false,
+  "blockers": [
+    "Independent authorized print comparison",
+    "15:7 needs reviewed ink partition for separate legacy word highlights",
+    "Provider lexical timing certification",
+    "Real Android/device parity and performance"
+  ]
+}

@@ -86,7 +86,15 @@ async function navigate(number,target=null){
     if(pendingTarget){for(const node of built.nodes.values())node.classList.toggle('is-search-target',node.dataset.verse===pendingTarget);pendingTarget=null;targetTimer=setTimeout(()=>text.querySelectorAll('.is-search-target').forEach(n=>n.classList.remove('is-search-target')),5500);}
     metrics.pageLoads.push({page:number,ms:performance.now()-start});if(metrics.pageLoads.length>604)metrics.pageLoads.shift();
     message('نموذج تجريبي · حفص 1441هـ · المطابقة النهائية قيد المراجعة');
-    for(const n of [number+1,number-1])if(n>=1&&n<=604)load(n).then(item=>{if(number===current)preparePreview(n,item);}).catch(()=>{});
+    // Let the accepted page reach the screen before decoding or drawing previews.
+    // Old navigation timers have no effect after the reader has moved on.
+    setTimeout(()=>{
+      if(number!==current)return;
+      for(const n of [number+1,number-1])if(n>=1&&n<=604)load(n).then(item=>{
+        const prepare=()=>{if(number===current)preparePreview(n,item);};
+        if('requestIdleCallback'in window)requestIdleCallback(prepare,{timeout:450});else setTimeout(prepare,60);
+      }).catch(()=>{});
+    },80);
     return true;
   }catch(e){if(ticket===revision)error(e);return false;}
 }

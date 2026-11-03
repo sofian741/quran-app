@@ -1,0 +1,18 @@
+{
+  "legacy": {
+    "samples": 36,
+    "p50": 52.9000000001397,
+    "p95": 74.80000000004657,
+    "max": 86.80000000004657,
+    "jsHeapBytes": 20671505,
+    "notes": "Desktop Chromium heap excludes native Canvas/Path2D allocations; not Android memory or animation frame-time"
+  },
+  "qvp": {
+    "samples": 36,
+    "p50": 68.0999999998603,
+    "p95": 110.29999999981374,
+    "max": 110.30000000004657,
+    "jsHeapBytes": 29530363,
+    "notes": "Desktop Chromium heap excludes native Canvas/Path2D allocations; not Android memory or animation frame-time"
+  }
+}
