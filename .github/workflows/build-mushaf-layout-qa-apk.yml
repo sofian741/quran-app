@@ -8,6 +8,8 @@ on:
       - .github/workflows/build-mushaf-layout-qa-apk.yml
       - reader-layout-polish.js
       - tests/qa53-stability.test.cjs
+      - app-update.js
+      - scripts/write-android-build-info.py
 
 concurrency:
   group: isolated-mushaf-qa-${{ github.ref_name }}
@@ -84,11 +86,24 @@ jobs:
         env:
           QA_BUILD_NUMBER: ${{ github.run_number }}
           UPDATE_MANIFEST_URL: ''
+          AYAT_ISOLATED_QA: '1'
         run: |
           python3 scripts/write-android-build-info.py
 
       - name: Prepare bundled web app
         run: npm run android:prepare
+
+      - name: Verify QA update is disabled in packaged application
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          info = (Path('www') / 'android-build-info.js').read_text(encoding='utf-8')
+          updater = (Path('www') / 'app-update.js').read_text(encoding='utf-8')
+          assert '"qaMode": true' in info, 'QA mode flag missing'
+          assert '"updateManifestUrl": ""' in info, 'QA update endpoint unexpectedly enabled'
+          assert 'if (isolatedQA)' in updater and 'button.disabled = true' in updater
+          print('Isolated QA updater is disabled and cannot offer a production APK.')
+          PY
 
       - name: Verify lightweight Android package (no embedded reciter)
         run: |
