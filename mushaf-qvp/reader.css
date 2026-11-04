@@ -22,7 +22,7 @@
    Keep the page geometry and fixed QVP line positions intact. */
 .madinah-heritage-heading {
   position:absolute;
-  z-index:4;
+  z-index:1;
   pointer-events:none;
   overflow:visible;
 }

@@ -1,7 +1,6 @@
 // Exact ornament drawing from the retired Mushaf renderer.
 // Only the frame artwork is reused. The surah name stays in QVP's own font paths.
-// The transparent center prevents replacing its typography.
-let ornamentSequence=0;
+// QVP's transparent canvas paints the original title glyphs above this artwork.
 export function createHeritageHeading(){
     const heading={innerHTML:''};
         const leaf = (x, y, rotation, scale = 1) =>
@@ -62,8 +61,5 @@ export function createHeritageHeading(){
             `<g transform="translate(966 112) rotate(90) scale(.5)">${finial}</g>` +
         '</svg>';
 
-    const maskId='qvp-heritage-title-'+(++ornamentSequence);
-    return heading.innerHTML
-        .replace(' focusable="false">', ' focusable="false"><defs><mask id="'+maskId+'" maskUnits="userSpaceOnUse"><rect width="1000" height="224" fill="white"/><rect x="276" y="62" width="448" height="101" rx="29" fill="black"/></mask></defs><g mask="url(#'+maskId+')">')
-        .replace('</svg>','</g></svg>');
+    return heading.innerHTML;
 }

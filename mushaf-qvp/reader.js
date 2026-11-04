@@ -62,7 +62,6 @@ function build(item){
   // Place the original ornamental frame over QVP's surah-heading decoration.
   // Its center is transparent: the current QVP surah name remains untouched.
   for(const d of g.decorations.filter(d=>d.decoration===1)){
-    const row=rows.get(d.lineIndex);if(!row)throw new Error('Surah heading line');
     const header=document.createElement('div');
     header.className='madinah-heritage-heading';
     header.setAttribute('aria-hidden','true');
@@ -71,7 +70,8 @@ function build(item){
     const height=Math.min(lineHeight*1.12,Math.max(d.box[3]-d.box[1]+8,lineHeight*.88));
     const middle=(d.box[1]+d.box[3])/2;
     setBox(header,[4,middle-height/2,g.width-4,middle+height/2]);
-    layer.append(header);
+    // Under the transparent QVP canvas: the original title glyphs stay on top.
+    frame.insertBefore(header,canvas);
   }
   // Basmala is edition artwork, not four additional spoken timing ordinals.
   // Preserve verse-1 actions without manufacturing word timestamps.
