@@ -4,16 +4,16 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-test('QVP-only engine and preserved shared services', () => {
-    const html = fs.readFileSync('quran.html', 'utf8');
-    assert.match(html, /src="mushaf-qvp\\/boot\\.js"/);
-    assert.match(html, /src="mushaf-keyboard-viewport\\.js"/);
-    assert.match(html, /src="qud-audio\\.js"/);
-    for (const old of ['app.js','reader-enhancements.js','reader-layout-polish.js','mushaf-engine-loader.js','mushaf-layout-prewarm-worker.js','data/mushaf-layout.json'])
-        assert.equal(fs.existsSync(old),false,old + ' must be deleted');
-    const registry = fs.readFileSync('data/qud/registry.js','utf8');
-    assert.equal((registry.match(/\\.word\\.json\\.gz/g)||[]).length,19);
-    assert.equal((registry.match(/"id":90\\d\\d/g)||[]).length,19);
+test('QVP-only engine and shared services remain', () => {
+    const html=fs.readFileSync('quran.html','utf8');
+    for (const file of ['mushaf-qvp/boot.js','mushaf-keyboard-viewport.js','qud-audio.js'])
+        assert.ok(html.includes('src="'+file+'"'),file);
+    for (const old of ['app.js','reader-enhancements.js','reader-layout-polish.js',
+        'mushaf-engine-loader.js','mushaf-layout-prewarm-worker.js','data/mushaf-layout.json'])
+        assert.equal(fs.existsSync(old),false,old+' must not exist');
+    const registry=fs.readFileSync('data/qud/registry.js','utf8');
+    assert.equal(registry.split('.word.json.gz').length-1,19);
+    assert.equal(registry.match(/"id":90[0-9]{2}/g)?.length,19);
 });
 
 test('keyboard show/hide never changes Quran page dimensions, and normal viewport returns after dismissal', () => {

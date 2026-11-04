@@ -49,7 +49,7 @@ jobs:
 
       - name: Check JavaScript syntax and offline audio tests
         run: |
-          node --check app.js
+          node --check mushaf-qvp/reader.js
           node --check mushaf-audio.js
           node --check qud-audio.js
           node --check ayat-reading-continuity.js
@@ -93,7 +93,7 @@ jobs:
               )
               packaged = (out / page).read_text(encoding='utf-8')
               assert packaged == expected, page + ' changed beyond deleting offline-audio hooks'
-          for file in ('app.js', 'reader-enhancements.js', 'reader-layout-polish.js',
+          for file in ('mushaf-qvp/reader.js',
                        'mushaf-audio.js', 'audio-core.js', 'audio-downloads.js',
                        'assets/fonts/amiri-quran-arabic-400-normal.woff2'):
               assert (out / file).read_bytes() == Path(file).read_bytes(), file + ' was modified'

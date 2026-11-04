@@ -37,7 +37,7 @@ jobs:
       - name: Preserve production and test mapping failures
         run: |
           node --test tests/madinah-engine/unit.test.mjs
-          node tests/content.cjs
+          node --test tests/qvp-integration.test.mjs
           node tests/data-integrity.cjs
           node tests/audio-core.cjs
           node --test tests/offline-audio.test.cjs tests/offline-mishary-sync.test.cjs tests/qa53-stability.test.cjs

@@ -27,7 +27,7 @@ jobs:
         run: node tests/continuous-sync-regression.cjs
       - name: Verify Quran, tafsir, adhkar and timing data
         run: |
-          node tests/content.cjs
+          node --test tests/qvp-integration.test.mjs
           node tests/reflection.cjs
           node tests/adhkar-data.cjs
           node tests/data-integrity.cjs
