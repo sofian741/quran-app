@@ -1,9 +1,9 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v76-heritage-underlay';
+const APP_CACHE = 'quran-reader-shell-v77-equal-line-gaps';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
-    './mushaf-qvp/boot.js', './mushaf-qvp/reader.js', './mushaf-qvp/heritage-ornament.js', './mushaf-qvp/reader.css', './mushaf-qvp/integrity.js',
+    './mushaf-qvp/boot.js', './mushaf-qvp/reader.js', './mushaf-qvp/line-layout.js', './mushaf-qvp/heritage-ornament.js', './mushaf-qvp/reader.css', './mushaf-qvp/integrity.js',
     './mushaf-qvp/vendor/LICENSE', './mushaf-qvp/text-map.js', './mushaf-qvp/subwords.js', './mushaf-qvp/vendor/lite.js', './mushaf-qvp/vendor/lite-path.js',
     './data/qvp/manifest.json', './data/qvp/word-map.json',
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',

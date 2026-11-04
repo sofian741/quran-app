@@ -4,6 +4,7 @@ import {sha256} from './integrity.js';
 import {SUBWORDS, subwordBox} from './subwords.js';
 import {createHeritageHeading} from './heritage-ornament.js';
 import {parseTanzil, timingRange} from './text-map.js';
+import {layoutGeometry} from './line-layout.js';
 
 const $ = id=>document.getElementById(id), text=$('quran-text'), stage=$('reader-stage');
 const STORAGE='quranReaderState', SETTINGS='quranReaderSettings';
@@ -32,6 +33,7 @@ async function load(number){
     const digest=await sha256(bytes);
     if(digest!==manifest.files[id+'.qvp'].sha256)throw new Error('Page integrity '+number);
     const geometry=decodeGeometry(bytes);if(geometry.number!==number)throw new Error('Page identity');
+    layoutGeometry(geometry);
     const item={geometry,paint:new QvpLitePage(geometry)};cache.set(number,item);evict();return item;
   })().finally(()=>pending.delete(number));
   pending.set(number,promise);return promise;
