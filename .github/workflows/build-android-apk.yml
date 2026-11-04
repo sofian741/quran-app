@@ -7,6 +7,10 @@ on:
         description: 'Publish to the public in-app update feed (main only)'
         type: boolean
         default: false
+  push:
+    branches: [main]
+    paths:
+      - '.github/apk-build-trigger'
 
 concurrency:
   group: qa-apk-${{ github.ref_name }}

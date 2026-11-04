@@ -4,7 +4,7 @@ const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const base=process.env.QURAN_BASE_URL||'http://127.0.0.1:4173';
 (async()=>{
- const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium',args:['--no-sandbox','--autoplay-policy=no-user-gesture-required']});
+ const browser=await chromium.launch({headless:true,executablePath:process.env.QURAN_BROWSER_PATH||'/usr/bin/chromium',args:['--no-sandbox','--autoplay-policy=no-user-gesture-required']});
  try {
   const page=await browser.newPage({viewport:{width:390,height:844},serviceWorkers:'block'});
   await page.goto(base+'/quran.html',{waitUntil:'domcontentloaded'});
