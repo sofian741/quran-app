@@ -118,8 +118,14 @@ function paint(item){
     for(let i=d.firstPath;i<d.firstPath+d.nPaths;i++)
       ctx.fill(buildPath(item.geometry.paths[i]),item.geometry.paths[i].rule);
   ctx.restore();
-  // Only the reviewed paths of the active source token change color.
-  ctx.save();ctx.setTransform(scale,0,0,scale,0,0);ctx.fillStyle=theme==='dark'?'#ffde6b':'#a36700';
+  // Match the original reader: recolor the active word's own QVP contours.
+  // There is no box, marker or geometry change over the printed word.
+  ctx.save();ctx.setTransform(scale,0,0,scale,0,0);ctx.fillStyle=theme==='dark'?'#76c8b9':'#176b63';
+  for(const w of item.geometry.words){
+    const key=`${w.surah}:${w.ayah}:${w.word}`;
+    if(!item.nodes.get(key)?.classList.contains('is-audio-word'))continue;
+    for(let i=w.firstPath;i<w.firstPath+w.nPaths;i++)ctx.fill(buildPath(item.geometry.paths[i]),item.geometry.paths[i].rule);
+  }
   for(const parts of Object.values(SUBWORDS))for(const part of parts)if(item.nodes.get(part.key)?.classList.contains('is-audio-word'))
     for(const i of part.paths)ctx.fill(buildPath(item.geometry.paths[i]),item.geometry.paths[i].rule);
   ctx.restore();
@@ -186,9 +192,9 @@ function syncAudio(state){
   const inVerse=(!Number.isFinite(state.timing?.timestampFrom)||msKey>=state.timing.timestampFrom)&&(!Number.isFinite(state.timing?.timestampTo)||msKey<state.timing.timestampTo);
   const signature=[current,playing?ref:'',segmentKey?.word,segmentKey?.endWord,state.reciterId,inVerse].join(':');
   if(signature===audioSignature)return;audioSignature=signature;
-  const hadSubword=text.querySelector('.madinah-subword.is-audio-word');
+  const hadAudioWord=text.querySelector('.is-audio-word');
   for(const node of active.nodes.values())node.classList.remove('is-audio-word');
-  if(hadSubword)paint(active);metrics.activeWordKeys=[];bands(playing?ref:'','audio-verse-band');if(!playing)return;
+  if(hadAudioWord)paint(active);metrics.activeWordKeys=[];bands(playing?ref:'','audio-verse-band');if(!playing)return;
   const ms=state.currentTime*1000,t=state.timing;
   if(Number.isFinite(t.timestampFrom)&&ms<t.timestampFrom||Number.isFinite(t.timestampTo)&&ms>=t.timestampTo)return;
   // Require the complete provider ordinal range. No first-word guessing, no
@@ -200,7 +206,7 @@ function syncAudio(state){
   const segment=segments.findLast(s=>ms>=s.start&&ms<s.end);if(!segment)return;
   const keys=timingRange(map,segment);if(!keys){metrics.lastTimingError='Unmapped word '+ref;return;}
   for(const key of keys)active.nodes.get(key)?.classList.add('is-audio-word');
-  metrics.activeWordKeys=keys;if(keys.some(k=>k.includes('~')))paint(active);
+  metrics.activeWordKeys=keys;paint(active);
 }
 function follow(state){
   if(!state.playing||!state.autoFollow||state.provider!=='quran-foundation'||!active)return;

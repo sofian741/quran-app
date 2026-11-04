@@ -5,7 +5,7 @@
 .madinah-hit-layer { position:absolute; inset:0; z-index:3; }
 .quran-text.madinah-text .madinah-row { position:absolute; height:var(--qvp-height,550px); inset:0; width:var(--qvp-width,345px); min-height:0; display:block; font-size:0; margin:0; padding:0; transform:none; pointer-events:none; }
 .quran-text.madinah-text .madinah-word { position:absolute; display:block; padding:0; margin:0; color:transparent; font-size:0; min-width:0; pointer-events:auto; border-radius:1px; background:transparent; box-shadow:none; }
-.quran-text.madinah-text .madinah-word.is-audio-word { background:#e8c66c99; outline:1px solid #b58c25; }
+.quran-text.madinah-text .madinah-word.is-audio-word { background:transparent; outline:none; }
 .quran-text.madinah-text .madinah-word.is-search-target { background:#45b6a844; outline:1px solid #288a7d; }
 .quran-text.madinah-text .madinah-row .verse-highlight-band, .quran-text.madinah-text .madinah-row .audio-verse-band { z-index:-1; pointer-events:none; background:#62b5a940; border-radius:2px; }
 .quran-text.madinah-text .madinah-row .ayah-end-group { position:absolute; display:block; padding:0; margin:0; pointer-events:none; }
@@ -15,7 +15,7 @@
 .madinah-status.is-error { background:#fff4dc; color:#802900; padding:8px; font-size:13px; }
 .madinah-lab-link { position:fixed; top:2px; left:4px; z-index:100; font:11px sans-serif; color:#176b63; background:#fff9; padding:2px 5px; }
 .quran-text.madinah-text .madinah-subword {position:absolute;display:block;pointer-events:auto;}
-.quran-text.madinah-text .madinah-subword.is-audio-word {background:#e8c66c55;outline:1px solid #b58c25;}
+.quran-text.madinah-text .madinah-subword.is-audio-word {background:transparent;outline:none;}
 .quran-text.madinah-text .surah-basmala {line-height:normal;border:0;background:transparent;}
 
 /* Existing decorative frame; title glyphs belong to QVP and move with the row. */

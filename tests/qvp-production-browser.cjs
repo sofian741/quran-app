@@ -82,6 +82,16 @@ if(!process.env.QURAN_BASE_URL){
    return {first,gap,third,stopped,bands:document.querySelectorAll('.audio-verse-band').length};
   });assert.deepEqual(result.first,['15:7:1~2']);assert.equal(result.gap,0);assert.deepEqual(result.third,['15:7:2']);assert.equal(result.stopped,0);assert.ok(result.bands>=10);return result;
  });
+ await check('active word recolors its QVP ink in emerald without a box or outline',async()=>{
+  const result=await page.evaluate(async()=>{
+   await mushafQvp.navigate(4);const canvas=document.querySelector('.madinah-frame canvas'),ctx=canvas.getContext('2d');
+   const before=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+   mushafQvp.syncAudio({playing:true,provider:'quran-foundation',reciterId:9000,surah:2,ayah:17,currentTime:1,timing:{timestampFrom:0,timestampTo:3000,segments:[{word:1,start:0,end:3000}]}});
+   const after=ctx.getImageData(0,0,canvas.width,canvas.height).data,node=document.querySelector('.is-audio-word[data-word-key="2:17:1"]'),style=getComputedStyle(node);
+   let changed=0,emerald=0;for(let i=0;i<after.length;i+=4)if(before[i]!==after[i]||before[i+1]!==after[i+1]||before[i+2]!==after[i+2]){changed++;if(after[i]<60&&after[i+1]>75&&after[i+2]>65)emerald++;}
+   return {changed,emerald,background:style.backgroundColor,outline:style.outlineStyle};
+  });assert.ok(result.changed>20);assert.ok(result.emerald>20);assert.equal(result.background,'rgba(0, 0, 0, 0)');assert.equal(result.outline,'none');return result;
+ });
  await check('basmala selection targets verse 1 without shifting audio ordinals; Tawba has no basmala',async()=>{
   await page.evaluate(()=>mushafQvp.navigate(2));
   const basmala=page.locator('.madinah-basmala');assert.equal(await basmala.count(),1);
