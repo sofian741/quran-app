@@ -44,3 +44,15 @@ test('Tanzil, timing corpora, app identity, QVP-only startup and Android text zo
  assert.match(read('mushaf-qvp/boot.js').toString(),/reader\.js/);
  for(const file of ['app.js','reader-enhancements.js','reader-layout-polish.js','mushaf-engine-loader.js','mushaf-layout-prewarm-worker.js','data/mushaf-layout.json'])assert.equal(fs.existsSync(new URL('../'+file,import.meta.url)),false,file+' obsolete');
 });
+
+// Ornamentation never replaces the fixed QVP Quran text or glyph geometry.
+test('heritage surah frame is visual-only and ayah markers use original QVP paths',()=>{
+ const source=read('mushaf-qvp/reader.js').toString();
+ const art=read('mushaf-qvp/heritage-ornament.js').toString();
+ assert.match(source,/createHeritageHeading/);
+ assert.match(source,/g\.decorations\.filter\(d=>d\.decoration===1\)/);
+ assert.match(source,/item\.geometry\.decorations\.filter\(d=>d\.decoration===0\)/);
+ assert.match(art,/maskUnits="userSpaceOnUse"/);
+ assert.match(art,/ornament-frame-outer/);
+ assert.ok(!art.includes('surah-title-chapter'),'QVP surah text must not be replaced');
+});

@@ -2,6 +2,7 @@ import {decodeGeometry, QvpLitePage} from './vendor/lite.js';
 import {buildPath} from './vendor/lite-path.js';
 import {sha256} from './integrity.js';
 import {SUBWORDS, subwordBox} from './subwords.js';
+import {createHeritageHeading} from './heritage-ornament.js';
 import {parseTanzil, timingRange} from './text-map.js';
 
 const $ = id=>document.getElementById(id), text=$('quran-text'), stage=$('reader-stage');
@@ -58,6 +59,20 @@ function build(item){
     setBox(marker,[d.box[0]-box[0],d.box[1]-box[1],d.box[2]-box[0],d.box[3]-box[1]]);
     word.replaceWith(group);group.append(word,marker);
   }
+  // Place the original ornamental frame over QVP's surah-heading decoration.
+  // Its center is transparent: the current QVP surah name remains untouched.
+  for(const d of g.decorations.filter(d=>d.decoration===1)){
+    const row=rows.get(d.lineIndex);if(!row)throw new Error('Surah heading line');
+    const header=document.createElement('div');
+    header.className='madinah-heritage-heading';
+    header.setAttribute('aria-hidden','true');
+    header.innerHTML=createHeritageHeading();
+    const lineHeight=g.height/g.lines.length;
+    const height=Math.min(lineHeight*1.12,Math.max(d.box[3]-d.box[1]+8,lineHeight*.88));
+    const middle=(d.box[1]+d.box[3])/2;
+    setBox(header,[4,middle-height/2,g.width-4,middle+height/2]);
+    layer.append(header);
+  }
   // Basmala is edition artwork, not four additional spoken timing ordinals.
   // Preserve verse-1 actions without manufacturing word timestamps.
   for(const d of g.decorations.filter(d=>d.decoration===2)){
@@ -95,6 +110,14 @@ function paint(item){
   const ctx=item.canvas.getContext('2d'),scale=item.canvas.width/345;
   ctx.clearRect(0,0,item.canvas.width,item.canvas.height);
   item.paint.draw(ctx,{scale,ink:getComputedStyle(document.body).getPropertyValue('--page-text').trim()||'#231f20'});
+  // Recolor ONLY the original QVP ayah-number cartouches. No shape,
+  // wording, spacing or hit boxes are modified.
+  ctx.save();ctx.setTransform(scale,0,0,scale,0,0);
+  ctx.fillStyle=theme==='dark'?'#d7bb7b':'#157a6b';
+  for(const d of item.geometry.decorations.filter(d=>d.decoration===0))
+    for(let i=d.firstPath;i<d.firstPath+d.nPaths;i++)
+      ctx.fill(buildPath(item.geometry.paths[i]),item.geometry.paths[i].rule);
+  ctx.restore();
   // Only the reviewed paths of the active source token change color.
   ctx.save();ctx.setTransform(scale,0,0,scale,0,0);ctx.fillStyle=theme==='dark'?'#ffde6b':'#a36700';
   for(const parts of Object.values(SUBWORDS))for(const part of parts)if(item.nodes.get(part.key)?.classList.contains('is-audio-word'))

@@ -17,3 +17,21 @@
 .quran-text.madinah-text .madinah-subword {position:absolute;display:block;pointer-events:auto;}
 .quran-text.madinah-text .madinah-subword.is-audio-word {background:#e8c66c55;outline:1px solid #b58c25;}
 .quran-text.madinah-text .surah-basmala {line-height:normal;border:0;background:transparent;}
+
+/* The legacy ornament returns as decoration only; QVP owns all title glyphs.
+   Keep the page geometry and fixed QVP line positions intact. */
+.madinah-heritage-heading {
+  position:absolute;
+  z-index:4;
+  pointer-events:none;
+  overflow:visible;
+}
+.madinah-heritage-heading .surah-ornament {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+  overflow:visible;
+}
+/* The existing style.css ornament palette supports the reader's four themes. */

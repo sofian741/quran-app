@@ -7,22 +7,6 @@ on:
         description: 'Publish to the public in-app update feed (main only)'
         type: boolean
         default: false
-  push:
-    branches: [main, qa/test-stable-53, feature/qvp-production-integration]
-    paths:
-      - docs/MISHARY_AUDIO_READY.md
-      - .github/workflows/build-android-apk.yml
-      - scripts/register-background-downloads.py
-      - android-native/MushafTextScale.java
-      - mushaf-qvp/**
-      - mushaf-qvp/boot.js
-      - scripts/qvp/**
-      - scripts/prepare-android-web.mjs
-      - quran.html
-      - mushaf-audio.js
-      - verse-actions.js
-      - tests/qvp*
-      - sw.js
 
 concurrency:
   group: qa-apk-${{ github.ref_name }}
