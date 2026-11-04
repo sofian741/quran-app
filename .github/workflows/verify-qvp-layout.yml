@@ -1,0 +1,41 @@
+name: Verify QVP reader layout in browser
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mushaf-qvp/**'
+      - 'tests/qvp-*'
+      - 'quran.html'
+      - 'sw.js'
+      - '.github/workflows/verify-qvp-layout.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare pinned Quran page files
+        run: npm run qvp:prepare
+      - name: Install headless Chromium
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq chromium
+          npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Verify all 604 QVP pages and geometry alignment
+        env:
+          QURAN_BROWSER_PATH: /usr/bin/chromium
+        run: npm run test:qvp
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qvp-reader-layout
+          path: artifacts/qvp
+          if-no-files-found: ignore
+          retention-days: 7
