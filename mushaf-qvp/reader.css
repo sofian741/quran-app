@@ -1,9 +1,9 @@
 /* Pinned glyph outlines and printed word order; one fixed presentation grid. */
 .quran-text.madinah-text { display:block; position:relative; padding:0; overflow:hidden; direction:ltr; font-size:16px; }
-.madinah-frame { position:absolute; width:345px; height:var(--qvp-height,550px); transform-origin:0 0; isolation:isolate; }
-.madinah-frame canvas { position:absolute; width:345px; height:var(--qvp-height,550px); inset:0; pointer-events:none; z-index:2; }
+.madinah-frame { position:absolute; width:var(--qvp-width,345px); height:var(--qvp-height,550px); transform-origin:0 0; isolation:isolate; }
+.madinah-frame canvas { position:absolute; width:var(--qvp-width,345px); height:var(--qvp-height,550px); inset:0; pointer-events:none; z-index:2; }
 .madinah-hit-layer { position:absolute; inset:0; z-index:3; }
-.quran-text.madinah-text .madinah-row { position:absolute; height:var(--qvp-height,550px); inset:0; width:345px; min-height:0; display:block; font-size:0; margin:0; padding:0; transform:none; pointer-events:none; }
+.quran-text.madinah-text .madinah-row { position:absolute; height:var(--qvp-height,550px); inset:0; width:var(--qvp-width,345px); min-height:0; display:block; font-size:0; margin:0; padding:0; transform:none; pointer-events:none; }
 .quran-text.madinah-text .madinah-word { position:absolute; display:block; padding:0; margin:0; color:transparent; font-size:0; min-width:0; pointer-events:auto; border-radius:1px; background:transparent; box-shadow:none; }
 .quran-text.madinah-text .madinah-word.is-audio-word { background:#e8c66c99; outline:1px solid #b58c25; }
 .quran-text.madinah-text .madinah-word.is-search-target { background:#45b6a844; outline:1px solid #288a7d; }

@@ -14,19 +14,19 @@ test('all 602 normal pages share one 15-slot grid, preserve every contour and ha
  let minGap=Infinity,headings=0,sajdah=0;
  for(let n=3;n<=604;n++){
   const source=raw(n),g=layoutGeometry(raw(n)),stats=g.layoutStats;
-  assert.equal(stats.mode,'fixed-grid');assert.equal(g.height,760);
+  assert.equal(stats.mode,'fixed-grid');assert.equal(g.height,760);assert.equal(g.width,360);assert.equal(stats.inkScale,1.035);
   assert.deepEqual(stats.centres,Array.from({length:15},(_,i)=>30+50*i));
   assert.equal(GRID.slots*GRID.band+(GRID.slots+1)*GRID.gap,g.height);
   for(let i=0;i<g.paths.length;i++){
    const p=g.paths[i],before=source.paths[i];assert.deepEqual(p.ops,before.ops);
    if(p.hidden){assert.equal(n,17);assert.deepEqual(p.pts,before.pts);continue;}
-   const line=stats.pathLines[i],dy=stats.centres[line]-stats.sourceCentres[line];
-   assert.ok(p.box[1]>=0&&p.box[3]<=g.height,'crop '+n+':'+i);
-   for(let k=0;k<p.pts.length;k+=2){assert.equal(p.pts[k],before.pts[k]);near(p.pts[k+1],before.pts[k+1]+dy,'contour '+n+':'+i);}
+   const line=stats.pathLines[i],scale=GRID.inkScale,dx=GRID.width/2-source.width/2*scale,dy=stats.centres[line]-stats.sourceCentres[line]*scale;
+   assert.ok(p.box[0]>=0&&p.box[2]<=g.width&&p.box[1]>=0&&p.box[3]<=g.height,'crop '+n+':'+i);
+   for(let k=0;k<p.pts.length;k+=2){near(p.pts[k],before.pts[k]*scale+dx);near(p.pts[k+1],before.pts[k+1]*scale+dy,'contour '+n+':'+i);}
   }
   for(let i=0;i<g.words.length;i++){
    const w=g.words[i],before=source.words[i];assert.equal(w.text,before.text);assert.equal(w.lineIndex,before.lineIndex);
-   near(w.box[2]-w.box[0],before.box[2]-before.box[0]);near(w.box[3]-w.box[1],before.box[3]-before.box[1]);
+   near(w.box[2]-w.box[0],(before.box[2]-before.box[0])*GRID.inkScale);near(w.box[3]-w.box[1],(before.box[3]-before.box[1])*GRID.inkScale);
   }
   for(const line of g.lines){
    if(line.nWords)near(bodyCentre(g,line.index),stats.centres[line.index],'body centre '+n+':'+line.index);
@@ -49,7 +49,7 @@ test('all 602 normal pages share one 15-slot grid, preserve every contour and ha
   }
   assert.equal(layoutGeometry(g),g,'layout is applied once');
  }
- assert.equal(headings,112);assert.ok(sajdah>=15);assert.ok(minGap>1.89);
+ assert.equal(headings,112);assert.ok(sajdah>=15);assert.ok(minGap>0.21);
 });
 
 test('page 17 source running head and folio remain clipped when the presentation grows',()=>{

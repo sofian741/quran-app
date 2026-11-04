@@ -40,7 +40,7 @@ async function load(number){
 }
 function setBox(el,box){Object.assign(el.style,{left:box[0]+'px',top:box[1]+'px',width:(box[2]-box[0])+'px',height:(box[3]-box[1])+'px'});}
 function build(item){
-  const g=item.geometry, frame=document.createElement('div');frame.className='madinah-frame';frame.style.setProperty('--qvp-height',g.height+'px');
+  const g=item.geometry, frame=document.createElement('div');frame.className='madinah-frame';frame.style.setProperty('--qvp-height',g.height+'px');frame.style.setProperty('--qvp-width',g.width+'px');
   const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');frame.append(canvas);
   const layer=document.createElement('div');layer.className='madinah-hit-layer';frame.append(layer);
   const rows=new Map(), nodes=new Map();
@@ -107,7 +107,7 @@ function fitItem(item,container){
   paint(item);
 }
 function paint(item){
-  const ctx=item.canvas.getContext('2d'),scale=item.canvas.width/345;
+  const ctx=item.canvas.getContext('2d'),scale=item.canvas.width/item.geometry.width;
   ctx.clearRect(0,0,item.canvas.width,item.canvas.height);
   item.paint.draw(ctx,{scale,ink:getComputedStyle(document.body).getPropertyValue('--page-text').trim()||'#231f20'});
   // Recolor ONLY the original QVP ayah-number cartouches. No shape,
