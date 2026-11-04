@@ -1,7 +1,7 @@
 // Fixed printed-line grid. Uniformly size glyphs within fixed rows; never stretch them or
 // reflow words. Reference for body-only centres, ayah-marker ownership and
 // sajdah underlines: Quran Engine qvp-core/src/lib.rs at sources.json engineCommit.
-export const GRID=Object.freeze({slots:15,band:40,gap:10,width:360,height:760,inkScale:1.035});
+export const GRID=Object.freeze({slots:15,band:40,gap:10,width:360,height:760,inkScale:1.055,inkStroke:.4});
 const valid=b=>Array.isArray(b)&&b.length===4&&b.every(Number.isFinite);
 const middle=b=>(b[1]+b[3])/2;
 const union=boxes=>boxes.length?[

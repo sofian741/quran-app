@@ -4,7 +4,7 @@ import {sha256} from './integrity.js';
 import {SUBWORDS, subwordBox} from './subwords.js';
 import {createHeritageHeading} from './heritage-ornament.js';
 import {parseTanzil, timingRange} from './text-map.js';
-import {layoutGeometry, paintGeometry, headingBox} from './line-layout.js';
+import {layoutGeometry, paintGeometry, headingBox, GRID} from './line-layout.js';
 
 const $ = id=>document.getElementById(id), text=$('quran-text'), stage=$('reader-stage');
 const STORAGE='quranReaderState', SETTINGS='quranReaderSettings';
@@ -108,8 +108,17 @@ function fitItem(item,container){
 }
 function paint(item){
   const ctx=item.canvas.getContext('2d'),scale=item.canvas.width/item.geometry.width;
+  const ink=getComputedStyle(document.body).getPropertyValue('--page-text').trim()||'#231f20';
   ctx.clearRect(0,0,item.canvas.width,item.canvas.height);
-  item.paint.draw(ctx,{scale,ink:getComputedStyle(document.body).getPropertyValue('--page-text').trim()||'#231f20'});
+  item.paint.draw(ctx,{scale,ink});
+  // QVP supplies filled contours rather than a font weight. A small, uniform
+  // contour stroke gives every printed word, title and basmala the same safe
+  // weight without reflowing text or changing any hit/timing geometry.
+  ctx.save();ctx.setTransform(scale,0,0,scale,0,0);ctx.strokeStyle=ink;ctx.lineWidth=GRID.inkStroke;ctx.lineJoin='round';ctx.lineCap='round';
+  for(const w of item.geometry.words)for(let i=w.firstPath;i<w.firstPath+w.nPaths;i++)ctx.stroke(buildPath(item.geometry.paths[i]));
+  for(const d of item.geometry.decorations.filter(d=>d.decoration===1||d.decoration===2))
+    for(let i=d.firstPath;i<d.firstPath+d.nPaths;i++)ctx.stroke(buildPath(item.geometry.paths[i]));
+  ctx.restore();
   // Recolor ONLY the original QVP ayah-number cartouches. No shape,
   // wording, spacing or hit boxes are modified.
   ctx.save();ctx.setTransform(scale,0,0,scale,0,0);
@@ -124,10 +133,10 @@ function paint(item){
   for(const w of item.geometry.words){
     const key=`${w.surah}:${w.ayah}:${w.word}`;
     if(!item.nodes.get(key)?.classList.contains('is-audio-word'))continue;
-    for(let i=w.firstPath;i<w.firstPath+w.nPaths;i++)ctx.fill(buildPath(item.geometry.paths[i]),item.geometry.paths[i].rule);
+    for(let i=w.firstPath;i<w.firstPath+w.nPaths;i++){const path=buildPath(item.geometry.paths[i]);ctx.strokeStyle=ctx.fillStyle;ctx.lineWidth=GRID.inkStroke;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke(path);ctx.fill(path,item.geometry.paths[i].rule);}
   }
   for(const parts of Object.values(SUBWORDS))for(const part of parts)if(item.nodes.get(part.key)?.classList.contains('is-audio-word'))
-    for(const i of part.paths)ctx.fill(buildPath(item.geometry.paths[i]),item.geometry.paths[i].rule);
+    for(const i of part.paths){const path=buildPath(item.geometry.paths[i]);ctx.strokeStyle=ctx.fillStyle;ctx.lineWidth=GRID.inkStroke;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke(path);ctx.fill(path,item.geometry.paths[i].rule);}
   ctx.restore();
 }
 function fit(){fitItem(active,text);if(active)metrics.canvasPixels=active.canvas.width*active.canvas.height;audioSignature='';if(lastAudio)syncAudio(lastAudio);}

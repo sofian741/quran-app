@@ -22,6 +22,7 @@ if(!process.env.QURAN_BASE_URL){
  async function check(name,fn){try{const detail=await fn();report.results.push({name,pass:true,detail});fs.writeFileSync(path.join(out,'browser-progress.json'),JSON.stringify(report,null,2));console.log('PASS',name);}catch(e){report.failures.push({name,error:e.message});console.log('FAIL',name,e.message);}}
  await page.goto(base+'/quran.html');await page.waitForFunction(()=>window.mushafQvp?.metrics.ready);
  assert.equal(await page.evaluate(()=>mushafReader.getCurrentPage()),4);assert.equal(await page.locator('body').getAttribute('data-theme'),'mint');
+ assert.deepEqual(await page.evaluate(async()=>{const normal=mushafQvp.getGeometry().layoutStats.inkScale;await mushafQvp.navigate(1);const opening=mushafQvp.getGeometry().layoutStats.zoom;await mushafQvp.navigate(4);return {normal,opening};}),{normal:1.055,opening:1.5});
  await check('all 604 pages load, word hit boxes match pinned geometry and cache stays bounded',async()=>{
   const result=await page.evaluate(async()=>{
    const errors=[],times=[];let words=0;
