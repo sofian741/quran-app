@@ -27,3 +27,17 @@
 
 التشغيل المحلي كما هو: `npm run qvp:prepare` ثم `npm run dev`.
 الاختبار: `npm run test:qvp` و`npm run test:tour:qvp`.
+
+صور النتيجة منفردة بدقة DPR=2، بنفس مساحة الشاشة 390×844، لتفادي تصغير الحروف
+عند عرض صورتين جنبًا إلى جنب داخل شاشة المحادثة:
+
+- [الصفحة 3](results/qvp-fuller/page-3-after.png)
+- [الصفحة 604](results/qvp-fuller/page-604-after.png)
+
+نجح GitHub Actions على كود التطبيق `b22b3e374cb86f74976a7be6e9b0d2b799bf78b0`:
+
+- [فحص المصحف الشامل](https://github.com/sofian741/quran-app/actions/runs/41853238263).
+- [فحص واجهات التطبيق وLAN](https://github.com/sofian741/quran-app/actions/runs/41853238330).
+
+نجحت الاختبارات الثمانية وسيناريوهات المتصفح الـ14، بما فيها جميع الصفحات دون شبكة.
+جولة المصحف وتجهيز Android بصفحاته الـ604 نجحا محليًا. لم يُبن APK جديد ولم يحدث نشر.
