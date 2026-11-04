@@ -52,7 +52,9 @@ test('heritage surah frame is visual-only and ayah markers use original QVP path
  assert.match(source,/createHeritageHeading/);
  assert.match(source,/g\.decorations\.filter\(d=>d\.decoration===1\)/);
  assert.match(source,/item\.geometry\.decorations\.filter\(d=>d\.decoration===0\)/);
- assert.match(art,/maskUnits="userSpaceOnUse"/);
+ assert.ok(art.includes('ornament-frame-outer'));
+ assert.ok(art.includes('heading.innerHTML'));
+ assert.ok(!art.includes('maskUnits'), 'the ornament is a full frame drawn behind the QVP glyphs');
  assert.match(art,/ornament-frame-outer/);
  assert.ok(!art.includes('surah-title-chapter'),'QVP surah text must not be replaced');
 });

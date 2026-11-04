@@ -9,7 +9,7 @@
     "test:tour": "node tests/tour-navigation-browser.cjs",
     "qvp:prepare": "node scripts/qvp/bootstrap.mjs",
     "dev": "node scripts/dev-server.mjs",
-    "test:qvp": "node --test tests/qvp-integration.test.mjs && node tests/qvp-production-browser.cjs",
+    "test:qvp": "node --test tests/qvp-integration.test.mjs tests/qvp-line-layout.test.mjs && node tests/qvp-production-browser.cjs",
     "test:tour:qvp": "node scripts/qvp/test-tour.mjs"
   },
   "dependencies": {
