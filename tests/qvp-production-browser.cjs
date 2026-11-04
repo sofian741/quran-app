@@ -29,7 +29,7 @@ if(!process.env.QURAN_BASE_URL){
     const begin=performance.now(),ok=await mushafQvp.navigate(n);times.push(performance.now()-begin);
     const g=mushafQvp.getGeometry(),nodes=[...document.querySelectorAll('.madinah-word:not(.madinah-basmala)')];words+=nodes.length;
     if(!ok||g.number!==n||nodes.length!==g.words.length||mushafQvp.metrics.cachePages>3)errors.push(n);
-    const frame=document.querySelector('.madinah-frame').getBoundingClientRect(),scale=frame.width/345;
+    const frame=document.querySelector('.madinah-frame').getBoundingClientRect(),scale=frame.width/g.width;
     for(let i=0;i<nodes.length;i++){const r=nodes[i].getBoundingClientRect(),w=g.words[i];if(Math.abs(r.left-(frame.left+w.box[0]*scale))>.15||Math.abs(r.top-(frame.top+w.box[1]*scale))>.15)errors.push(n+':'+i);}
    }
    times.sort((a,b)=>a-b);return {errors,words,p50:times[302],p95:times[573],max:times.at(-1),cache:mushafQvp.metrics.cachePages,heap:performance.memory?.usedJSHeapSize};

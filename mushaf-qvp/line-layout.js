@@ -1,7 +1,7 @@
-// Fixed printed-line grid. Only translate whole rows; never stretch glyphs or
+// Fixed printed-line grid. Uniformly size glyphs within fixed rows; never stretch them or
 // reflow words. Reference for body-only centres, ayah-marker ownership and
 // sajdah underlines: Quran Engine qvp-core/src/lib.rs at sources.json engineCommit.
-export const GRID=Object.freeze({slots:15,band:40,gap:10,width:345,height:760});
+export const GRID=Object.freeze({slots:15,band:40,gap:10,width:360,height:760,inkScale:1.035});
 const valid=b=>Array.isArray(b)&&b.length===4&&b.every(Number.isFinite);
 const middle=b=>(b[1]+b[3])/2;
 const union=boxes=>boxes.length?[
@@ -13,7 +13,7 @@ const boxAt=(b,scale,dx,dy)=>[b[0]*scale+dx,b[1]*scale+dy,b[2]*scale+dx,b[3]*sca
 
 export function layoutGeometry(g){
  if(g.layoutApplied)return g;
- const originalHeight=g.height;
+ const originalHeight=g.height,originalWidth=g.width;
  // Artwork outside the source viewBox (four records on p17) was never visible.
  // A taller presentation must not pull that running head/page number into view.
  for(const path of g.paths)path.hidden=!onPage(path.box,g);
@@ -44,7 +44,7 @@ export function layoutGeometry(g){
   return middle(box);
  });
  const targets=centres.map((_,i)=>GRID.gap+GRID.band/2+i*(GRID.band+GRID.gap));
- const shift=centres.map((c,i)=>targets[i]-c),ownership=new Int16Array(g.paths.length).fill(-1);
+ const ownership=new Int16Array(g.paths.length).fill(-1);
  const lastWord=new Map(g.words.map(w=>[w.surah+':'+w.ayah,w]));
  function assign(record,line){
   if(!Number.isInteger(line)||line<0||line>=GRID.slots)throw new Error('Missing printed line '+g.number);
@@ -73,18 +73,19 @@ export function layoutGeometry(g){
  for(let i=0;i<g.paths.length;i++){
   const p=g.paths[i];if(p.hidden)continue;
   const line=ownership[i];if(line<0)throw new Error('Unowned visible path '+g.number+':'+i);
-  const dy=shift[line];for(let k=1;k<p.pts.length;k+=2)p.pts[k]+=dy;
-  p.box=boxAt(p.box,1,0,dy);bands[line].push(p.box);
+  const scale=GRID.inkScale,dx=GRID.width/2-originalWidth/2*scale,dy=targets[line]-centres[line]*scale;
+  for(let k=0;k<p.pts.length;k+=2){p.pts[k]=p.pts[k]*scale+dx;p.pts[k+1]=p.pts[k+1]*scale+dy;}
+  p.box=boxAt(p.box,scale,dx,dy);bands[line].push(p.box);
  }
- for(const w of g.words)w.box=boxAt(w.box,1,0,shift[w.lineIndex]);
+ for(const w of g.words)w.box=boxAt(w.box,GRID.inkScale,GRID.width/2-originalWidth/2*GRID.inkScale,targets[w.lineIndex]-centres[w.lineIndex]*GRID.inkScale);
  for(const d of g.decorations){
   const boxes=g.paths.slice(d.firstPath,d.firstPath+d.nPaths).filter(p=>!p.hidden).map(p=>p.box);
   if(boxes.length)d.box=union(boxes);
  }
  for(let i=0;i<GRID.slots;i++)g.lines[i].box=union(bands[i]);
  for(const a of g.ayahs)a.box=union(g.words.slice(a.firstWord,a.firstWord+a.nWords).map(w=>w.box));
- g.height=GRID.height;
- g.layoutStats={mode:'fixed-grid',slots:GRID.slots,band:GRID.band,gap:GRID.gap,pitch:GRID.band+GRID.gap,centres:targets,sourceCentres:centres,pathLines:ownership};
+ g.width=GRID.width;g.height=GRID.height;
+ g.layoutStats={mode:'fixed-grid',inkScale:GRID.inkScale,sourceWidth:originalWidth,slots:GRID.slots,band:GRID.band,gap:GRID.gap,pitch:GRID.band+GRID.gap,centres:targets,sourceCentres:centres,pathLines:ownership};
  g.layoutApplied=true;return g;
 }
 
