@@ -9,6 +9,7 @@
     <title>المصحف الشريف | آيات | Ayat</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="reader-enhancements.css">
+    <link rel="stylesheet" href="mushaf-qvp/reader.css">
     <link rel="stylesheet" href="audio-player.css">
     <style>
       .mushaf-index-search{display:block;padding:0 16px 12px}
@@ -168,12 +169,6 @@
             <span><strong>التحقق من تحديثات التطبيق</strong><small>تثبيت آخر إصدار تجريبي دون حذف بياناتك</small></span>
         </button>
         <p id="app-update-status" class="settings-note" role="status" aria-live="polite">تحديثات النسخة التجريبية</p>
-        <label class="mushaf-engine-setting">محرك عرض المصحف
-            <select id="mushaf-engine-choice" aria-label="محرك عرض المصحف">
-                <option value="qvp">مصحف المدينة — QVP</option>
-                <option value="legacy">المحرك السابق</option>
-            </select>
-        </label>
         <button type="button" class="reset-settings" id="reset-settings">إعادة الإعدادات الافتراضية</button>
         <p class="settings-note">صفحات المصحف وأسطرها ثابتة (٦٠٤ صفحة)، ويُضبط حجم الخط تلقائيًا لعرض السطر كاملًا. نص القرآن من <a href="https://tanzil.net" target="_blank" rel="noopener noreferrer">Tanzil Project</a>. <a href="licenses.html">المصادر والتراخيص والخصوصية</a>.</p>
     </aside>
@@ -403,7 +398,7 @@
     <script src="android-navigation.js"></script>
     <script src="android-build-info.js"></script>
     <script src="app-update.js"></script>
-    <script src="mushaf-engine-loader.js"></script>
+    <script type="module" src="mushaf-qvp/boot.js"></script>
     <script src="mushaf-keyboard-viewport.js"></script>
     <script src="verse-actions.js"></script>
     <script src="tafsir.js"></script>

@@ -41,7 +41,8 @@ for (const item of shellPaths) {
     const resolved = item === '' ? 'index.html' : item.split(/[?#]/)[0];
     assert.ok(fs.existsSync(path.join(root, resolved)), `offline shell path missing: ${resolved}`);
 }
-assert.ok(shellPaths.includes('mushaf-layout-prewarm-worker.js'), 'layout worker must be available offline');
+assert.ok(shellPaths.includes('mushaf-qvp/boot.js'), 'QVP boot must be available offline');
+assert.ok(!shellPaths.includes('app.js'), 'old engine must not be offline');
 assert.ok(shellPaths.includes('licenses.html'), 'license and privacy notices must be available offline');
 
 for (const file of fs.readdirSync(root).filter(name => name.endsWith('.js'))) {

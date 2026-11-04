@@ -120,7 +120,7 @@ console.log('Prepared Android web bundle in www/');
 const qvpManifest = JSON.parse(await readFile(join(out, 'data/qvp/manifest.json')));
 const qvpPages = await readdir(join(out, 'data/qvp/pages'));
 if (qvpManifest.pages.length !== 604 || qvpPages.length !== 604 ||
-    !(await readFile(join(out, 'quran.html'), 'utf8')).includes('mushaf-engine-loader.js')) {
+    !(await readFile(join(out, 'quran.html'), 'utf8')).includes('mushaf-qvp/boot.js')) {
   throw new Error('Android requires QVP as default and all 604 local pages');
 }
 

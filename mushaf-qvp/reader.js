@@ -238,7 +238,6 @@ function wire(){
   for(const b of document.querySelectorAll('[data-index-tab]'))b.onclick=()=>index(b.dataset.indexTab);
   $('index-surah-search').oninput=()=>index();
   for(const b of document.querySelectorAll('[data-theme-choice]'))b.onclick=()=>{theme=b.dataset.themeChoice;settings();};$('reset-settings').onclick=()=>{theme='paper';settings();};
-  $('mushaf-engine-choice').value='qvp';
   stage.addEventListener('click',e=>{if(suppress){suppress=false;return;}const word=wordFromPoint(e.clientX,e.clientY)||e.target.closest('.madinah-subword,.madinah-word');if(word){metrics.wordTaps++;emit('mushaf:word-tapped',{wordKey:word.dataset.wordKey,verseKey:word.dataset.verse});}if(!e.target.closest('button,a,input'))document.body.classList.toggle('tools-visible');});
   stage.addEventListener('keydown',e=>{const w=e.target.closest('.madinah-subword,.madinah-word');if(w&&(e.key==='Enter'||e.key===' ')){e.preventDefault();window.mushafVerseActions.openForVerse(...w.dataset.verse.split(':').map(Number));}});
   stage.addEventListener('pointerdown',e=>{

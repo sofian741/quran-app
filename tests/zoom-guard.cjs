@@ -14,10 +14,10 @@ const base = process.env.QURAN_BASE_URL || 'http://127.0.0.1:4173';
         HTMLElement.prototype.releasePointerCapture = function releasePointerCapture() {};
     });
     await page.goto(`${base}/quran.html`);
-    await page.waitForFunction(() => document.querySelector('#quran-text')?.dataset.layoutState === 'ready');
+    await page.waitForFunction(() => window.mushafQvp?.metrics.ready);
     await page.evaluate(() => localStorage.setItem('quranReaderState', JSON.stringify({ displayPage: 223 })));
     await page.reload();
-    await page.waitForFunction(() => window.mushafReader?.getCurrentPage() === 223 && document.querySelector('#quran-text')?.dataset.layoutState === 'ready');
+    await page.waitForFunction(() => window.mushafReader?.getCurrentPage() === 223 && window.mushafQvp?.metrics.ready);
 
     const drag = () => page.evaluate(() => {
         const stage = document.querySelector('#reader-stage');

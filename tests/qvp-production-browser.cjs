@@ -110,7 +110,6 @@ if(!process.env.QURAN_BASE_URL){
   await page.evaluate(async()=>{await Promise.all([mushafQvp.navigate(48),mushafQvp.navigate(602)]);});assert.equal(await page.evaluate(()=>mushafReader.getCurrentPage()),602);
  });
  for(const n of [1,4,48,77,187,208,262,282,428,451,602,604]){await page.evaluate(n=>mushafQvp.navigate(n),n);const file='page-'+String(n).padStart(3,'0')+'-390x844.png';await page.screenshot({path:path.join(out,file)});report.screenshots.push(file);}
- await check('old engine remains separately runnable',async()=>{const old=await context.newPage();await old.goto(base+'/quran.html?engine=legacy');await old.waitForFunction(()=>document.querySelector('#quran-text .mushaf-word')&&window.mushafReader);assert.equal(await old.locator('.madinah-frame').count(),0);await old.screenshot({path:path.join(out,'legacy-390x844.png')});await old.close();});
  await context.close();
  await check('complete local shell and all 604 pages reopen with browser network offline',async()=>{
   const c=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'allow'});await c.route('https://**/*',r=>r.abort());const p=await c.newPage();await p.goto(base+'/quran.html');await p.waitForFunction(()=>window.mushafQvp?.metrics.ready);await p.evaluate(()=>navigator.serviceWorker.ready);const installed={pages:604};

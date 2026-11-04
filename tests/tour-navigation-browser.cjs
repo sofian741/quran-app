@@ -242,7 +242,7 @@ async function testQuranFromSettings(browser,origin){
   page.on('console',message=>{if(/content security policy|refused to/i.test(message.text()))securityErrors.push(message.text());});
   page.on('pageerror',error=>securityErrors.push(error.message));
   await page.goto(origin+'/quran.html');
-  await page.waitForFunction(()=>document.querySelector('#quran-text')?.dataset.layoutState==='ready');
+  await page.waitForFunction(()=>window.mushafQvp?.metrics.ready);
   assert.match(await page.locator('script[src^="tour.js"]').getAttribute('src'),/tour\.js\?v=64$/);
   await invite(page).waitFor({state:'visible'});
   await invite(page).locator('[data-tour-action="later"]').click();
@@ -318,7 +318,7 @@ async function testQuranFromSettings(browser,origin){
 async function testQuranTourSkipAndBack(browser,origin){
   const {context,page}=await preparePage(browser);
   await page.goto(origin+'/quran.html');
-  await page.waitForFunction(()=>document.querySelector('#quran-text')?.dataset.layoutState==='ready');
+  await page.waitForFunction(()=>window.mushafQvp?.metrics.ready);
   await invite(page).waitFor({state:'visible'});
   await invite(page).locator('[data-tour-action="begin"]').click();
   assert.match(await waitTourTitle(page,/اضغط مطولًا على الآية/),/اضغط مطولًا على الآية/);

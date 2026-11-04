@@ -11,9 +11,11 @@ with zipfile.ZipFile(apk) as z:
     assert len(pages)==604
     for name,meta in manifest['files'].items():
         assert hashlib.sha256(z.read(prefix+'data/qvp/pages/'+name)).hexdigest()==meta['sha256'],name
-    for name in ['app.js','reader-enhancements.js','reader-layout-polish.js','index.html','library.html','adhkar.html','recitations.html','mushaf-qvp/reader.js']:
+    for name in ['index.html','library.html','adhkar.html','recitations.html','mushaf-qvp/boot.js','mushaf-qvp/reader.js']:
         assert prefix+name in z.namelist(),name
-    assert b'mushaf-engine-loader.js' in z.read(prefix+'quran.html')
+    assert b'mushaf-qvp/boot.js' in z.read(prefix+'quran.html')
+    for old in ['app.js','reader-enhancements.js','reader-layout-polish.js','mushaf-engine-loader.js','mushaf-layout-prewarm-worker.js','data/mushaf-layout.json']:
+        assert prefix+old not in z.namelist(),old
 receipt={'appId':config['appId']}
 if os.environ.get('ANDROID_HOME'):
     build=Path(os.environ['ANDROID_HOME'])/'build-tools/36.0.0'
@@ -26,4 +28,4 @@ if os.environ.get('ANDROID_HOME'):
     signature=subprocess.check_output([str(build/'apksigner'),'verify','--print-certs',str(apk)],text=True)
     assert 'Signer #1 certificate SHA-256 digest: '+expected in signature,'Unexpected APK signer'
     receipt.update(versionCode=int(match[2]),signerSha256=expected,stableQaSignatureVerified=True)
-print(json.dumps({**receipt,'pages':604,'allPageHashesVerified':True,'legacyRetained':True,'bytes':apk.stat().st_size,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest()},indent=2))
+print(json.dumps({**receipt,'pages':604,'allPageHashesVerified':True,'legacyRetained':False,'bytes':apk.stat().st_size,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest()},indent=2))

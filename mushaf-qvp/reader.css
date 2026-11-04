@@ -14,8 +14,6 @@
 .madinah-status { position:fixed; bottom:2px; left:6px; right:6px; z-index:100; text-align:center; pointer-events:none; font:10px sans-serif; color:#176b63; }
 .madinah-status.is-error { background:#fff4dc; color:#802900; padding:8px; font-size:13px; }
 .madinah-lab-link { position:fixed; top:2px; left:4px; z-index:100; font:11px sans-serif; color:#176b63; background:#fff9; padding:2px 5px; }
-.mushaf-engine-setting {display:grid;gap:8px;padding:12px 16px;font:inherit;}
-.mushaf-engine-setting select {padding:10px;border:1px solid #9cae9f;border-radius:10px;background:var(--page-paper);color:var(--page-text);font:inherit;}
 .quran-text.madinah-text .madinah-subword {position:absolute;display:block;pointer-events:auto;}
 .quran-text.madinah-text .madinah-subword.is-audio-word {background:#e8c66c55;outline:1px solid #b58c25;}
 .quran-text.madinah-text .surah-basmala {line-height:normal;border:0;background:transparent;}

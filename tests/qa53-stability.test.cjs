@@ -3,39 +3,17 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const { execFileSync } = require('node:child_process');
 
-test('original mushaf typography, kashida and canonical 604-page data remain byte-for-byte unchanged (except approved index search)', () => {
-    const expected = {
-        'style.css': '5d39e5da6064e62a2402e7be47f5cd5b8829a888',
-        'reader-enhancements.js': '8982ac70f1e2d8e22719fe9a7610339d791adb0f',
-        'reader-layout-polish.js': '0d4b45ae5ca27d9d46222e25d4e910fed355ab4a',
-        'data/mushaf-layout.json': 'c10a1fad7d78c4a5809db88ebb0adb59f8576390',
-        'assets/fonts/amiri-quran-arabic-400-normal.woff2': 'e8b4b25708dd8dbc7ebfb3fad24595d0196e40ac'
-    };
-    // app.js intentionally changed to add surah index search. Keep its
-    // approved version pinned so unexpected reader changes still fail CI.
-    assert.equal(execFileSync('git', ['hash-object', 'app.js'], { encoding: 'utf8' }).trim(),
-        '76e22e2c4d7926146b3d7e6723b62eb27fc90fc9',
-        'app.js differs from the reviewed index-search version');
-    const app = fs.readFileSync('app.js', 'utf8');
-    assert.match(app, /index-surah-search/);
-    assert.match(app, /normalized\(entry\.label\)/);
-    for (const [file, sha] of Object.entries(expected)) {
-        assert.equal(execFileSync('git', ['hash-object', file], { encoding: 'utf8' }).trim(),
-            sha, file + ' unexpectedly changed');
-    }
-});
-
-test('all reciter metadata remain available and keyboard guard is included only in reader page', () => {
+test('QVP-only engine and preserved shared services', () => {
     const html = fs.readFileSync('quran.html', 'utf8');
-    assert.match(html, /src="mushaf-engine-loader\.js"/);
-    assert.match(fs.readFileSync('mushaf-engine-loader.js', 'utf8'), /'reader-layout-polish\.js'/);
-    assert.match(html, /src="mushaf-keyboard-viewport\.js"/);
-    assert.match(html, /src="qud-audio\.js"/);
-    const registry = fs.readFileSync('data/qud/registry.js', 'utf8');
-    assert.equal((registry.match(/\.word\.json\.gz/g) || []).length, 19);
-    assert.equal((registry.match(/"id":90\d\d/g) || []).length, 19);
+    assert.match(html, /src="mushaf-qvp\\/boot\\.js"/);
+    assert.match(html, /src="mushaf-keyboard-viewport\\.js"/);
+    assert.match(html, /src="qud-audio\\.js"/);
+    for (const old of ['app.js','reader-enhancements.js','reader-layout-polish.js','mushaf-engine-loader.js','mushaf-layout-prewarm-worker.js','data/mushaf-layout.json'])
+        assert.equal(fs.existsSync(old),false,old + ' must be deleted');
+    const registry = fs.readFileSync('data/qud/registry.js','utf8');
+    assert.equal((registry.match(/\\.word\\.json\\.gz/g)||[]).length,19);
+    assert.equal((registry.match(/"id":90\\d\\d/g)||[]).length,19);
 });
 
 test('keyboard show/hide never changes Quran page dimensions, and normal viewport returns after dismissal', () => {

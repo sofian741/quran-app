@@ -35,11 +35,12 @@ test('15:7 subword paths form an exhaustive, nonduplicated partition and keep la
  assert.deepEqual(timingRange(map,{word:1}),['15:7:1~1']);assert.deepEqual(timingRange(map,{word:2}),['15:7:1~2']);assert.deepEqual(timingRange(map,{word:3}),['15:7:2']);
  assert.deepEqual(timingRange(map,{word:1,endWord:2}),['15:7:1~1','15:7:1~2']);assert.equal(timingRange(map,{word:9}),null);
 });
-test('Tanzil, timing corpora, app identity, legacy escape hatch and Android text zoom are retained',()=>{
+test('Tanzil, timing corpora, app identity, QVP-only startup and Android text zoom are retained',()=>{
  assert.equal(sha(read('data/quran-uthmani.txt')),json('mushaf-qvp/sources.json').tanzilSha256);
  const report=json('data/qvp/validation-data.json');assert.equal(report.timing.length,19);assert.ok(report.timing.every(r=>r.ordinalRangeFailures.length===0));
  assert.equal(json('capacitor.config.json').appId,'com.sofian.nooralquran');
  assert.match(read('android-native/MushafTextScale.java').toString(),/settings\.setTextZoom\(100\)/);
- const loader=read('mushaf-engine-loader.js').toString();for(const file of ['app.js','reader-enhancements.js','reader-layout-polish.js'])assert.ok(loader.includes(file));
- assert.match(read('quran.html').toString(),/mushaf-engine-loader\.js/);
+ assert.match(read('quran.html').toString(),/mushaf-qvp\/boot\.js/);
+ assert.match(read('mushaf-qvp/boot.js').toString(),/reader\.js/);
+ for(const file of ['app.js','reader-enhancements.js','reader-layout-polish.js','mushaf-engine-loader.js','mushaf-layout-prewarm-worker.js','data/mushaf-layout.json'])assert.equal(fs.existsSync(new URL('../'+file,import.meta.url)),false,file+' obsolete');
 });

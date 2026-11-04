@@ -15,7 +15,7 @@ on:
       - scripts/register-background-downloads.py
       - android-native/MushafTextScale.java
       - mushaf-qvp/**
-      - mushaf-engine-loader.js
+      - mushaf-qvp/boot.js
       - scripts/qvp/**
       - scripts/prepare-android-web.mjs
       - quran.html
@@ -93,7 +93,6 @@ jobs:
           npm run qvp:prepare
           npm run test:qvp
           npm run test:tour:qvp
-          node tests/content.cjs
           node tests/data-integrity.cjs
           node tests/security-static.cjs
           node tests/ui-pages.cjs
@@ -140,9 +139,8 @@ jobs:
               )
               packaged = (out / page).read_text(encoding='utf-8')
               assert packaged == expected, page + ' changed beyond deleting offline-audio hooks'
-          for file in ('app.js', 'reader-enhancements.js', 'reader-layout-polish.js',
-                       'mushaf-audio.js', 'audio-core.js', 'audio-downloads.js',
-                       'assets/fonts/amiri-quran-arabic-400-normal.woff2'):
+          for file in ('mushaf-audio.js', 'audio-core.js', 'audio-downloads.js',
+                       'mushaf-qvp/boot.js', 'mushaf-qvp/reader.js'):
               assert (out / file).read_bytes() == Path(file).read_bytes(), file + ' was modified'
           from json import loads
           qud = out / 'data/qud'
@@ -160,8 +158,10 @@ jobs:
           assert 'mushaf-keyboard-viewport.js' in (out / 'quran.html').read_text(encoding='utf-8')
           assert (out / 'qud-audio.js').read_bytes() == Path('qud-audio.js').read_bytes()
           assert len(list((out / 'data/qvp/pages').glob('*.qvp'))) == 604
-          assert 'mushaf-engine-loader.js' in (out / 'quran.html').read_text()
-          print('All 604 QVP pages local; legacy engine and original audio/download modules retained.')
+          assert 'mushaf-qvp/boot.js' in (out / 'quran.html').read_text()
+          for old in ('app.js','reader-enhancements.js','reader-layout-polish.js','mushaf-engine-loader.js','mushaf-layout-prewarm-worker.js','data/mushaf-layout.json'):
+              assert not (out / old).exists(), old + ' unexpectedly bundled'
+          print('All 604 QVP pages local; QVP-only engine and original audio/download modules retained.')
           PY
 
       - name: Create Android project
