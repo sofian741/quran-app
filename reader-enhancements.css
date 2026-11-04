@@ -50,8 +50,16 @@
     will-change: transform;
 }
 
-.swipe-preview.is-front {
-    z-index: 4;
+.mushaf-page.is-swipe-dragging,
+.swipe-preview.is-swipe-dragging {
+    transition: none !important;
+    will-change: transform;
+}
+
+.mushaf-page.is-swipe-settling,
+.swipe-preview.is-swipe-settling {
+    transition: transform 210ms cubic-bezier(.22,.72,.2,1) !important;
+    will-change: transform;
 }
 
 .preview-heading-fallback {

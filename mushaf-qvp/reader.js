@@ -14,7 +14,7 @@ const digits=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}};
 const emit=(name,detail)=>window.dispatchEvent(new CustomEvent(name,{detail}));
 let current=1, revision=0, active=null, manifest, maps, verses, verseIndex, theme=read(SETTINGS,{}).theme||'paper';
-let drag=null, suppress=false, pendingTarget=null, lastAudio=null, audioSignature='';
+let drag=null, settling=false, suppress=false, pendingTarget=null, lastAudio=null, audioSignature='';
 const pointers=new Set(), cache=new Map(), pending=new Map(), prepared=new Map(), maxPages=3;
 let preview=null,targetTimer=null;
 const metrics={pageLoads:[],cacheLimit:maxPages,cachePages:0,wordTaps:0,errors:[],timingSpace:'tanzil-spoken',productionReady:false};
@@ -140,12 +140,12 @@ function paint(item){
   ctx.restore();
 }
 function fit(){fitItem(active,text);if(active)metrics.canvasPixels=active.canvas.width*active.canvas.height;audioSignature='';if(lastAudio)syncAudio(lastAudio);}
-async function navigate(number,target=null){
+async function navigate(number,target=null,transitionOverlay=null){
   if(!Number.isInteger(number)||number<1||number>604)return false;
   const ticket=++revision,start=performance.now();pendingTarget=target;
   try{
     const item=await load(number);if(ticket!==revision)return false;
-    removePreview();prepared.clear();clearTimeout(targetTimer);
+    if(!transitionOverlay)removePreview();prepared.clear();clearTimeout(targetTimer);
     const built=build(item);current=number;active=built;audioSignature='';evict();
     text.replaceChildren(built.frame);text.classList.add('madinah-text');text.dataset.layoutState='ready';text.dataset.page=String(number);
     $('display-page-number').textContent=digits(number);
@@ -153,7 +153,13 @@ async function navigate(number,target=null){
     $('page-surah').textContent=title;$('toolbar-surah').textContent=title;
     const part='الجزء '+digits(juz.filter(n=>n<=number).length);$('page-range').textContent=part;$('toolbar-range').textContent=part;
     try{localStorage.setItem(STORAGE,JSON.stringify({displayPage:number,surah:item.geometry.words[0].surah,ayah:item.geometry.words[0].ayah}));}catch{}
-    fit();emit('mushaf:page-changed',{page:number});emit('mushaf:page-ready',{page:number});
+    fit();
+    if(transitionOverlay){
+      const shell=$('mushaf-page');shell.classList.remove('is-swipe-dragging','is-swipe-settling');shell.style.transition='none';shell.style.transform='';
+      transitionOverlay.remove();if(preview===transitionOverlay)preview=null;settling=false;
+      requestAnimationFrame(()=>shell.style.removeProperty('transition'));
+    }
+    emit('mushaf:page-changed',{page:number});emit('mushaf:page-ready',{page:number});
     if(pendingTarget){for(const node of built.nodes.values())node.classList.toggle('is-search-target',node.dataset.verse===pendingTarget);pendingTarget=null;targetTimer=setTimeout(()=>text.querySelectorAll('.is-search-target').forEach(n=>n.classList.remove('is-search-target')),5500);}
     metrics.pageLoads.push({page:number,ms:performance.now()-start});if(metrics.pageLoads.length>604)metrics.pageLoads.shift();
     message('');
@@ -167,11 +173,15 @@ async function navigate(number,target=null){
       }).catch(()=>{});
     },80);
     return true;
-  }catch(e){if(ticket===revision)error(e);return false;}
+  }catch(e){if(ticket===revision){removePreview();settling=false;error(e);}return false;}
 }
-function removePreview(){preview?.remove();preview=null;$('mushaf-page').style.transform='';}
+function removePreview(){
+  preview?.remove();preview=null;
+  const shell=$('mushaf-page');shell.classList.remove('is-swipe-dragging','is-swipe-settling');shell.style.removeProperty('transition');shell.style.removeProperty('transition-duration');shell.style.transform='';
+  settling=false;
+}
 function preparePreview(number,item){
-  if(drag||preview||prepared.has(number)||Math.abs(number-current)!==1)return;
+  if(prepared.has(number)||Math.abs(number-current)!==1)return;
   const shell=$('mushaf-page').cloneNode(true);shell.removeAttribute('id');shell.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));
   shell.classList.add('swipe-preview');shell.setAttribute('aria-hidden','true');
   const rect=$('mushaf-page').getBoundingClientRect(),sr=stage.getBoundingClientRect();
@@ -182,6 +192,46 @@ function preparePreview(number,item){
   const heading=shell.querySelector('.page-heading span');if(heading)heading.textContent=names;
   const part=shell.querySelector('.page-heading span:last-child');if(part)part.textContent='الجزء '+digits(juz.filter(n=>n<=number).length);
   stage.append(shell);fitItem(built,container);shell.remove();shell.style.visibility='';prepared.set(number,shell);
+}
+function positionSwipe(dx,direction,width=$('mushaf-page').clientWidth){
+  const shell=$('mushaf-page');shell.style.transform=`translate3d(${dx}px,0,0)`;
+  if(preview)preview.style.transform=`translate3d(${dx-direction*width}px,0,0)`;
+}
+async function showPreview(number,direction,dx,width){
+  if(number<1||number>604)return null;
+  let shell=prepared.get(number);
+  if(!shell){const item=await load(number);if(Math.abs(number-current)!==1)return null;preparePreview(number,item);shell=prepared.get(number);}
+  if(!shell)return null;
+  if(preview!==shell){preview?.remove();preview=shell;preview.dataset.target=String(number);preview.dataset.preparedPreview='used';stage.append(preview);}
+  preview.classList.add('is-swipe-dragging');positionSwipe(dx,direction,width);return preview;
+}
+function waitForSwipeTransition(shell,duration){
+  if(!duration)return Promise.resolve();
+  return new Promise(resolve=>{
+    let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);shell.removeEventListener('transitionend',finish);resolve();};
+    const timer=setTimeout(finish,duration+90);shell.addEventListener('transitionend',finish);
+  });
+}
+async function settleSwipe({dx,direction,target,width,commit}){
+  const shell=$('mushaf-page'),duration=matchMedia('(prefers-reduced-motion: reduce)').matches?0:210;
+  settling=true;shell.classList.remove('is-swipe-dragging');shell.classList.add('is-swipe-settling');
+  if(preview){preview.classList.remove('is-swipe-dragging');preview.classList.add('is-swipe-settling');}
+  // Commit only with the adjacent page already painted. A cold preview is
+  // prepared after release while the current page remains under the finger.
+  if(commit&&!preview){try{await showPreview(target,direction,dx,width);}catch{commit=false;}}
+  if(commit&&!preview)commit=false;
+  shell.style.transitionDuration=duration+'ms';if(preview)preview.style.transitionDuration=duration+'ms';
+  // Flush the drag position once, then let the compositor finish both pages.
+  shell.getBoundingClientRect();
+  const finishPosition=()=>{
+    shell.style.transform=commit?`translate3d(${direction*width}px,0,0)`:'translate3d(0,0,0)';
+    if(preview)preview.style.transform=commit?'translate3d(0,0,0)':`translate3d(${-direction*width}px,0,0)`;
+  };
+  if(duration)requestAnimationFrame(finishPosition);else finishPosition();
+  await waitForSwipeTransition(shell,duration);
+  shell.style.removeProperty('transition-duration');if(preview)preview.style.removeProperty('transition-duration');
+  if(commit){const overlay=preview,ok=await navigate(target,null,overlay);if(ok)return;}
+  removePreview();settling=false;
 }
 function bands(verseKey,cls){
   text.querySelectorAll('.'+cls).forEach(n=>n.remove());if(!active)return;
@@ -280,13 +330,16 @@ function wire(){
   stage.addEventListener('keydown',e=>{const w=e.target.closest('.madinah-subword,.madinah-word');if(w&&(e.key==='Enter'||e.key===' ')){e.preventDefault();window.mushafVerseActions.openForVerse(...w.dataset.verse.split(':').map(Number));}});
   stage.addEventListener('pointerdown',e=>{
     if(e.pointerType==='touch')pointers.add(e.pointerId);
-    if(pointers.size>1||(visualViewport?.scale||1)>=1.01||closePanels()){drag=null;removePreview();return;}
-    if(e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0};
+    if(settling||pointers.size>1||(visualViewport?.scale||1)>=1.01||closePanels()){drag=null;if(!settling)removePreview();return;}
+    if(e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0,dy:0,direction:0,target:0,width:$('mushaf-page').clientWidth};
   });
-  stage.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){drag=null;removePreview();return;}if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.2){drag.dx=dx;const direction=dx>0?1:-1;
-    if(preview?.dataset.target!==String(current+direction)){removePreview();preview=prepared.get(current+direction)||null;if(preview){preview.dataset.target=String(current+direction);stage.append(preview);}}
-    $('mushaf-page').style.transform=`translateX(${dx}px)`;if(preview)preview.style.transform=`translateX(${dx-direction*$('mushaf-page').clientWidth}px)`;suppress=true;}});
-  const release=e=>{pointers.delete(e.pointerId);if(!drag||drag.id!==e.pointerId)return;const dx=drag.dx;drag=null;removePreview();if(e.type==='pointerup'&&Math.abs(dx)>Math.min(85,stage.clientWidth*.2))navigate(current+(dx>0?1:-1));};
+  stage.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;let dx=e.clientX-drag.x;const dy=e.clientY-drag.y;drag.dy=dy;if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){drag=null;removePreview();return;}if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.2){const direction=dx>0?1:-1,target=current+direction,valid=target>=1&&target<=604;
+    if(!valid)dx*=.22;drag.dx=dx;drag.direction=direction;drag.target=target;
+    const shell=$('mushaf-page');shell.classList.add('is-swipe-dragging');shell.classList.remove('is-swipe-settling');
+    if(valid&&preview?.dataset.target!==String(target)){preview?.remove();preview=null;showPreview(target,direction,dx,drag.width).then(node=>{if(node&&drag?.id===e.pointerId&&drag.target===target)positionSwipe(drag.dx,direction,drag.width);else if(!settling&&preview===node){node.remove();preview=null;}}).catch(()=>{});}
+    positionSwipe(dx,direction,drag.width);suppress=true;}});
+  const release=e=>{pointers.delete(e.pointerId);if(!drag||drag.id!==e.pointerId)return;const gesture=drag;drag=null;const threshold=Math.min(85,stage.clientWidth*.2),valid=gesture.target>=1&&gesture.target<=604;
+    const commit=e.type==='pointerup'&&valid&&Math.abs(gesture.dx)>threshold;settleSwipe({...gesture,commit});};
   stage.addEventListener('pointerup',release);stage.addEventListener('pointercancel',release);
   window.addEventListener('keydown',e=>{if(e.key==='Escape'){panel('index',false);panel('settings',false);return;}if(e.target.closest('input,textarea')||closePanels())return;if(e.key==='ArrowLeft')navigate(current+1);if(e.key==='ArrowRight')navigate(current-1);});
   const zoom=()=>{const value=(visualViewport?.scale||1)>=1.01;document.body.classList.toggle('is-pinch-panning',value);if(value){drag=null;removePreview();}prepared.clear();fit();};

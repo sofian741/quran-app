@@ -118,6 +118,25 @@ if(!process.env.QURAN_BASE_URL){
   await page.reload();await page.waitForFunction(()=>window.mushafReader?.getCurrentPage()===208&&window.mushafQvp?.metrics.ready&&window.mushafQvp?.getGeometry()?.number===208);
   assert.equal(await page.evaluate(()=>localStorage.getItem('qvp-upgrade-sentinel')),'unchanged');
  });
+ await check('live page swipe keeps the adjacent page under the finger and settles without a blank frame',async()=>{
+  await page.evaluate(()=>mushafQvp.navigate(4));await page.waitForFunction(()=>mushafQvp.getPreparedPages().includes(5));
+  const held=await page.evaluate(()=>{
+   const s=document.querySelector('#reader-stage'),emit=(type,x)=>s.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerType:'touch',pointerId:41,clientX:x,clientY:350,button:0}));
+   emit('pointerdown',50);emit('pointermove',180);
+   const current=document.querySelector('#mushaf-page').getBoundingClientRect(),next=document.querySelector('.swipe-preview').getBoundingClientRect();
+   return {target:document.querySelector('.swipe-preview').dataset.target,currentLeft:current.left,nextRight:next.right,seam:Math.abs(current.left-next.right)};
+  });
+  assert.equal(held.target,'5');assert.ok(held.currentLeft>100);assert.ok(held.seam<1);
+  await page.evaluate(()=>document.querySelector('#reader-stage').dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'touch',pointerId:41,clientX:180,clientY:350,button:0})));
+  await page.waitForTimeout(70);assert.equal(await page.locator('.swipe-preview.is-swipe-settling').count(),1);
+  await page.waitForFunction(()=>mushafReader.getCurrentPage()===5&&!document.querySelector('.swipe-preview'));
+  assert.equal(await page.locator('#mushaf-page').evaluate(n=>getComputedStyle(n).transform),'none');
+  await page.evaluate(()=>mushafQvp.navigate(604));await page.waitForFunction(()=>mushafQvp.getPreparedPages().includes(603));
+  const edge=await page.evaluate(()=>{
+   const s=document.querySelector('#reader-stage'),emit=(type,x)=>s.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerType:'touch',pointerId:42,clientX:x,clientY:350,button:0}));
+   emit('pointerdown',50);emit('pointermove',220);const x=new DOMMatrix(getComputedStyle(document.querySelector('#mushaf-page')).transform).m41,preview=!!document.querySelector('.swipe-preview');emit('pointerup',220);return {x,preview};
+  });assert.equal(edge.preview,false);assert.ok(edge.x<50);await page.waitForTimeout(260);assert.equal(await page.evaluate(()=>mushafReader.getCurrentPage()),604);
+ });
  await check('zoom simulation suppresses page turns and supports reverse navigation',async()=>{
   await page.evaluate(()=>mushafQvp.navigate(4));
   const drag=()=>page.evaluate(()=>{const stage=document.querySelector('#reader-stage');for(const [type,x]of [['pointerdown',50],['pointermove',250],['pointerup',250]])stage.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerType:'touch',pointerId:12,clientX:x,clientY:350,button:0}));});
