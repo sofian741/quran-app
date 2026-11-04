@@ -1,117 +1,103 @@
-// Page-local, one-time QVP geometry layout. No DOM measurements or per-frame work.
-// All word, decoration and hit-test paths are moved together.
-const validBox = b => Array.isArray(b) && b.length === 4 &&
-    b.every(Number.isFinite) && b[2] >= b[0] && b[3] >= b[1];
+// Fixed printed-line grid. Only translate whole rows; never stretch glyphs or
+// reflow words. Reference for body-only centres, ayah-marker ownership and
+// sajdah underlines: Quran Engine qvp-core/src/lib.rs at sources.json engineCommit.
+export const GRID=Object.freeze({slots:15,band:40,gap:10,width:345,height:760});
+const valid=b=>Array.isArray(b)&&b.length===4&&b.every(Number.isFinite);
+const middle=b=>(b[1]+b[3])/2;
+const union=boxes=>boxes.length?[
+ Math.min(...boxes.map(b=>b[0])),Math.min(...boxes.map(b=>b[1])),
+ Math.max(...boxes.map(b=>b[2])),Math.max(...boxes.map(b=>b[3]))
+]:null;
+const onPage=(box,g)=>valid(box)&&box[2]>0&&box[0]<g.width&&box[3]>0&&box[1]<g.height;
+const boxAt=(b,scale,dx,dy)=>[b[0]*scale+dx,b[1]*scale+dy,b[2]*scale+dx,b[3]*scale+dy];
 
-function union(boxes) {
-    if (!boxes.length) return null;
-    return [
-        Math.min(...boxes.map(b => b[0])),
-        Math.min(...boxes.map(b => b[1])),
-        Math.max(...boxes.map(b => b[2])),
-        Math.max(...boxes.map(b => b[3]))
-    ];
+export function layoutGeometry(g){
+ if(g.layoutApplied)return g;
+ const originalHeight=g.height;
+ // Artwork outside the source viewBox (four records on p17) was never visible.
+ // A taller presentation must not pull that running head/page number into view.
+ for(const path of g.paths)path.hidden=!onPage(path.box,g);
+ if(g.number<=2){
+  const ink=union(g.paths.filter(p=>!p.hidden).map(p=>p.box));
+  const zoom=Math.min(1.5,(g.width-12)/(ink[2]-ink[0]),(g.height-20)/(ink[3]-ink[1]));
+  const dx=g.width/2-((ink[0]+ink[2])/2)*zoom;
+  const dy=g.height/2-middle(ink)*zoom;
+  for(const path of g.paths){
+   if(path.hidden)continue;
+   for(let k=0;k<path.pts.length;k+=2){path.pts[k]=path.pts[k]*zoom+dx;path.pts[k+1]=path.pts[k+1]*zoom+dy;}
+   path.box=boxAt(path.box,zoom,dx,dy);
+  }
+  for(const record of [...g.words,...g.decorations,...g.lines,...g.ayahs])
+   if(valid(record.box)&&onPage(record.box,{...g,height:originalHeight}))record.box=boxAt(record.box,zoom,dx,dy);
+  g.layoutStats={mode:'opening-zoom',zoom,dx,dy};g.layoutApplied=true;return g;
+ }
+ if(g.lines.length!==GRID.slots)throw new Error('Expected 15 printed slots: '+g.number);
+ const centres=g.lines.map(line=>{
+  const boxes=[];
+  for(let i=line.firstWord;i<line.firstWord+line.nWords;i++){
+   const w=g.words[i];for(let p=w.firstPath;p<w.firstPath+w.nPaths;p++)
+    if(g.paths[p].kind===0&&!g.paths[p].hidden)boxes.push(g.paths[p].box);
+  }
+  if(!boxes.length)for(const d of g.decorations)
+   if(d.lineIndex===line.index&&(d.decoration===1||d.decoration===2))boxes.push(d.box);
+  const box=union(boxes);if(!box)throw new Error('Empty printed slot '+g.number+':'+line.index);
+  return middle(box);
+ });
+ const targets=centres.map((_,i)=>GRID.gap+GRID.band/2+i*(GRID.band+GRID.gap));
+ const shift=centres.map((c,i)=>targets[i]-c),ownership=new Int16Array(g.paths.length).fill(-1);
+ const lastWord=new Map(g.words.map(w=>[w.surah+':'+w.ayah,w]));
+ function assign(record,line){
+  if(!Number.isInteger(line)||line<0||line>=GRID.slots)throw new Error('Missing printed line '+g.number);
+  for(let p=record.firstPath;p<record.firstPath+record.nPaths;p++){
+   if(ownership[p]>=0&&ownership[p]!==line)throw new Error('Conflicting path ownership');
+   ownership[p]=line;
+  }
+ }
+ for(const w of g.words)assign(w,w.lineIndex);
+ for(const d of g.decorations){
+  if(!onPage(d.box,g))continue;
+  let line=d.decoration===0?lastWord.get(d.surah+':'+d.ayah)?.lineIndex:d.lineIndex;
+  if(!Number.isInteger(line)||line<0)throw new Error('Unresolved decoration '+g.number+':'+d.decoration);
+  assign(d,line);
+  // A sajdah underline can belong several rows above its closing sign.
+  // Attach each underline to the overlapping word directly below it.
+  for(let p=d.firstPath;p<d.firstPath+d.nPaths;p++)if(g.paths[p].mark===31){
+   const box=g.paths[p].box;
+   const under=g.words.filter(w=>w.box[0]<box[2]&&w.box[2]>box[0]&&w.box[1]>=box[1]-2)
+    .sort((a,b)=>a.box[1]-b.box[1])[0];
+   if(!under)throw new Error('Unresolved sajdah underline '+g.number);
+   ownership[p]=under.lineIndex;
+  }
+ }
+ const bands=Array.from({length:GRID.slots},()=>[]);
+ for(let i=0;i<g.paths.length;i++){
+  const p=g.paths[i];if(p.hidden)continue;
+  const line=ownership[i];if(line<0)throw new Error('Unowned visible path '+g.number+':'+i);
+  const dy=shift[line];for(let k=1;k<p.pts.length;k+=2)p.pts[k]+=dy;
+  p.box=boxAt(p.box,1,0,dy);bands[line].push(p.box);
+ }
+ for(const w of g.words)w.box=boxAt(w.box,1,0,shift[w.lineIndex]);
+ for(const d of g.decorations){
+  const boxes=g.paths.slice(d.firstPath,d.firstPath+d.nPaths).filter(p=>!p.hidden).map(p=>p.box);
+  if(boxes.length)d.box=union(boxes);
+ }
+ for(let i=0;i<GRID.slots;i++)g.lines[i].box=union(bands[i]);
+ for(const a of g.ayahs)a.box=union(g.words.slice(a.firstWord,a.firstWord+a.nWords).map(w=>w.box));
+ g.height=GRID.height;
+ g.layoutStats={mode:'fixed-grid',slots:GRID.slots,band:GRID.band,gap:GRID.gap,pitch:GRID.band+GRID.gap,centres:targets,sourceCentres:centres,pathLines:ownership};
+ g.layoutApplied=true;return g;
 }
 
-function owningLine(geometry, record) {
-    if (Number.isInteger(record.lineIndex) &&
-        record.lineIndex >= 0 && record.lineIndex < geometry.lines.length)
-        return record.lineIndex;
-    // Rare decoration with no associated line: use the closest occupied line.
-    const center=(record.box[1]+record.box[3])/2;
-    let nearest=0, distance=Infinity;
-    geometry.lines.forEach((line,i)=>{
-        if (!validBox(line.box)) return;
-        const d=Math.abs(center-(line.box[1]+line.box[3])/2);
-        if(d<distance){distance=d;nearest=i;}
-    });
-    return nearest;
+// Preserve upstream data/path indices; discard only the originally clipped ink
+// from the painter's view. Word/ayah references and original buffers stay intact.
+export function paintGeometry(g){
+ return {...g,paths:g.paths.map(p=>p.hidden?{...p,ops:new Uint8Array(0),pts:new Float32Array(0)}:p)};
 }
 
-function zoomOpening(geometry, requested) {
-    const box=union(geometry.paths.map(p=>p.box).filter(validBox));
-    if(!box)return 1;
-    // Fixed QVP canvas 345x550. Always keep a small visible safety margin.
-    const availableX=geometry.width-6, availableY=geometry.height-12;
-    const applied=Math.min(requested,availableX/(box[2]-box[0]),availableY/(box[3]-box[1]));
-    if(!Number.isFinite(applied)||applied<=1)return 1;
-    const centerX=(box[0]+box[2])/2, centerY=(box[1]+box[3])/2;
-    const moveX=geometry.width/2-centerX*applied;
-    const moveY=geometry.height/2-centerY*applied;
-    const tx=x=>x*applied+moveX, ty=y=>y*applied+moveY;
-    for(const path of geometry.paths){
-        for(let k=0;k<path.pts.length;k+=2){path.pts[k]=tx(path.pts[k]);path.pts[k+1]=ty(path.pts[k+1]);}
-        path.box=[tx(path.box[0]),ty(path.box[1]),tx(path.box[2]),ty(path.box[3])];
-    }
-    for(const record of [...geometry.words,...geometry.decorations,...geometry.ayahs,...geometry.lines]){
-        if(validBox(record.box))record.box=[tx(record.box[0]),ty(record.box[1]),tx(record.box[2]),ty(record.box[3])];
-    }
-    return applied;
-}
-
-export function layoutGeometry(geometry) {
-    if(geometry.layoutApplied)return geometry;
-    if(geometry.number<=2){
-        geometry.layoutStats={mode:'opening-zoom',zoom:zoomOpening(geometry,geometry.number===1?1.28:1.10)};
-        geometry.layoutApplied=true;
-        return geometry;
-    }
-    const n=geometry.lines.length;
-    const records=Array.from({length:n},()=>[]);
-    for(const item of [...geometry.words,...geometry.decorations])
-        if(validBox(item.box))records[owningLine(geometry,item)].push(item.box);
-    const bands=records.map(union),occupied=bands.map((b,i)=>b?i:-1).filter(i=>i>=0);
-    if(occupied.length<2){geometry.layoutStats={mode:'original'};geometry.layoutApplied=true;return geometry;}
-    const used=occupied.reduce((sum,i)=>sum+bands[i][3]-bands[i][1],0);
-    // Equal optical whitespace: the page starts and ends with the same gap
-    // as between every occupied text / basmala / title band.
-    const gap=(geometry.height-used)/(occupied.length+1);
-    if(!Number.isFinite(gap)||gap<2){
-        geometry.layoutStats={mode:'original',reason:'insufficient-vertical-space'};
-        geometry.layoutApplied=true;return geometry;
-    }
-    const shift=Array(n).fill(0);
-    let cursor=gap;
-    for(const i of occupied){
-        shift[i]=cursor-bands[i][1];
-        cursor+=bands[i][3]-bands[i][1]+gap;
-    }
-    // Resolve all paths exactly once. A page might have decorative contours
-    // beyond the words, so unmatched paths inherit their nearest band.
-    const ownership=new Int16Array(geometry.paths.length).fill(-1);
-    for(const record of [...geometry.words,...geometry.decorations]){
-        const line=owningLine(geometry,record);
-        for(let i=record.firstPath;i<record.firstPath+record.nPaths;i++){
-            if(i>=0&&i<ownership.length && ownership[i]<0)ownership[i]=line;
-        }
-    }
-    for(let i=0;i<geometry.paths.length;i++){
-        const path=geometry.paths[i];
-        let line=ownership[i];
-        if(line<0){
-            const center=(path.box[1]+path.box[3])/2;
-            line=occupied.reduce((best,j)=>Math.abs(center-(bands[j][1]+bands[j][3])/2)<
-                Math.abs(center-(bands[best][1]+bands[best][3])/2)?j:best,occupied[0]);
-        }
-        const dy=shift[line];if(!dy)continue;
-        for(let k=1;k<path.pts.length;k+=2)path.pts[k]+=dy;
-        path.box[1]+=dy;path.box[3]+=dy;
-    }
-    for(const record of [...geometry.words,...geometry.decorations]){
-        const dy=shift[owningLine(geometry,record)];
-        record.box[1]+=dy;record.box[3]+=dy;
-    }
-    for(const line of geometry.lines){
-        if(!validBox(line.box))continue;
-        const index=geometry.lines.indexOf(line),dy=shift[index];
-        line.box[1]+=dy;line.box[3]+=dy;
-    }
-    for(const ayah of geometry.ayahs){
-        const boxes=geometry.words.slice(ayah.firstWord,ayah.firstWord+ayah.nWords)
-            .map(w=>w.box).filter(validBox);
-        ayah.box=union(boxes);
-    }
-    geometry.layoutStats={mode:'equal-gaps',gap,occupied:occupied.length,lines:n};
-    geometry.layoutApplied=true;
-    return geometry;
+export function headingBox(g,decoration){
+ const zoom=g.layoutStats.mode==='opening-zoom'?g.layoutStats.zoom:1;
+ // Full-width frame with enough room for title ink and padding, independent of
+ // whether the page contains 8 or 15 source rows.
+ const height=(decoration.box[3]-decoration.box[1]+8*zoom)*224/144;
+ const y=middle(decoration.box);return [4,y-height/2,g.width-4,y+height/2];
 }

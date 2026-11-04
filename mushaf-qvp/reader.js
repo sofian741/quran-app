@@ -4,7 +4,7 @@ import {sha256} from './integrity.js';
 import {SUBWORDS, subwordBox} from './subwords.js';
 import {createHeritageHeading} from './heritage-ornament.js';
 import {parseTanzil, timingRange} from './text-map.js';
-import {layoutGeometry} from './line-layout.js';
+import {layoutGeometry, paintGeometry, headingBox} from './line-layout.js';
 
 const $ = id=>document.getElementById(id), text=$('quran-text'), stage=$('reader-stage');
 const STORAGE='quranReaderState', SETTINGS='quranReaderSettings';
@@ -34,13 +34,13 @@ async function load(number){
     if(digest!==manifest.files[id+'.qvp'].sha256)throw new Error('Page integrity '+number);
     const geometry=decodeGeometry(bytes);if(geometry.number!==number)throw new Error('Page identity');
     layoutGeometry(geometry);
-    const item={geometry,paint:new QvpLitePage(geometry)};cache.set(number,item);evict();return item;
+    const item={geometry,paint:new QvpLitePage(paintGeometry(geometry))};cache.set(number,item);evict();return item;
   })().finally(()=>pending.delete(number));
   pending.set(number,promise);return promise;
 }
 function setBox(el,box){Object.assign(el.style,{left:box[0]+'px',top:box[1]+'px',width:(box[2]-box[0])+'px',height:(box[3]-box[1])+'px'});}
 function build(item){
-  const g=item.geometry, frame=document.createElement('div');frame.className='madinah-frame';
+  const g=item.geometry, frame=document.createElement('div');frame.className='madinah-frame';frame.style.setProperty('--qvp-height',g.height+'px');
   const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');frame.append(canvas);
   const layer=document.createElement('div');layer.className='madinah-hit-layer';frame.append(layer);
   const rows=new Map(), nodes=new Map();
@@ -68,10 +68,7 @@ function build(item){
     header.className='madinah-heritage-heading';
     header.setAttribute('aria-hidden','true');
     header.innerHTML=createHeritageHeading();
-    const lineHeight=g.height/g.lines.length;
-    const height=Math.min(lineHeight*1.12,Math.max(d.box[3]-d.box[1]+8,lineHeight*.88));
-    const middle=(d.box[1]+d.box[3])/2;
-    setBox(header,[4,middle-height/2,g.width-4,middle+height/2]);
+    setBox(header,headingBox(g,d));
     // Under the transparent QVP canvas: the original title glyphs stay on top.
     frame.insertBefore(header,canvas);
   }
@@ -100,12 +97,13 @@ function build(item){
 }
 function fitItem(item,container){
   if(!item||!container.clientWidth||!container.clientHeight)return;
-  const scale=Math.min(container.clientWidth/345,container.clientHeight/550), x=(container.clientWidth-345*scale)/2,y=(container.clientHeight-550*scale)/2;
+  const {width,height}=item.geometry;
+  const scale=Math.min(container.clientWidth/width,container.clientHeight/height), x=(container.clientWidth-width*scale)/2,y=(container.clientHeight-height*scale)/2;
   item.frame.style.transform=`translate(${x}px,${y}px) scale(${scale})`;
   // DPR adapts to pinch magnification, with a bounded 3M-pixel backing store.
   const ratio=Math.min(8,Math.max(2,devicePixelRatio*(visualViewport?.scale||1))), desired=scale*ratio;
-  const backing=Math.min(desired,Math.sqrt(3000000/(345*550)));
-  item.canvas.width=Math.ceil(345*backing);item.canvas.height=Math.ceil(550*backing);
+  const backing=Math.min(desired,Math.sqrt(3000000/(width*height)));
+  item.canvas.width=Math.ceil(width*backing);item.canvas.height=Math.ceil(height*backing);
   paint(item);
 }
 function paint(item){
@@ -219,8 +217,8 @@ function follow(state){
 }
 function wordFromPoint(clientX,clientY){
   if(!active||!Number.isFinite(clientX)||!Number.isFinite(clientY))return null;
-  const rect=active.frame.getBoundingClientRect(),x=(clientX-rect.left)*345/rect.width,y=(clientY-rect.top)*550/rect.height;
-  if(x<0||y<0||x>345||y>550)return null;
+  const rect=active.frame.getBoundingClientRect(),{width,height}=active.geometry,x=(clientX-rect.left)*width/rect.width,y=(clientY-rect.top)*height/rect.height;
+  if(x<0||y<0||x>width||y>height)return null;
   const basmala=[...text.querySelectorAll('.madinah-basmala')].find(n=>{const b=n.getBoundingClientRect();return clientX>=b.left&&clientX<=b.right&&clientY>=b.top&&clientY<=b.bottom;});if(basmala)return basmala;
   const g=active.geometry, candidates=g.words.filter(w=>x>=w.box[0]&&x<=w.box[2]&&y>=w.box[1]&&y<=w.box[3]);
   active.hitPaths??=new Map();const ctx=active.canvas.getContext('2d');
