@@ -17,7 +17,7 @@ jobs:
     # Its byte-frozen baseline is historical; the production integration has
     # its own coverage in Build Android APK and must not use this old gate.
     if: github.ref == 'refs/heads/feature/madinah-mushaf-engine'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
