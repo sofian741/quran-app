@@ -77,6 +77,8 @@ jobs:
           node --check native-background-audio.js
           node --check qud-audio.js
           node --check mushaf-keyboard-viewport.js
+          node --check mushaf-qvp/boot.js
+          node --check mushaf-qvp/reader.js
           node --check library.js
           node --check app-update.js
           node --check android-navigation.js
