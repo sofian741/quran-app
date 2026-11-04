@@ -32,8 +32,8 @@ jobs:
         run: |
           npm install --no-audit --no-fund --no-package-lock
           npm install --no-save --no-package-lock playwright@1.56.1
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq chromium
+          npx playwright install --with-deps chromium
+          echo "QURAN_BROWSER_PATH=$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')" >> "$GITHUB_ENV"
       - name: Preserve production and test mapping failures
         run: |
           node --test tests/madinah-engine/unit.test.mjs

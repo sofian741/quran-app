@@ -22,14 +22,12 @@ jobs:
           node-version: '22'
       - name: Prepare pinned Quran page files
         run: npm run qvp:prepare
-      - name: Install headless Chromium
+      - name: Install Playwright Chromium
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq chromium
           npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+          echo "QURAN_BROWSER_PATH=$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')" >> "$GITHUB_ENV"
       - name: Verify all 604 QVP pages and geometry alignment
-        env:
-          QURAN_BROWSER_PATH: /usr/bin/chromium
         run: npm run test:qvp
       - name: Upload browser evidence
         if: always()

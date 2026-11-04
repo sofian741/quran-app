@@ -27,16 +27,15 @@ jobs:
         run: npm run qvp:prepare
       - name: Install browser test dependencies
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq chromium
           npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+          echo "QURAN_BROWSER_PATH=$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')" >> "$GITHUB_ENV"
       - name: Start local mushaf
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/quran-test-server.log 2>&1 &
           sleep 2
       - name: Test full library and automatic reciter fallback
         env:
-          QURAN_BROWSER_PATH: /usr/bin/chromium
           QURAN_BASE_URL: http://127.0.0.1:4173
         run: |
           node --check mushaf-audio.js
@@ -46,25 +45,21 @@ jobs:
 
       - name: Verify QUD 9000 playback in Chromium
         env:
-          QURAN_BROWSER_PATH: /usr/bin/chromium
           QURAN_BASE_URL: http://127.0.0.1:4173
           QUD_RECITER_ID: '9000'
         run: node tests/qud-play-browser.cjs
       - name: Verify QUD 9001 playback in Chromium
         env:
-          QURAN_BROWSER_PATH: /usr/bin/chromium
           QURAN_BASE_URL: http://127.0.0.1:4173
           QUD_RECITER_ID: '9001'
         run: node tests/qud-play-browser.cjs
       - name: Verify QUD 9016 playback in Chromium
         env:
-          QURAN_BROWSER_PATH: /usr/bin/chromium
           QURAN_BASE_URL: http://127.0.0.1:4173
           QUD_RECITER_ID: '9016'
         run: node tests/qud-play-browser.cjs
       - name: Verify QUD 9017 playback in Chromium
         env:
-          QURAN_BROWSER_PATH: /usr/bin/chromium
           QURAN_BASE_URL: http://127.0.0.1:4173
           QUD_RECITER_ID: '9017'
         run: node tests/qud-play-browser.cjs

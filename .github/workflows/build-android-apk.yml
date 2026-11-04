@@ -70,12 +70,10 @@ jobs:
           node --test tests/offline-audio.test.cjs tests/bundled-mishary.test.cjs tests/offline-mishary-sync.test.cjs tests/qa53-stability.test.cjs
 
       - name: Verify QVP integration and app tours in Chromium
-        env:
-          QURAN_BROWSER_PATH: /usr/bin/chromium
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq chromium
           npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+          export QURAN_BROWSER_PATH="$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')"
           npm run qvp:prepare
           npm run test:qvp
           npm run test:tour:qvp
