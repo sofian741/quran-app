@@ -1,9 +1,9 @@
-/* All geometry belongs to the pinned page. No per-device typography or reflow. */
+/* Pinned glyph outlines and printed word order; one fixed presentation grid. */
 .quran-text.madinah-text { display:block; position:relative; padding:0; overflow:hidden; direction:ltr; font-size:16px; }
-.madinah-frame { position:absolute; width:345px; height:550px; transform-origin:0 0; isolation:isolate; }
-.madinah-frame canvas { position:absolute; width:345px; height:550px; inset:0; pointer-events:none; z-index:2; }
+.madinah-frame { position:absolute; width:345px; height:var(--qvp-height,550px); transform-origin:0 0; isolation:isolate; }
+.madinah-frame canvas { position:absolute; width:345px; height:var(--qvp-height,550px); inset:0; pointer-events:none; z-index:2; }
 .madinah-hit-layer { position:absolute; inset:0; z-index:3; }
-.quran-text.madinah-text .madinah-row { position:absolute; height:550px; inset:0; width:345px; min-height:0; display:block; font-size:0; margin:0; padding:0; transform:none; pointer-events:none; }
+.quran-text.madinah-text .madinah-row { position:absolute; height:var(--qvp-height,550px); inset:0; width:345px; min-height:0; display:block; font-size:0; margin:0; padding:0; transform:none; pointer-events:none; }
 .quran-text.madinah-text .madinah-word { position:absolute; display:block; padding:0; margin:0; color:transparent; font-size:0; min-width:0; pointer-events:auto; border-radius:1px; background:transparent; box-shadow:none; }
 .quran-text.madinah-text .madinah-word.is-audio-word { background:#e8c66c99; outline:1px solid #b58c25; }
 .quran-text.madinah-text .madinah-word.is-search-target { background:#45b6a844; outline:1px solid #288a7d; }
@@ -18,9 +18,15 @@
 .quran-text.madinah-text .madinah-subword.is-audio-word {background:#e8c66c55;outline:1px solid #b58c25;}
 .quran-text.madinah-text .surah-basmala {line-height:normal;border:0;background:transparent;}
 
-/* The legacy ornament returns as decoration only; QVP owns all title glyphs.
-   Keep the page geometry and fixed QVP line positions intact. */
+/* Existing decorative frame; title glyphs belong to QVP and move with the row. */
 .madinah-heritage-heading {
+  --ornament-gold:#997532;
+  --ornament-field:#64ac98;
+  --ornament-edge:#236f61;
+  --ornament-leaf:#faf3da;
+  --ornament-leaf-shade:#bdd7aa;
+  --ornament-paper:#fbf7ec;
+  --ornament-ink:#154d43;
   position:absolute;
   z-index:1;
   pointer-events:none;
@@ -35,3 +41,12 @@
   overflow:visible;
 }
 /* The existing style.css ornament palette supports the reader's four themes. */
+.reader-page[data-theme='dark'] .madinah-heritage-heading {
+  --ornament-gold:#c4aa70;
+  --ornament-field:#24594f;
+  --ornament-edge:#7bbba5;
+  --ornament-leaf:#e4dfbd;
+  --ornament-leaf-shade:#80b69b;
+  --ornament-paper:#202e29;
+  --ornament-ink:#f2ecd9;
+}

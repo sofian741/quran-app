@@ -1,7 +1,7 @@
 name: Verify QVP reader layout in browser
 on:
   push:
-    branches: [main]
+    branches: [main, feature/qvp-uniform-page-spacing]
     paths:
       - 'mushaf-qvp/**'
       - 'tests/qvp-*'

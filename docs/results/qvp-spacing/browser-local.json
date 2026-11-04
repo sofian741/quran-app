@@ -1,0 +1,109 @@
+{
+  "browser": "Chromium desktop; Android behavior simulated only",
+  "results": [
+    {
+      "name": "all 604 pages load, word hit boxes match pinned geometry and cache stays bounded",
+      "pass": true,
+      "detail": {
+        "errors": [],
+        "words": 77432,
+        "p50": 44.0999999998603,
+        "p95": 78.29999999981374,
+        "max": 145.80000000004657,
+        "cache": 3,
+        "heap": 41683467
+      }
+    },
+    {
+      "name": "plain pages share the same row grid and actual bottom-row touch uses the taller coordinate space",
+      "pass": true
+    },
+    {
+      "name": "surah frames have a visible palette, fit all three headings and remain readable in dark mode",
+      "pass": true
+    },
+    {
+      "name": "five viewports retain exact printed geometry on varied pages",
+      "pass": true,
+      "detail": {
+        "cases": 70
+      }
+    },
+    {
+      "name": "word tap and genuine long-press menu, favorites, copy, tafsir and sharing",
+      "pass": true
+    },
+    {
+      "name": "word and verse highlighting use timed words, fused mapping, gaps and multi-line verses",
+      "pass": true,
+      "detail": {
+        "first": [
+          "15:7:1~2"
+        ],
+        "gap": 0,
+        "third": [
+          "15:7:2"
+        ],
+        "stopped": 0,
+        "bands": 15
+      }
+    },
+    {
+      "name": "basmala selection targets verse 1 without shifting audio ordinals; Tawba has no basmala",
+      "pass": true
+    },
+    {
+      "name": "15:7 first two source tokens have separate contours, timing cues, and hit targets",
+      "pass": true
+    },
+    {
+      "name": "real AudioEngine event pipeline produces word cues with local mocked media",
+      "pass": true
+    },
+    {
+      "name": "index, offline search, marker and restore after reload",
+      "pass": true
+    },
+    {
+      "name": "zoom simulation suppresses page turns and supports reverse navigation",
+      "pass": true
+    },
+    {
+      "name": "adjacent page preview, themes, verse marker, saved panel and normalized index search",
+      "pass": true
+    },
+    {
+      "name": "failed and out-of-order page loads preserve last accepted position",
+      "pass": true
+    },
+    {
+      "name": "complete local shell and all 604 pages reopen with browser network offline",
+      "pass": true,
+      "detail": {
+        "pages": 604,
+        "offlinePages": 604
+      }
+    }
+  ],
+  "screenshots": [
+    "page-001-390x844.png",
+    "page-002-390x844.png",
+    "page-003-390x844.png",
+    "page-004-390x844.png",
+    "page-048-390x844.png",
+    "page-077-390x844.png",
+    "page-187-390x844.png",
+    "page-208-390x844.png",
+    "page-262-390x844.png",
+    "page-282-390x844.png",
+    "page-428-390x844.png",
+    "page-451-390x844.png",
+    "page-602-390x844.png",
+    "page-604-390x844.png"
+  ],
+  "failures": [],
+  "pageErrors": [],
+  "completed": true,
+  "baselineCommit": "b243297f4c5dc94497b425e194033b59ea481901",
+  "execution": "Local Chromium 154 on Linux; Android gestures simulated"
+}

@@ -46,7 +46,7 @@ export function createHeritageHeading(){
         const finial = '<path class="botanical-petal" d="M0 29C-6 17-15 15-16 5C-30 10-34-8-21-11C-21-26-9-28-6-38L0-50 6-38C9-28 21-26 21-11C34-8 30 10 16 5C15 15 6 17 0 29Z"/>' +
             '<path class="botanical-calyx" d="M0 17C-4 4-13 2-12-9Q-3-7 0 3Q3-7 12-9C13 2 4 4 0 17ZM0-10Q-13-23 0-38Q13-23 0-10Z"/>' +
             '<path class="botanical-vein" d="M0-35V11"/>';
-        heading.innerHTML = `<svg class="surah-ornament" viewBox="0 0 1000 224" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">` +
+        heading.innerHTML = `<svg class="surah-ornament" viewBox="0 0 1000 224" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">` +
             '<path class="ornament-frame-outer" d="M28 40H972V184H28Z"/>' +
             '<path class="ornament-frame-inner" d="M34 46H966V178H34Z"/>' +
             '<path class="ornament-field" d="M41 53H959V171H41Z"/>' +

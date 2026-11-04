@@ -35,8 +35,25 @@ if(!process.env.QURAN_BASE_URL){
    times.sort((a,b)=>a-b);return {errors,words,p50:times[302],p95:times[573],max:times.at(-1),cache:mushafQvp.metrics.cachePages,heap:performance.memory?.usedJSHeapSize};
   });assert.deepEqual(result.errors,[]);assert.equal(result.words,77432);return result;
  });
+ await check('plain pages share the same row grid and actual bottom-row touch uses the taller coordinate space',async()=>{
+  const grids=await page.evaluate(async()=>{
+   const result=[];for(const n of [3,4,48,100]){await mushafQvp.navigate(n);const g=mushafQvp.getGeometry(),f=document.querySelector('.madinah-frame').getBoundingClientRect();result.push({height:g.height,centres:g.layoutStats.centres.map(y=>f.top+y*f.height/g.height)});}return result;
+  });assert.ok(grids.every(g=>g.height===760));for(const g of grids)assert.deepEqual(g.centres,grids[0].centres);
+  await page.evaluate(()=>mushafQvp.navigate(604));
+  const word=page.locator('.madinah-word[data-word-key="114:6:1"]'),box=await word.boundingBox();
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.waitForTimeout(620);await page.mouse.up();
+  await page.waitForFunction(()=>mushafVerseActions.getSelectedVerse()?.verseKey==='114:6');await page.evaluate(()=>mushafVerseActions.close());
+ });
+ await check('surah frames have a visible palette, fit all three headings and remain readable in dark mode',async()=>{
+  await page.evaluate(()=>mushafQvp.navigate(604));
+  assert.equal(await page.locator('.madinah-heritage-heading').count(),3);
+  const palette=await page.locator('.ornament-frame-outer').evaluateAll(nodes=>nodes.map(n=>getComputedStyle(n).fill));assert.ok(palette.every(c=>c!=='none'&&c!=='rgba(0, 0, 0, 0)'));
+  await page.locator('#open-settings').evaluate(n=>n.click());await page.locator('[data-theme-choice="dark"]').click();
+  assert.equal(await page.locator('.ornament-cartouche').first().evaluate(n=>getComputedStyle(n).fill),'rgb(32, 46, 41)');
+  await page.locator('[data-theme-choice="paper"]').click();await page.locator('#close-settings').click();
+ });
  await check('five viewports retain exact printed geometry on varied pages',async()=>{
-  const sizes=[[320,568],[390,844],[430,932],[768,1024],[1024,1366]], samples=[1,4,48,77,187,208,262,282,428,451,602,604];let cases=0;
+  const sizes=[[320,568],[390,844],[430,932],[768,1024],[1024,1366]], samples=[1,2,3,4,48,77,187,208,262,282,428,451,602,604];let cases=0;
   for(const [width,height]of sizes){await page.setViewportSize({width,height});for(const n of samples){await page.evaluate(n=>mushafQvp.navigate(n),n);await page.waitForTimeout(20);const r=await page.evaluate(()=>{const t=document.querySelector('#quran-text').getBoundingClientRect(),f=document.querySelector('.madinah-frame').getBoundingClientRect();return {inside:f.left>=t.left-.1&&f.right<=t.right+.1&&f.top>=t.top-.1&&f.bottom<=t.bottom+.1,pixels:mushafQvp.metrics.canvasPixels};});assert.ok(r.inside,'page '+n+' '+width);assert.ok(r.pixels<=3010000);cases++;}}
   return {cases};
  });
@@ -109,7 +126,7 @@ if(!process.env.QURAN_BASE_URL){
   const result=await page.evaluate(async()=>({ok:await mushafQvp.navigate(50),current:mushafReader.getCurrentPage(),saved:JSON.parse(localStorage.quranReaderState).displayPage}));assert.equal(result.ok,false);assert.equal(result.current,4);assert.equal(result.saved,4);await page.unroute('**/data/qvp/pages/050.qvp');
   await page.evaluate(async()=>{await Promise.all([mushafQvp.navigate(48),mushafQvp.navigate(602)]);});assert.equal(await page.evaluate(()=>mushafReader.getCurrentPage()),602);
  });
- for(const n of [1,4,48,77,187,208,262,282,428,451,602,604]){await page.evaluate(n=>mushafQvp.navigate(n),n);const file='page-'+String(n).padStart(3,'0')+'-390x844.png';await page.screenshot({path:path.join(out,file)});report.screenshots.push(file);}
+ for(const n of [1,2,3,4,48,77,187,208,262,282,428,451,602,604]){await page.evaluate(n=>mushafQvp.navigate(n),n);const file='page-'+String(n).padStart(3,'0')+'-390x844.png';await page.screenshot({path:path.join(out,file)});report.screenshots.push(file);}
  await context.close();
  await check('complete local shell and all 604 pages reopen with browser network offline',async()=>{
   const c=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'allow'});await c.route('https://**/*',r=>r.abort());const p=await c.newPage();await p.goto(base+'/quran.html');await p.waitForFunction(()=>window.mushafQvp?.metrics.ready);await p.evaluate(()=>navigator.serviceWorker.ready);const installed={pages:604};
