@@ -101,3 +101,20 @@ body.dark .ts-ring-track{stroke:rgba(233,247,234,.15)}
 @media(min-width:740px){.ts-studio-body{padding-inline:75px}.ts-counter-wrap{padding-top:22px}}
 @media(max-width:380px){.ts-head{padding-inline:12px;gap:7px}.ts-head-title h2{font-size:15px}.ts-haptic{padding:0 8px}.ts-haptic span{display:none}.ts-prayer-choices{gap:6px}.ts-prayer-choices button{padding:11px 9px}.ts-steps{gap:4px}.ts-step{padding:6px 7px;font-size:9px}}
 @media(prefers-reduced-motion:reduce){.ts-feature-card,.ts-feature-action svg,.ts-tabs button,.ts-phrases button,.ts-goals button,.ts-counter,.ts-ring-fill{transition:none!important}.ts-counter.ts-bump .ts-counter-inner,.ts-counter.ts-finished{animation:none!important}}
+
+/* Keep the counter visible above the fold on typical phones: choices scroll
+   sideways in a single row instead of pushing the counter off screen. */
+.ts-phrases,.ts-goals{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+.ts-phrases::-webkit-scrollbar,.ts-goals::-webkit-scrollbar{display:none}
+.ts-phrases{margin-bottom:10px}
+.ts-goals{margin-bottom:2px}
+.ts-phrases button,.ts-goals button{flex:none;white-space:nowrap}
+.ts-mode-panel{padding-top:15px}
+.ts-section-label{margin-bottom:8px}
+.ts-counter-wrap{padding-top:11px}
+.ts-count-number.ts-long-number{font-size:clamp(33px,10vw,54px)}
+@media(max-width:480px){
+ .ts-studio-body{padding-top:13px}
+ .ts-phrase-title{min-height:39px}
+ .ts-feature{margin-top:13px}
+}
