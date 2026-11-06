@@ -124,10 +124,11 @@ export function layoutGeometry(g,{uniformInkScale=GRID.inkScale,calibrate=false}
  }
  // A shared scale is calibrated against all 602 pages during asset preparation.
  // The historical 1.055 baseline is the safe compatibility fallback for old assets.
- const maximum=chooseInkScale(g,ownership,centres,targets,originalWidth);
- const scale=calibrate?maximum:uniformInkScale;
- if(!calibrate&&(scale<GRID.inkScale||scale>GRID.maxInkScale||maximum+.000001<scale))
-  throw new Error('Page '+g.number+' rejects calibrated uniform ink scale '+scale+' (maximum '+maximum+')');
+ const scale=calibrate?chooseInkScale(g,ownership,centres,targets,originalWidth):uniformInkScale;
+ // Every printed page was already verified against this scale during preparation;
+ // never repeat a binary search on every page turn on a low-end phone.
+ if(!Number.isFinite(scale)||scale<GRID.inkScale||scale>GRID.maxInkScale)
+  throw new Error('Invalid shared ink scale '+scale+' on page '+g.number);
  const bands=Array.from({length:GRID.slots},()=>[]);
  for(let i=0;i<g.paths.length;i++){
   const p=g.paths[i];if(p.hidden)continue;
