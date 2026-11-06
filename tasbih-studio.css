@@ -1,0 +1,103 @@
+/* Ayat | Tasbih Studio. Deliberately namespaced: no styles shared with the Hisn reader counter. */
+.ts-feature{margin-top:16px}
+.ts-feature-card{position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:173px;padding:22px 25px;text-align:right;overflow:hidden;border:1px solid var(--line);border-radius:23px;background:var(--paper);box-shadow:var(--shadow);color:var(--ink);transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.ts-feature-card:hover{border-color:rgba(176,141,83,.55);box-shadow:0 15px 36px rgba(20,67,48,.105);transform:translateY(-2px)}
+.ts-feature-card:active{transform:scale(.991)}
+.ts-feature-card:focus-visible{outline:3px solid #c6a46a;outline-offset:3px}
+.ts-feature-copy{position:relative;z-index:1;display:flex;align-items:flex-start;flex-direction:column;gap:8px;flex:1;min-width:0}
+.ts-feature-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;color:var(--green)}
+.ts-feature-spark{font-size:15px;color:#b48d50}
+.ts-feature-copy>strong{font-size:clamp(20px,3.4vw,25px);line-height:1.3;font-weight:850}
+.ts-feature-description{font-size:12px;line-height:1.85;color:var(--muted);max-width:390px}
+.ts-feature-action{margin-top:5px;display:inline-flex;align-items:center;gap:7px;color:var(--green);font-size:12px;font-weight:800}
+.ts-feature-action svg{width:17px;height:17px;transition:transform .2s ease}
+.ts-feature-card:hover .ts-feature-action svg{transform:translateX(-4px)}
+.ts-feature-art{display:grid;place-items:center;position:relative;flex:none;width:130px;height:130px;border-radius:50%;color:var(--green);background:radial-gradient(circle,rgba(198,164,106,.14),rgba(198,164,106,0) 72%)}
+.ts-feature-art svg{width:120px;height:120px;filter:drop-shadow(0 6px 10px rgba(88,103,61,.12))}
+body.dark .ts-feature-card{background:linear-gradient(130deg,rgba(42,67,55,.94),var(--paper));border-color:rgba(140,162,139,.2)}
+body.dark .ts-feature-art{background:radial-gradient(circle,rgba(198,164,106,.12),transparent 72%)}
+@media(max-width:480px){.ts-feature-card{min-height:153px;padding:18px;gap:5px}.ts-feature-copy>strong{font-size:19px}.ts-feature-description{font-size:11px}.ts-feature-art{width:92px;height:110px;margin-inline-end:-6px}.ts-feature-art svg{width:100px;height:100px}}
+@media(max-width:340px){.ts-feature-art{width:70px}.ts-feature-art svg{width:86px}.ts-feature-card{padding:14px}}
+
+/* Full-page immersive counter */
+body.ts-open{overflow:hidden}
+.ts-studio[hidden]{display:none!important}
+.ts-studio{--ts-gold:#c6a46a;--ts-gold-dark:#ac874c;--ts-line:var(--line);--ts-soft:var(--pale);position:fixed;inset:0;z-index:110;background:var(--bg);color:var(--ink);overscroll-behavior:contain}
+.ts-studio-shell{max-width:760px;margin:0 auto;display:flex;flex-direction:column;height:100%;height:100dvh;min-height:0;background:var(--bg)}
+.ts-head{flex:none;display:flex;align-items:center;gap:12px;min-height:80px;padding:calc(13px + env(safe-area-inset-top)) 18px 13px;background:var(--paper);border-bottom:1px solid var(--ts-line)}
+.ts-icon-button{width:43px;height:43px;border:1px solid var(--ts-line);border-radius:14px;background:var(--bg);color:var(--ink);display:grid;place-items:center;flex:none}
+.ts-icon-button svg{width:21px;height:21px}
+.ts-head-title{flex:1;min-width:0;text-align:center}
+.ts-head-title>span{display:block;color:var(--green);font-size:11px;font-weight:800;letter-spacing:.02em}
+.ts-head-title h2{margin:3px 0 0;font-size:18px;line-height:1.4}
+.ts-haptic{display:flex;align-items:center;justify-content:center;gap:5px;min-width:43px;min-height:43px;padding:0 11px;border:1px solid var(--ts-line);border-radius:13px;color:var(--green);background:var(--bg);font-size:11px;font-weight:750}
+.ts-haptic svg{width:18px;height:18px}
+.ts-haptic[aria-pressed=false]{color:var(--muted)}
+.ts-studio-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:19px clamp(16px,5vw,38px) max(34px,env(safe-area-inset-bottom));scrollbar-width:thin}
+.ts-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px;border:1px solid var(--ts-line);border-radius:16px;background:var(--paper)}
+.ts-tabs button{border:0;border-radius:12px;padding:13px 6px;background:transparent;color:var(--muted);font-size:13px;font-weight:800;transition:background .22s ease,color .22s ease,box-shadow .22s ease}
+.ts-tabs button[aria-selected=true]{background:var(--green);color:#fff;box-shadow:0 4px 12px rgba(19,88,68,.16)}
+.ts-mode-panel{padding-top:19px}
+.ts-section-label{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;column-gap:10px;row-gap:2px;margin-bottom:11px}
+.ts-section-label>span:first-child{font-weight:850;font-size:13px}
+.ts-section-note{font-size:10px;color:var(--muted)}
+.ts-phrases,.ts-goals{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:19px}
+.ts-phrases button,.ts-goals button{min-height:38px;border:1px solid var(--ts-line);border-radius:100px;padding:9px 13px;background:var(--paper);color:var(--ink);font-size:12px;font-weight:700;line-height:1.4;transition:background .15s ease,color .15s ease,border-color .15s ease}
+.ts-phrases button[aria-pressed=true],.ts-goals button[aria-pressed=true]{background:var(--pale);border-color:var(--green);color:var(--green)}
+.ts-goals{gap:8px;margin-bottom:5px}
+.ts-goals button{min-width:58px}
+.ts-custom-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-5px 0 18px;font-size:12px;font-weight:750;color:var(--green)}
+.ts-custom-row input{flex:1;min-width:150px;min-height:43px;padding:9px 13px;border:1px solid var(--ts-line);border-radius:12px;background:var(--paper);color:var(--ink);outline:none;font:inherit}
+.ts-custom-row input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(47,128,104,.14)}
+.ts-prayer-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ts-prayer-choices button{display:flex;flex-direction:column;gap:5px;text-align:right;background:var(--paper);color:var(--ink);padding:14px 13px;border:1px solid var(--ts-line);border-radius:14px;transition:border-color .15s,background .15s}
+.ts-prayer-choices button[aria-pressed=true]{border-color:var(--green);background:var(--pale)}
+.ts-prayer-choices button strong{font-size:12px;line-height:1.5}
+.ts-prayer-choices button small{font-size:10px;color:var(--muted);line-height:1.5}
+.ts-steps{display:flex;gap:5px;justify-content:center;align-items:center;margin:18px 0 13px;flex-wrap:wrap}
+.ts-step{display:flex;align-items:center;gap:5px;padding:8px 9px;border-radius:20px;color:var(--muted);font-size:10px;white-space:nowrap;background:var(--paper);border:1px solid var(--ts-line)}
+.ts-step[data-state=current]{background:var(--green);color:#fff;border-color:var(--green)}
+.ts-step[data-state=done]{color:var(--green);border-color:rgba(59,141,104,.3)}
+.ts-step strong{font-size:11px}
+.ts-prayer-source{text-align:center;margin:4px 0 0;font-size:10px;line-height:1.7;color:var(--muted)}
+.ts-prayer-source a{color:var(--green);text-decoration:underline;text-underline-offset:3px}
+
+/* Count instrument. SVG and number are deliberately the only ring layers. */
+.ts-counter-wrap{display:flex;align-items:center;flex-direction:column;padding:16px 0 0}
+.ts-phrase-title{text-align:center;color:var(--green);font-family:"Amiri Quran","Amiri",Georgia,serif;font-size:clamp(22px,5.3vw,28px);line-height:1.8;min-height:47px;max-width:95%;overflow-wrap:anywhere}
+.ts-counter{--size:clamp(216px,62vw,268px);position:relative;isolation:isolate;display:grid;place-items:center;flex:none;width:var(--size);height:var(--size);margin:5px 0 0;padding:0;border:0;border-radius:50%;color:#fff;background:radial-gradient(circle at 35% 24%,#298877 0%,#186757 62%,#104b43 100%);box-shadow:0 15px 36px rgba(14,70,52,.22),0 0 0 1px rgba(198,164,106,.23);-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;transition:box-shadow .24s ease,transform .22s ease}
+.ts-counter::before{content:"";position:absolute;inset:-13px;z-index:-1;border-radius:50%;background:radial-gradient(circle,rgba(198,164,106,.18) 0%,rgba(198,164,106,.09) 58%,transparent 73%);filter:blur(8px);pointer-events:none}
+.ts-counter:active{transform:scale(.974)}
+.ts-counter:focus-visible{outline:3px solid var(--ts-gold);outline-offset:5px}
+.ts-ring{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transform:rotate(-90deg);pointer-events:none}
+.ts-ring-track,.ts-ring-fill{fill:none;stroke-width:6}
+.ts-ring-track{stroke:rgba(229,248,236,.16)}
+.ts-ring-fill{stroke:var(--ts-gold);stroke-linecap:round;stroke-dasharray:691.15038379;stroke-dashoffset:691.15038379;filter:drop-shadow(0 0 2px rgba(198,164,106,.28));transition:stroke-dashoffset .56s cubic-bezier(.16,.9,.3,1)}
+.ts-counter-inner{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;pointer-events:none;padding:12px}
+.ts-count-number{font-size:clamp(56px,15vw,76px);font-weight:800;line-height:1.25;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.ts-count-target{font-size:16px;font-weight:800;color:#efdbb8;margin-top:1px}
+.ts-counter-prompt{margin-top:11px;font-size:11px;font-weight:600;color:rgba(242,255,248,.75)}
+.ts-counter.ts-bump .ts-counter-inner{animation:ts-bump .32s cubic-bezier(.2,.8,.25,1)}
+.ts-counter.ts-finished{animation:ts-finish .75s ease-out}
+@keyframes ts-bump{0%{transform:scale(1)}38%{transform:scale(.945)}100%{transform:scale(1)}}
+@keyframes ts-finish{0%{box-shadow:0 15px 36px rgba(14,70,52,.22),0 0 0 1px rgba(198,164,106,.23)}50%{box-shadow:0 15px 36px rgba(14,70,52,.22),0 0 0 13px rgba(198,164,106,.14)}100%{box-shadow:0 15px 36px rgba(14,70,52,.22),0 0 0 1px rgba(198,164,106,.23)}}
+.ts-status{text-align:center;min-height:26px;margin:18px 0 7px;font-size:12px;line-height:1.8;color:var(--muted)}
+.ts-counter-actions{display:flex;gap:10px;justify-content:center;width:100%}
+.ts-secondary-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:117px;min-height:43px;border:1px solid var(--ts-line);border-radius:13px;padding:8px 16px;color:var(--ink);background:var(--paper);font-size:12px;font-weight:800}
+.ts-secondary-button:disabled{opacity:.45;cursor:not-allowed}
+.ts-secondary-button svg{width:17px;height:17px}
+.ts-secondary-button.ts-confirm{color:#9f5044;border-color:#bc8070}
+.ts-bottom-info{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(100%,400px);margin-top:20px}
+.ts-bottom-info>div{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--paper);border:1px solid var(--ts-line);border-radius:15px;padding:11px 8px}
+.ts-bottom-info>div span{font-size:10px;color:var(--muted)}
+.ts-bottom-info>div strong{font-size:20px;line-height:1.5;color:var(--green);font-variant-numeric:tabular-nums}
+.ts-prayer-navigation{display:flex;gap:10px;margin-top:13px;width:min(100%,400px)}
+.ts-prayer-navigation button{flex:1;min-height:42px;border-radius:12px;border:1px solid var(--ts-line);background:var(--paper);color:var(--ink);font-size:12px;font-weight:800}
+.ts-prayer-navigation button:last-child{background:var(--green);border-color:var(--green);color:#fff}
+.ts-prayer-navigation button:disabled{opacity:.4}
+.ts-footnote{margin:19px auto 7px;max-width:380px;text-align:center;font-size:10px;line-height:1.9;color:var(--muted)}
+body.dark .ts-counter{background:radial-gradient(circle at 35% 25%,#25745e,#195546 67%,#12382f);box-shadow:0 15px 36px rgba(0,0,0,.24)}
+body.dark .ts-ring-track{stroke:rgba(233,247,234,.15)}
+@media(min-width:740px){.ts-studio-body{padding-inline:75px}.ts-counter-wrap{padding-top:22px}}
+@media(max-width:380px){.ts-head{padding-inline:12px;gap:7px}.ts-head-title h2{font-size:15px}.ts-haptic{padding:0 8px}.ts-haptic span{display:none}.ts-prayer-choices{gap:6px}.ts-prayer-choices button{padding:11px 9px}.ts-steps{gap:4px}.ts-step{padding:6px 7px;font-size:9px}}
+@media(prefers-reduced-motion:reduce){.ts-feature-card,.ts-feature-action svg,.ts-tabs button,.ts-phrases button,.ts-goals button,.ts-counter,.ts-ring-fill{transition:none!important}.ts-counter.ts-bump .ts-counter-inner,.ts-counter.ts-finished{animation:none!important}}
