@@ -1,6 +1,6 @@
 /* Standalone vertical, verse-by-verse reading mode. QVP page geometry is untouched. */
-.reading-mode-switch-row{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:29px;flex:0 0 auto}
-.reading-mode-switch{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:42px;height:34px;padding:0;border:1px solid rgba(157,220,198,.4);border-radius:11px;background:rgba(255,255,255,.075);color:#e9fff6;cursor:pointer;touch-action:manipulation}
+.reading-mode-switch-row{display:flex;direction:rtl;align-items:center;justify-content:center;gap:10px;width:100%;min-height:34px;flex:0 0 auto}
+.reading-mode-switch{position:relative;flex:0 0 auto;display:grid;place-items:center;width:38px;height:30px;padding:0;border:1px solid rgba(157,220,198,.4);border-radius:11px;background:rgba(255,255,255,.075);color:#e9fff6;cursor:pointer;touch-action:manipulation}
 .reading-mode-switch:focus-visible{outline:2px solid #dcb97a;outline-offset:2px}
 .reading-mode-switch[aria-pressed="true"]{background:#d2af6d;color:#153a33;border-color:#f2daac}
 .vertical-reading[hidden]{display:none!important}
@@ -30,6 +30,6 @@
 .reader-page[data-theme="dark"] .vertical-tafsir{color:#e1e7df}
 .reader-page[data-theme="dark"] .vertical-reading-status{color:#c2d5c9}
 .reader-page[data-theme="dark"] .vertical-reading-status button{background:#284439;color:#e0f4e9;border-color:#527b68}
-@media(min-width:700px){.reading-mode-switch{right:calc(50% - 145px)}}
-@media(max-height:650px){.reading-mode-switch-row{min-height:18px}.reading-mode-switch{width:32px;height:25px}.reading-mode-switch svg{width:18px;height:18px}}
+
+@media(max-height:650px){.reading-mode-switch-row{min-height:25px;gap:8px}.reading-mode-switch{width:32px;height:25px}.reading-mode-switch svg{width:18px;height:18px}}
 @media(prefers-reduced-motion:reduce){.vertical-reading-content{scroll-behavior:auto}}
