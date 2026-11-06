@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="reader-enhancements.css">
     <link rel="stylesheet" href="mushaf-qvp/reader.css">
     <link rel="stylesheet" href="audio-player.css">
+    <link rel="stylesheet" href="vertical-reading.css">
     <style>
       .mushaf-index-search{display:block;padding:0 16px 12px}
       .mushaf-index-search input{box-sizing:border-box;width:100%;min-height:44px;border-radius:13px;border:1px solid #9cae9f;background:var(--surface,#fff);color:inherit;padding:10px 14px;font:inherit}
@@ -60,10 +61,28 @@
         </section>
     </main>
 
+    <section id="vertical-reading" class="vertical-reading" aria-label="القراءة الرأسية مع التفسير" hidden>
+        <div class="vertical-reading-content" id="vertical-reading-content">
+            <div class="vertical-reading-list" id="vertical-reading-list"></div>
+            <div id="vertical-reading-status" class="vertical-reading-status" role="status" aria-live="polite"></div>
+        </div>
+    </section>
+
     <section class="mushaf-audio-player" id="mushaf-audio-player" aria-label="مشغل التلاوة">
-        <div class="audio-page-badge" aria-label="رقم الصفحة الحالية">
-            <span>صفحة</span>
-            <strong class="display-page-number" id="display-page-number">١</strong>
+        <div class="reading-mode-switch-row">
+            <button id="toggle-vertical-reading" class="reading-mode-switch" type="button"
+                    aria-label="القراءة الرأسية مع التفسير" aria-pressed="false"
+                    aria-controls="vertical-reading" title="القراءة الرأسية مع التفسير">
+                <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor"
+                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 6.5C9.3 4.8 6.3 4.5 3 5.4v13c3.4-.9 6.4-.6 9 1.1 2.6-1.7 5.6-2 9-1.1v-13c-3.3-.9-6.3-.6-9 1.1Z"/>
+                    <path d="M12 6.5v12.6"/>
+                </svg>
+            </button>
+            <div class="audio-page-badge" aria-label="رقم الصفحة الحالية">
+                <span>صفحة</span>
+                <strong class="display-page-number" id="display-page-number">١</strong>
+            </div>
         </div>
         <button class="audio-reader-trigger" id="audio-open-options" type="button" aria-haspopup="dialog"
                 aria-controls="audio-options-sheet">
@@ -398,6 +417,7 @@
     <script src="mushaf-keyboard-viewport.js"></script>
     <script src="verse-actions.js"></script>
     <script src="tafsir.js"></script>
+    <script src="vertical-reading.js"></script>
     <script src="quran-search.js"></script>
     <script src="verse-tools.js"></script>
     <script src="audio-core.js"></script>
