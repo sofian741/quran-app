@@ -74,7 +74,5 @@ body.dark {
   .adhkar-jump,.adhkar-jump svg{animation:none;transition:none;}
 }
 
-.tasbih::after{content:"";position:absolute;inset:32px;border-radius:50%;background:conic-gradient(from 0deg,var(--gold) 0 var(--progress,0%),transparent var(--progress,0%) 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 6px));mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 6px));pointer-events:none;transition:--progress .24s cubic-bezier(.22,.75,.3,1);z-index:1}.tasbih:focus-visible{border-radius:50%;outline:3px solid var(--gold);outline-offset:3px}@media(prefers-reduced-motion:reduce){.tasbih::after{transition:none}}
+.tasbih-progress{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible;transform:rotate(-90deg)}.tasbih-progress-track,.tasbih-progress-fill{fill:none;stroke-width:7}.tasbih-progress-track{stroke:color-mix(in srgb,var(--green) 18%,var(--line))}.tasbih-progress-fill{stroke:var(--gold);stroke-linecap:round;stroke-dasharray:376.99111843;stroke-dashoffset:376.99111843;transition:stroke-dashoffset .24s cubic-bezier(.22,.75,.3,1)}.tasbih:focus-visible{border-radius:50%;outline:3px solid var(--gold);outline-offset:3px}@media(prefers-reduced-motion:reduce){.tasbih-progress-fill{transition:none}}
 
-/* Register the ring fill as an animatable percentage: each tap sweeps the arc instead of jumping. */
-@property --progress{syntax:"<percentage>";inherits:false;initial-value:0%}
