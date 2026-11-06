@@ -312,7 +312,7 @@
     // one or two, the opening word is the only safe leading cue.
     // Never extrapolate into later gaps or beyond the first known segment.
     const first=segments.reduce((earliest,item)=>!earliest||item.start<earliest.start?item:earliest,null);
-    if(first&&ms>=Math.max(Number.isFinite(start)?start:0,first.start-2000)&&
+    if(first&&ms>=(Number.isFinite(start)?start:Math.max(0,first.start-2000))&&
        ms<first.start&&(first.word+offset===1||first.word+offset===2))return 1;
     return 0;
   }
