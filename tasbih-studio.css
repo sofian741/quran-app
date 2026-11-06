@@ -123,3 +123,40 @@ body.dark .ts-ring-track{stroke:rgba(233,247,234,.15)}
 .ts-studio:not([hidden]) .ts-studio-shell{animation:ts-studio-enter .32s cubic-bezier(.2,.8,.2,1) both}
 @keyframes ts-studio-enter{from{opacity:.45;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.ts-studio:not([hidden]) .ts-studio-shell{animation:none}}
+
+/* Tasbih statistics: a focused, uplifting view without gamification. */
+.ts-stats[hidden]{display:none!important}
+.ts-stats{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;background:var(--bg);animation:ts-stats-entrance .26s ease both}
+@keyframes ts-stats-entrance{from{opacity:.3;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.ts-stats-head{display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 18px 14px;border-bottom:1px solid var(--line);background:var(--paper)}
+.ts-stats-head>div{flex:1;text-align:center}
+.ts-stats-head small{display:block;font-size:11px;font-weight:800;color:var(--green)}
+.ts-stats-head h3{margin:3px 0 0;font-size:19px}
+.ts-stats-emblem{width:43px;text-align:center;color:#c6a46a;font-size:25px}
+.ts-stats-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:23px clamp(16px,5vw,38px) max(35px,env(safe-area-inset-bottom))}
+.ts-stats-intro{margin:0 0 22px;text-align:center;line-height:1.9;font-size:13px;color:var(--muted)}
+.ts-stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ts-stats-tile{display:flex;flex-direction:column;gap:9px;justify-content:center;min-height:139px;padding:17px 9px;border-radius:19px;text-align:center;border:1px solid var(--line);background:var(--paper);box-shadow:var(--shadow)}
+.ts-stats-tile>span{font-size:12px;font-weight:800;color:var(--muted)}
+.ts-stats-tile>strong{font-size:clamp(25px,6vw,38px);font-weight:850;line-height:1.25;font-variant-numeric:tabular-nums;color:var(--green);overflow-wrap:anywhere}
+.ts-stats-tile>small{font-size:10px;line-height:1.5;color:var(--muted)}
+.ts-stats-tile-featured{background:linear-gradient(145deg,#1a755f,#0e5147);border-color:transparent;box-shadow:0 12px 28px rgba(13,83,63,.18)}
+.ts-stats-tile-featured>span,.ts-stats-tile-featured>strong{color:#fff}
+.ts-stats-tile-featured>small{color:#d4e9dc}
+.ts-stats-chart-card{margin-top:20px;padding:20px;border:1px solid var(--line);border-radius:22px;background:var(--paper);box-shadow:var(--shadow)}
+.ts-stats-chart-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:25px}
+.ts-stats-chart-heading strong{font-size:14px}
+.ts-stats-chart-heading span{color:var(--green);font-size:11px;font-weight:800}
+.ts-stats-bars{height:198px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:end;gap:9px;direction:rtl}
+.ts-stats-bar-item{height:100%;min-width:0;display:flex;flex-direction:column;align-items:center;gap:8px}
+.ts-stats-bar-value{font-size:11px;font-weight:800;color:var(--green);height:17px;white-space:nowrap}
+.ts-stats-bar-track{position:relative;flex:1;width:min(100%,33px);min-height:0;border-radius:11px;background:var(--pale);overflow:hidden}
+.ts-stats-bar-fill{position:absolute;inset:auto 0 0;height:0;background:linear-gradient(0deg,#18725e,#48a689);border-radius:10px;transition:height .6s cubic-bezier(.22,.8,.2,1)}
+.ts-stats-bar-item.is-today .ts-stats-bar-fill{background:linear-gradient(0deg,#aa8248,#d4b47a)}
+.ts-stats-bar-item.is-today .ts-stats-weekday{color:#ae8449;font-weight:900}
+.ts-stats-bar-item.is-future{opacity:.45}
+.ts-stats-weekday{font-size:11px;font-weight:750;color:var(--muted)}
+.ts-stats-note{max-width:520px;text-align:center;margin:23px auto 0;line-height:2;color:var(--muted);font-size:11px}
+.ts-stats-trigger{white-space:nowrap}
+@media(max-width:370px){.ts-stats-grid{gap:6px}.ts-stats-tile{padding:12px 6px;min-height:115px}.ts-stats-tile>span{font-size:10px}.ts-stats-tile>small{font-size:9px}.ts-stats-chart-card{padding:16px 12px}.ts-stats-bars{gap:5px}}
+@media(prefers-reduced-motion:reduce){.ts-stats{animation:none}.ts-stats-bar-fill{transition:none}}
