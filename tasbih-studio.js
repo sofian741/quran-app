@@ -250,7 +250,7 @@ function renderStats(){
  const rows=[],labels=['س','ح','ن','ث','ر','خ','ج'];
  for(let i=0;i<7;i++){
   const date=new Date(start);date.setDate(start.getDate()+i);
-  const future=date.getTime()>now.getTime();
+  const future=localKey(date)>localKey(now);
   const value=future?0:bounded(state.daily[localKey(date)]);
   rows.push({value,label:labels[i],date:localKey(date),future});
   weekly+=value;if(value>0)activeDays++;max=Math.max(max,value);
