@@ -200,7 +200,7 @@
     button.setAttribute('aria-pressed','true');
     button.setAttribute('aria-label','الرجوع إلى المصحف');
     button.title='الرجوع إلى المصحف';
-    if(followButton)followButton.hidden=false;
+    if(followButton)followButton.hidden=true;
     start();
   }
   function close(){
@@ -234,18 +234,20 @@
       updateVisibleVerse();
       if(goingUp&&now<Math.max(500,viewport.clientHeight*.8))prependBatch();
       appendIfNearEnd();lastScrollTop=viewport.scrollTop;
+      if(active&&latestAudioState?.playing)updateFollowButton();
     });
   }
   viewport.addEventListener('scroll',onScroll,{passive:true});
   // At the initial top boundary scrollTop cannot turn negative. A downward
   // finger gesture / upward mouse wheel therefore needs to load earlier ayat.
-  viewport.addEventListener('touchstart',event=>{touchY=event.touches[0]?.clientY??null;},{passive:true});
+  viewport.addEventListener('touchstart',event=>{touchY=event.touches[0]?.clientY??null;followingAudio=false;},{passive:true});
   viewport.addEventListener('touchmove',event=>{
     const y=event.touches[0]?.clientY;
     if(active&&touchY!==null&&y>touchY+18&&viewport.scrollTop<50){prependBatch();touchY=y;}
   },{passive:true});
   viewport.addEventListener('touchend',()=>{touchY=null;},{passive:true});
   viewport.addEventListener('wheel',event=>{
+    followingAudio=false;
     if(active&&event.deltaY<0&&viewport.scrollTop<50)prependBatch();
   },{passive:true});
   window.addEventListener('keydown',event=>{
@@ -306,6 +308,17 @@
   function audioVerseNode(key){
     return [...list.querySelectorAll('.vertical-verse')].find(el=>el.dataset.verse===key);
   }
+  function updateFollowButton(){
+    if(!followButton)return;
+    const state=latestAudioState;
+    if(!active||!state?.playing||state.provider!=='quran-foundation'){
+      followButton.hidden=true;return;
+    }
+    const key=state.surah+':'+state.ayah,node=audioVerseNode(key);
+    const ordinal=audioWord(state,key);
+    const word=node?.dataset.wordMapped==='true'&&ordinal?node.querySelector('[data-ordinal="'+ordinal+'"]'):null;
+    followButton.hidden=isVisible(word||node?.querySelector('.vertical-ayah'));
+  }
   function seekAudioPosition(state,force=false){
     if(!active||!records||!state?.playing)return;
     const key=state.surah+':'+state.ayah;
@@ -339,7 +352,7 @@
     lastCueKey=cue;
     list.querySelectorAll('.vertical-ayah-word.is-reciting').forEach(n=>n.classList.remove('is-reciting'));
     list.querySelectorAll('.vertical-verse.is-reciting-verse').forEach(n=>n.classList.remove('is-reciting-verse'));
-    if(!key){followingAudio=false;lastAudioKey='';return;}
+    if(!key){followingAudio=false;lastAudioKey='';updateFollowButton();return;}
     const node=audioVerseNode(key);
     if(node){
       node.classList.add('is-reciting-verse');
@@ -348,6 +361,7 @@
     // Moving text is only justified when the actively recited word leaves
     // the visible area, NOT at each new ayah or every timing segment.
     if(state.autoFollow)seekAudioPosition(state);
+    updateFollowButton();
     lastAudioKey=key;
   }
   if(followButton)followButton.addEventListener('click',()=>{
@@ -357,6 +371,7 @@
       return;
     }
     seekAudioPosition(state,true);
+    followButton.hidden=true;
   });
   function toggleVerseAction(node){
     const wasOpen=node===listeningVerse;
