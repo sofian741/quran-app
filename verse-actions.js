@@ -217,6 +217,16 @@
             openVerseActions(verse, { id: -1, type: 'touch' });
             return true;
         },
+        // Vertical reading uses the same real actions for verses outside the
+        // currently rendered QVP page, without requiring a hidden word node.
+        openForReference(surah, ayah) {
+            const verse = window.mushafReader?.getVerse?.(Number(surah), Number(ayah));
+            if (!verse) return false;
+            const key = verse.surah + ':' + verse.ayah;
+            if (isOpen()) return selectedVerse?.verseKey === key;
+            openVerseActions({surah:verse.surah, ayah:verse.ayah, verseKey:key}, {id:-1,type:'touch'});
+            return true;
+        },
         getSelectedVerse() {
             return selectedVerse ? { ...selectedVerse } : null;
         },
