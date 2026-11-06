@@ -88,7 +88,7 @@
         <header class="ts-head">
             <button id="ts-close" class="ts-icon-button" type="button" aria-label="إغلاق المسبحة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg></button>
             <div class="ts-head-title"><span>وقتٌ للذِّكر</span><h2 id="ts-title">المسبحة الإلكترونية</h2></div>
-            <button id="ts-haptic" class="ts-haptic" type="button" aria-pressed="true" aria-label="تبديل الاهتزاز"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="8" y="2.5" width="8" height="19" rx="2.5"/><path d="M4 8v8M20 8v8"/></svg><span>اهتزاز</span></button>
+            <button id="ts-stats-open" class="ts-haptic ts-stats-trigger" type="button" aria-haspopup="dialog" aria-controls="ts-stats" aria-label="عرض إحصائيات التسبيح"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 19V11m6 8V5m6 14v-7m4 7V8M2 21h20"/></svg><span>الإحصائيات</span></button>
         </header>
         <div class="ts-studio-body">
             <div class="ts-tabs" role="tablist" aria-label="نوع التسبيح">
@@ -158,6 +158,22 @@
                 <p class="ts-footnote">العدّ للمساعدة على الذكر. الأهداف التي تختارها بنفسك لا ننسب لها فضلًا مخصوصًا.</p>
             </div>
         </div>
+        <section id="ts-stats" class="ts-stats" role="dialog" aria-modal="true" aria-labelledby="ts-stats-title" hidden>
+            <header class="ts-stats-head"><button id="ts-stats-close" class="ts-icon-button" type="button" aria-label="العودة للمسبحة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg></button><div><small>حصيلة الذكر</small><h3 id="ts-stats-title">إحصائيات التسبيح</h3></div><span class="ts-stats-emblem" aria-hidden="true">✦</span></header>
+            <div class="ts-stats-scroll">
+                <p class="ts-stats-intro">كل عدّة لحظة ذكر. تابع حصيلتك بهدوء، يومًا بعد يوم.</p>
+                <div class="ts-stats-grid">
+                    <article class="ts-stats-tile ts-stats-tile-featured"><span>اليوم</span><strong id="ts-stat-day">٠</strong><small>تسبيحة</small></article>
+                    <article class="ts-stats-tile"><span>هذا الأسبوع</span><strong id="ts-stat-week">٠</strong><small>من السبت إلى الجمعة</small></article>
+                    <article class="ts-stats-tile"><span>هذا الشهر</span><strong id="ts-stat-month">٠</strong><small>من بداية الشهر</small></article>
+                </div>
+                <div class="ts-stats-chart-card">
+                    <div class="ts-stats-chart-heading"><strong>نشاط الأسبوع</strong><span id="ts-stat-active-days">٠ أيام نشطة</span></div>
+                    <div id="ts-stats-bars" class="ts-stats-bars" role="img" aria-label="عدد التسبيحات لكل يوم في الأسبوع"></div>
+                </div>
+                <p class="ts-stats-note">الأرقام مبنية على الضغطات المسجلة في هذه المسبحة على جهازك، وليست مقياسًا للثواب. ويبدأ الأسبوع يوم السبت.</p>
+            </div>
+        </section>
     </div>
 </section>
 
