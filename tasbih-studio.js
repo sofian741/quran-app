@@ -4,7 +4,7 @@
 const $=id=>document.getElementById(id);
 const studio=$('ts-studio'),openButton=$('ts-open');
 if(!studio||!openButton)return;
-const STORAGE='ayatTasbihStudioV1',C=2*Math.PI*110,MAX_COUNT=999999999;
+const STORAGE='ayatTasbihStudioV1',C=2*Math.PI*116,MAX_COUNT=999999999;
 const LABELS={
  subhan:'سُبْحَانَ اللَّهِ',hamd:'الْحَمْدُ لِلَّهِ',akbar:'اللَّهُ أَكْبَرُ',
  astaghfir:'أَسْتَغْفِرُ اللَّهَ',tahlil:'لَا إِلَهَ إِلَّا اللَّهُ',
