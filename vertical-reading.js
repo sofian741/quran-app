@@ -5,12 +5,14 @@
   const viewport=document.getElementById('vertical-reading-content');
   const list=document.getElementById('vertical-reading-list');
   const status=document.getElementById('vertical-reading-status');
+  const followButton=document.getElementById('vertical-follow-reciter');
   if(!button||!surface||!viewport||!list||!status)return;
   const DATA_URL='./data/tafsir_muyassar.json',BATCH_SIZE=14;
   const ARABIC_DIGITS='٠١٢٣٤٥٦٧٨٩';
   const digits=n=>String(n).replace(/\d/g,d=>ARABIC_DIGITS[Number(d)]);
   let dataPromise=null,ordered=[],position=0,topIndex=0,active=false,opening=0,rendering=false;
   let lastScrollTop=0,touchY=null,ignorePageEvent=null,followingAudio=false,lastAudioKey='',lastCueKey='',pendingScrollSync=false;
+  let listeningVerse=null,holdTimer=null,holdStart=null,suppressVerseClick=false,latestAudioState=null;
   let lastVisibleKey=null;
   const keyOf=v=>v.surah+':'+v.ayah;
   const reader=()=>window.mushafReader;
@@ -72,7 +74,19 @@
     number.textContent='﴿'+digits(verse.ayah)+'﴾';number.setAttribute('aria-label','الآية '+digits(verse.ayah));ayah.append(number);
     const annotation=document.createElement('div');annotation.className='vertical-tafsir-label';annotation.textContent='التفسير الميسّر';
     const tafsir=document.createElement('p');tafsir.className='vertical-tafsir';tafsir.lang='ar';tafsir.textContent=record.translation;
-    section.append(ayah,annotation,tafsir);return section;
+    const actions=document.createElement('div');actions.className='vertical-verse-actions';actions.hidden=true;
+    const listen=document.createElement('button');listen.type='button';listen.className='vertical-verse-listen';
+    listen.textContent='استماع';listen.setAttribute('aria-label','الاستماع إلى الآية '+digits(verse.ayah));
+    listen.addEventListener('click',event=>{
+      event.stopPropagation();
+      const [surah,ayahNumber]=verse.key.split(':').map(Number);
+      if(window.mushafVerseActions?.openForReference?.(surah,ayahNumber)){
+        document.querySelector('[data-verse-action="listen"]')?.click();
+        actions.hidden=true;listeningVerse=null;
+      }
+    });
+    actions.append(listen);
+    section.append(ayah,annotation,tafsir,actions);return section;
   }
   let records=null;
   function appendBatch(){
@@ -186,6 +200,7 @@
     button.setAttribute('aria-pressed','true');
     button.setAttribute('aria-label','الرجوع إلى المصحف');
     button.title='الرجوع إلى المصحف';
+    if(followButton)followButton.hidden=false;
     start();
   }
   function close(){
@@ -194,6 +209,7 @@
     active=false;++opening;followingAudio=false;
     document.body.classList.remove('vertical-reading-active');
     surface.hidden=true;
+    if(followButton)followButton.hidden=true;
     button.setAttribute('aria-pressed','false');
     button.setAttribute('aria-label','القراءة الرأسية مع التفسير');
     button.title='القراءة الرأسية مع التفسير';
@@ -247,48 +263,134 @@
     // even when its scroll list already contains that page.
     start(page);
   });
+  function isVisible(element){
+    if(!element)return false;
+    const box=element.getBoundingClientRect(),frame=viewport.getBoundingClientRect();
+    // Honor visible reading area, including the open audio controls.
+    const top=frame.top+Math.max(12,parseFloat(getComputedStyle(viewport).paddingTop)||0);
+    const footer=document.body.classList.contains('tools-visible')?
+      document.getElementById('mushaf-audio-player')?.getBoundingClientRect().top:frame.bottom;
+    const bottom=Math.min(frame.bottom,Number.isFinite(footer)?footer:frame.bottom)-12;
+    return box.bottom>top+5&&box.top<bottom-5;
+  }
+  function easeIntoView(element){
+    if(!element)return;
+    const box=element.getBoundingClientRect(),frame=viewport.getBoundingClientRect();
+    const top=frame.top+Math.max(16,parseFloat(getComputedStyle(viewport).paddingTop)||0);
+    const playerTop=document.body.classList.contains('tools-visible')?
+      document.getElementById('mushaf-audio-player')?.getBoundingClientRect().top:frame.bottom;
+    const bottom=Math.min(frame.bottom,Number.isFinite(playerTop)?playerTop:frame.bottom)-20;
+    if(box.bottom>top&&box.top<bottom)return; // Already visible: NEVER reposition.
+    const delta=box.top>=bottom?box.top-bottom+36:box.top-top-24;
+    followingAudio=true;
+    viewport.scrollBy({top:delta,behavior:'smooth'});
+  }
+  function audioWord(state,key){
+    const timing=state.timing,map=qvp()?.getMapping?.(key),ms=state.currentTime*1000;
+    if(!timing||!map)return 0;
+    if(Number.isFinite(timing.timestampFrom)&&ms<timing.timestampFrom||
+       Number.isFinite(timing.timestampTo)&&ms>=timing.timestampTo)return 0;
+    const segments=timing.segments||[];
+    const segment=segments.findLast(item=>ms>=item.start&&ms<item.end);
+    const supported=[7,9020,9021,9022,...Array.from({length:19},(_,i)=>9000+i)].filter(n=>n!==9017).includes(Number(state.reciterId));
+    if(!supported||!segment||!segments.length)return 0;
+    // Some valid sources number the first word from 0. Use their actual
+    // declared ordinal convention, without interpolating missing timestamps.
+    const zeroBased=segments.some(item=>item.word===0);
+    const ordinal=segment.word+(zeroBased?1:0);
+    if(!Number.isInteger(ordinal)||ordinal<1||ordinal>map.sourceCount)return 0;
+    if(segments.some(item=>!Number.isInteger(item.word)||item.word<(zeroBased?0:1)||
+      item.word+(zeroBased?1:0)>map.sourceCount))return 0;
+    return ordinal;
+  }
+  function audioVerseNode(key){
+    return [...list.querySelectorAll('.vertical-verse')].find(el=>el.dataset.verse===key);
+  }
+  function seekAudioPosition(state,force=false){
+    if(!active||!records||!state?.playing)return;
+    const key=state.surah+':'+state.ayah;
+    let node=audioVerseNode(key);
+    if(!node){
+      const idx=ordered.findIndex(v=>v.key===key);
+      if(idx<0)return;
+      // If close to an existing edge, extend the list instead of rebuilding
+      // it and making the user's interpretation text disappear.
+      let rounds=0;
+      while(!node&&idx>=position&&rounds++<15){appendBatch();node=audioVerseNode(key);}
+      while(!node&&idx<topIndex&&rounds++<15){prependBatch();node=audioVerseNode(key);}
+      if(!node){if(force||state.autoFollow){const p=pageForVerse(key);if(p)reader()?.goToPage?.(p);}return;}
+    }
+    const ordinal=audioWord(state,key);
+    const word=ordinal&&node.dataset.wordMapped==='true'?node.querySelector('[data-ordinal="'+ordinal+'"]'):null;
+    const target=word||node.querySelector('.vertical-ayah')||node;
+    if(force||state.autoFollow){
+      if(force){followingAudio=true;viewport.scrollBy({top:target.getBoundingClientRect().top-viewport.getBoundingClientRect().top-viewport.clientHeight*.28,behavior:'smooth'});}
+      else easeIntoView(target);
+    }
+  }
   function applyAudio(state){
+    latestAudioState=state;
     if(!active||!records||!state)return;
     const eligible=state.playing&&state.provider==='quran-foundation'&&state.timing;
     const key=eligible?state.surah+':'+state.ayah:'';
-    let ordinal=0;
-    if(eligible){
-      const ms=state.currentTime*1000,t=state.timing;
-      const inside=(!Number.isFinite(t.timestampFrom)||ms>=t.timestampFrom)&&(!Number.isFinite(t.timestampTo)||ms<t.timestampTo);
-      const seg=inside?t.segments?.findLast(s=>ms>=s.start&&ms<s.end):null;
-      const map=qvp()?.getMapping?.(key);
-      const supported=[7,9020,9021,9022,...Array.from({length:19},(_,i)=>9000+i)].filter(n=>n!==9017).includes(Number(state.reciterId));
-      if(seg&&supported&&map&&Number.isInteger(seg.word)&&seg.word>=1&&seg.word<=map.sourceCount)
-        ordinal=seg.word;
-    }
+    const ordinal=eligible?audioWord(state,key):0;
     const cue=key+':'+ordinal;
     if(cue===lastCueKey)return;
     lastCueKey=cue;
     list.querySelectorAll('.vertical-ayah-word.is-reciting').forEach(n=>n.classList.remove('is-reciting'));
     list.querySelectorAll('.vertical-verse.is-reciting-verse').forEach(n=>n.classList.remove('is-reciting-verse'));
     if(!key){followingAudio=false;lastAudioKey='';return;}
-    const node=[...list.querySelectorAll('.vertical-verse')].find(el=>el.dataset.verse===key);
+    const node=audioVerseNode(key);
     if(node){
       node.classList.add('is-reciting-verse');
       if(ordinal&&node.dataset.wordMapped==='true')node.querySelector('[data-ordinal="'+ordinal+'"]')?.classList.add('is-reciting');
-      if(state.autoFollow&&key!==lastAudioKey){
-        followingAudio=true;
-        const dest=node.offsetTop-Math.min(110,viewport.clientHeight*.14);
-        viewport.scrollTo({top:Math.max(0,dest),behavior:'auto'});
-        const page=pageForVerse(key,reader()?.getCurrentPage?.());
-        if(page)notifyPage(page);
-      }
-    }else if(state.autoFollow&&key!==lastAudioKey){
-      const page=pageForVerse(key);
-      if(page){
-        followingAudio=true;
-        // QVP navigation refreshes vertical on the page event; cue follows next tick.
-        ignorePageEvent=null;
-        reader()?.goToPage?.(page);
-      }
     }
+    // Moving text is only justified when the actively recited word leaves
+    // the visible area, NOT at each new ayah or every timing segment.
+    if(state.autoFollow)seekAudioPosition(state);
     lastAudioKey=key;
   }
+  if(followButton)followButton.addEventListener('click',()=>{
+    const state=window.quranAudioEngine?.snapshot?.()||latestAudioState;
+    if(!state?.playing){
+      followButton.title='شغّل التلاوة أولًا';
+      return;
+    }
+    seekAudioPosition(state,true);
+  });
+  function toggleVerseAction(node){
+    const wasOpen=node===listeningVerse;
+    if(listeningVerse)listeningVerse.querySelector('.vertical-verse-actions').hidden=true;
+    listeningVerse=null;
+    if(!wasOpen){node.querySelector('.vertical-verse-actions').hidden=false;listeningVerse=node;}
+  }
+  viewport.addEventListener('pointerdown',event=>{
+    const node=event.target.closest('.vertical-verse');
+    if(!node||event.target.closest('button')||event.pointerType==='mouse'&&event.button!==0)return;
+    clearTimeout(holdTimer);suppressVerseClick=false;
+    holdStart={x:event.clientX,y:event.clientY,node,id:event.pointerId};
+    holdTimer=setTimeout(()=>{
+      if(!holdStart)return;
+      const [surah,ayah]=node.dataset.verse.split(':').map(Number);
+      if(window.mushafVerseActions?.openForReference?.(surah,ayah)){
+        suppressVerseClick=true;toggleVerseAction(node);
+      }
+      holdStart=null;
+    },500);
+  });
+  viewport.addEventListener('pointermove',event=>{
+    if(holdStart?.id===event.pointerId&&(Math.abs(event.clientX-holdStart.x)>12||
+      Math.abs(event.clientY-holdStart.y)>12)){clearTimeout(holdTimer);holdStart=null;}
+  });
+  for(const type of ['pointerup','pointercancel'])viewport.addEventListener(type,()=>{
+    clearTimeout(holdTimer);holdStart=null;
+  });
+  viewport.addEventListener('click',event=>{
+    if(suppressVerseClick){suppressVerseClick=false;event.stopPropagation();return;}
+    if(event.target.closest('button'))return;
+    const node=event.target.closest('.vertical-verse');
+    if(node)toggleVerseAction(node);
+  });
   // The playback loop calls this on each animation frame for word-accurate cues.
   window.mushafVerticalReading={syncAudio:applyAudio,isActive:()=>active};
   window.addEventListener('quran-audio:time',event=>applyAudio(event.detail));
