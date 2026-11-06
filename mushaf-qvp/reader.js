@@ -311,24 +311,119 @@ function settings(){
 }
 function closePanels(){return !!document.querySelector('#settings-sheet.is-open,#index-sheet.is-open,#verse-actions-sheet.is-open');}
 function panel(id,open){const sheet=$(id+'-sheet'),back=$(id+'-backdrop');sheet.classList.toggle('is-open',open);sheet.setAttribute('aria-hidden',String(!open));back.hidden=!open;back.classList.toggle('is-open',open);document.body.classList.toggle(id+'-open',open);}
-const foldIndex=value=>String(value).replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).trim();
-function index(tab='surahs'){
-  const list=$('index-list'),q=foldIndex($('index-surah-search')?.value||'');list.replaceChildren();
-  const entries=tab==='juz'?juz.map((page,i)=>({label:'الجزء '+digits(i+1),page})):window.QuranAudio.SURAH_NAMES.map((name,i)=>({label:name,page:maps[(i+1)+':1'].pages[0],surah:i+1}));
-  for(const e of entries){if(q&&!foldIndex(e.label).includes(q)&&String(e.surah)!==q)continue;
-    const wrapper=document.createElement('div'),button=document.createElement('button');button.className='index-entry';button.innerHTML='<span class="index-entry-number"></span><span class="index-entry-name"></span><small class="index-entry-page"></small>';button.children[0].textContent=digits(e.surah||juz.indexOf(e.page)+1);button.children[1].textContent=e.label;button.children[2].textContent='صفحة '+digits(e.page);wrapper.className='index-surah-group';button.onclick=()=>{panel('index',false);navigate(e.page);};wrapper.append(button);
-    if(e.surah){const toggle=document.createElement('button');toggle.className='index-ayah-toggle';toggle.textContent='⌄';toggle.setAttribute('aria-label','آيات '+e.label);
-      toggle.setAttribute('aria-expanded','false');const area=document.createElement('div');area.className='index-ayah-panel';area.hidden=true;toggle.onclick=()=>{area.hidden=!area.hidden;toggle.setAttribute('aria-expanded',String(!area.hidden));if(area.childNodes.length)return;
-        const input=document.createElement('input');input.type='search';input.className='index-ayah-search';input.placeholder='رقم الآية أو جزء من نصها';area.append(input);const results=document.createElement('div');results.className='index-ayah-results';area.append(results);
-        const paint=()=>{results.replaceChildren();for(const v of verses.filter(v=>v.surah===e.surah&&(!input.value||String(v.ayah)===foldIndex(input.value)||foldIndex(v.text).includes(foldIndex(input.value)))).slice(0,120)){const b=document.createElement('button');b.className='index-ayah-result';b.textContent=digits(v.ayah)+' '+v.text.slice(0,85);b.onclick=()=>{panel('index',false);navigate(maps[v.key].pages[0],v.key);};results.append(b);}};input.oninput=paint;paint();};wrapper.append(toggle,area);}
+// A widely used surah-level Makki/Madani classification (Quran.com chapter
+// metadata convention). This describes the surah as a whole, not every ayah.
+const MEDINAN_SURAHS=new Set([2,3,4,5,8,9,13,22,24,33,47,48,49,55,57,58,59,60,61,62,63,64,65,66,76,98,99,110]);
+const foldIndex=value=>String(value).replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).trim();
+let activeIndexTab='surahs';
+function navigateFromIndex(page,verseKey=null){
+  panel('index',false);
+  $('index-surah-search').blur();
+  navigate(page,verseKey);
+}
+function index(tab=activeIndexTab){
+  activeIndexTab=tab;
+  const list=$('index-list'),jump=$('index-page-jump'),input=$('index-surah-search');
+  const query=foldIndex(input?.value||'');
+  const pageNumber=/^\d+$/.test(query)?Number(query):null;
+  list.replaceChildren();
+  jump.replaceChildren();jump.hidden=true;
+  // Numbers in the main index mean actual Mushaf page numbers, not surah IDs.
+  if(query&&pageNumber!==null){
+    if(pageNumber>=1&&pageNumber<=604){
+      const go=document.createElement('button');go.type='button';go.className='index-jump-action';
+      const circle=document.createElement('span');circle.className='index-jump-icon';circle.textContent='↗';
+      const labels=document.createElement('span'),title=document.createElement('strong'),hint=document.createElement('small');
+      title.textContent='الانتقال إلى صفحة '+digits(pageNumber);
+      hint.textContent='افتح الصفحة مباشرة في المصحف';
+      labels.append(title,hint);go.append(circle,labels);
+      go.onclick=()=>navigateFromIndex(pageNumber);jump.append(go);jump.hidden=false;
+    }else{
+      const msg=document.createElement('p');msg.className='index-empty';msg.textContent='رقم الصفحة من ١ إلى ٦٠٤';jump.append(msg);jump.hidden=false;
+    }
+    for(const b of document.querySelectorAll('[data-index-tab]')){
+      b.classList.toggle('is-active',b.dataset.indexTab===tab);
+      b.setAttribute('aria-pressed',String(b.dataset.indexTab===tab));
+    }
+    return;
+  }
+  const entries=tab==='juz'
+    ?juz.map((page,i)=>({label:'الجزء '+digits(i+1),page,number:i+1}))
+    :window.QuranAudio.SURAH_NAMES.map((name,i)=>({label:name,page:maps[(i+1)+':1'].pages[0],surah:i+1,number:i+1}));
+  const filtered=entries.filter(e=>!query||foldIndex(e.label).includes(query));
+  if(!filtered.length){const p=document.createElement('p');p.className='index-empty';p.textContent='مفيش سور مطابقة للبحث';list.append(p);}
+  for(const e of filtered){
+    const wrapper=document.createElement('div');wrapper.className='index-surah-group';
+    const entry=document.createElement('button');entry.type='button';entry.className='index-entry';
+    const number=document.createElement('span');number.className='index-entry-number';number.textContent=digits(e.number);
+    const info=document.createElement('span');info.className='index-entry-info';
+    const name=document.createElement('strong');name.className='index-entry-name';name.textContent=e.label;
+    const meta=document.createElement('span');meta.className='index-entry-meta';
+    const page=document.createElement('span');page.className='index-entry-page';page.textContent='صفحة '+digits(e.page);
+    meta.append(page);
+    if(e.surah){
+      const type=document.createElement('span');type.className='index-revelation';
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');
+      svg.innerHTML=MEDINAN_SURAHS.has(e.surah)
+        ?'<path d="M4 20V9l8-5 8 5v11M8 20v-7h8v7M2 20h20" />'
+        :'<path d="M20 15.5A8 8 0 0 1 8.5 4 8 8 0 1 0 20 15.5Z" />';
+      type.append(svg,document.createTextNode(MEDINAN_SURAHS.has(e.surah)?'مدنية':'مكية'));
+      meta.append(type);
+    }
+    info.append(name,meta);entry.append(number,info);
+    entry.setAttribute('aria-label','الانتقال إلى '+e.label+'، صفحة '+digits(e.page));
+    entry.onclick=()=>navigateFromIndex(e.page);
+    wrapper.append(entry);
+    if(e.surah){
+      const toggle=document.createElement('button');toggle.type='button';toggle.className='index-ayah-toggle';
+      toggle.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>';
+      toggle.setAttribute('aria-label','عرض آيات سورة '+e.label+' للانتقال إلى آية');
+      toggle.setAttribute('aria-expanded','false');
+      const area=document.createElement('div');area.className='index-ayah-panel';area.hidden=true;
+      toggle.onclick=()=>{
+        area.hidden=!area.hidden;
+        toggle.setAttribute('aria-expanded',String(!area.hidden));
+        if(area.childNodes.length)return;
+        const input=document.createElement('input');input.type='search';input.className='index-ayah-search';
+        input.placeholder='رقم الآية أو كلمة منها';input.setAttribute('aria-label','بحث في آيات '+e.label);
+        const results=document.createElement('div');results.className='index-ayah-results';
+        area.append(input,results);
+        const paint=()=>{
+          results.replaceChildren();
+          const query=foldIndex(input.value);
+          const found=verses.filter(v=>v.surah===e.surah&&(!query||String(v.ayah)===query||foldIndex(v.text).includes(query))).slice(0,120);
+          for(const v of found){
+            const b=document.createElement('button');b.type='button';b.className='index-ayah-result';
+            const number=document.createElement('strong');number.textContent=digits(v.ayah);
+            const excerpt=document.createElement('span');excerpt.textContent=v.text.slice(0,100);
+            b.append(number,excerpt);
+            b.onclick=()=>navigateFromIndex(maps[v.key].pages[0],v.key);
+            results.append(b);
+          }
+          if(!found.length){const hint=document.createElement('p');hint.className='index-empty';hint.textContent='مفيش آيات مطابقة';results.append(hint);}
+        };
+        input.oninput=paint;paint();
+      };
+      wrapper.append(toggle,area);
+    }
     list.append(wrapper);
   }
-  for(const b of document.querySelectorAll('[data-index-tab]'))b.classList.toggle('is-active',b.dataset.indexTab===tab);
+  for(const b of document.querySelectorAll('[data-index-tab]')){
+    b.classList.toggle('is-active',b.dataset.indexTab===tab);
+    b.setAttribute('aria-pressed',String(b.dataset.indexTab===tab));
+  }
 }
+
 function wire(){
   for(const id of ['settings','index']){$('open-'+id).onclick=()=>{if(id==='index')index();panel(id,true);};$('close-'+id).onclick=()=>panel(id,false);$(id+'-backdrop').onclick=()=>panel(id,false);}
   for(const b of document.querySelectorAll('[data-index-tab]'))b.onclick=()=>index(b.dataset.indexTab);
   $('index-surah-search').oninput=()=>index();
+  $('index-surah-search').addEventListener('keydown',event=>{
+    if(event.key!=='Enter')return;
+    const n=Number(foldIndex(event.currentTarget.value));
+    if(/^\d+$/.test(foldIndex(event.currentTarget.value))&&n>=1&&n<=604){event.preventDefault();navigateFromIndex(n);}
+  });
   for(const b of document.querySelectorAll('[data-theme-choice]'))b.onclick=()=>{theme=b.dataset.themeChoice;settings();};$('reset-settings').onclick=()=>{theme='paper';settings();};
   stage.addEventListener('click',e=>{if(suppress){suppress=false;return;}const word=wordFromPoint(e.clientX,e.clientY)||e.target.closest('.madinah-subword,.madinah-word');if(word){metrics.wordTaps++;emit('mushaf:word-tapped',{wordKey:word.dataset.wordKey,verseKey:word.dataset.verse});}if(!e.target.closest('button,a,input'))document.body.classList.toggle('tools-visible');});
   stage.addEventListener('keydown',e=>{const w=e.target.closest('.madinah-subword,.madinah-word');if(w&&(e.key==='Enter'||e.key===' ')){e.preventDefault();window.mushafVerseActions.openForVerse(...w.dataset.verse.split(':').map(Number));}});
