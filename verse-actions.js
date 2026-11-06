@@ -131,6 +131,9 @@
     // Document capture precedes both the original and mobile swipe handlers.
     document.addEventListener('pointerdown', event => {
         cancelPending();
+        // Vertical reading owns its own verse hit-testing; never read a hidden
+        // QVP word from screen coordinates behind the vertical overlay.
+        if (event.target instanceof Element && event.target.closest('#vertical-reading')) return;
         if (isOpen() || (event.pointerType === 'mouse' && event.button !== 0)) return;
         if (document.querySelector('.settings-sheet.is-open, .index-sheet.is-open')) return;
         const verse = verseFromTarget(window.mushafQvp?.wordFromPoint(event.clientX, event.clientY) || event.target);
