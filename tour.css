@@ -196,3 +196,8 @@
   .ayat-tour-invite,.ayat-tour-complete,.ayat-tour-play-icon{animation:none}
   .ayat-tour-quiz button{transition:none}
 }
+
+/* Show the independent book control when the Mushaf guide highlights it. */
+.reader-page.ayat-tour-on.ayat-tour-audio .reading-mode-switch{
+ opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:translateY(0)!important;
+}
