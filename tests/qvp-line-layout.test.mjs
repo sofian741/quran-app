@@ -14,7 +14,7 @@ test('all 602 normal pages share one 15-slot grid, preserve every contour and ha
  let minGap=Infinity,headings=0,sajdah=0;
  for(let n=3;n<=604;n++){
   const source=raw(n),g=layoutGeometry(raw(n)),stats=g.layoutStats;
-  assert.equal(stats.mode,'fixed-grid');assert.equal(g.height,760);assert.equal(g.width,360);assert.equal(stats.inkScale,1.055);assert.equal(GRID.inkStroke,.4);
+  assert.equal(stats.mode,'fixed-grid');assert.equal(g.height,760);assert.equal(g.width,360);assert.equal(stats.inkScale,1.055);assert.equal(GRID.inkStroke,.4);assert.equal(GRID.markerStroke,.25);
   assert.deepEqual(stats.centres,Array.from({length:15},(_,i)=>30+50*i));
   assert.equal(GRID.slots*GRID.band+(GRID.slots+1)*GRID.gap,g.height);
   for(let i=0;i<g.paths.length;i++){

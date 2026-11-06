@@ -14,6 +14,9 @@ test('QVP-only engine and shared services remain', () => {
     const registry=fs.readFileSync('data/qud/registry.js','utf8');
     assert.equal(registry.split('.word.json.gz').length-1,19);
     assert.equal(registry.match(/"id":90[0-9]{2}/g)?.length,19);
+    assert.equal((html.match(/id="display-page-number"/g)||[]).length,1);
+    assert.match(html,/class="audio-page-badge"[\s\S]*id="display-page-number"/);
+    assert.doesNotMatch(html,/class="page-(?:heading|foot)"/);
 });
 
 test('keyboard show/hide never changes Quran page dimensions, and normal viewport returns after dismissal', () => {

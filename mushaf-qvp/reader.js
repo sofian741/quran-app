@@ -17,7 +17,7 @@ let current=1, revision=0, active=null, manifest, maps, verses, verseIndex, them
 let drag=null, settling=false, suppress=false, pendingTarget=null, lastAudio=null, audioSignature='';
 const pointers=new Set(), cache=new Map(), pending=new Map(), prepared=new Map(), maxPages=3;
 let preview=null,targetTimer=null;
-const metrics={pageLoads:[],cacheLimit:maxPages,cachePages:0,wordTaps:0,errors:[],timingSpace:'tanzil-spoken',productionReady:false};
+const metrics={pageLoads:[],cacheLimit:maxPages,cachePages:0,wordTaps:0,errors:[],timingSpace:'tanzil-spoken',productionReady:false,inkStroke:GRID.inkStroke,markerStroke:GRID.markerStroke};
 const status=document.createElement('p');status.className='madinah-status';status.setAttribute('role','status');document.body.append(status);
 status.hidden=true;
 function message(value,error=false){status.hidden=!value;status.textContent=value;status.classList.toggle('is-error',error);}
@@ -124,8 +124,11 @@ function paint(item){
   ctx.save();ctx.setTransform(scale,0,0,scale,0,0);
   ctx.fillStyle=theme==='dark'?'#d7bb7b':'#157a6b';
   for(const d of item.geometry.decorations.filter(d=>d.decoration===0))
-    for(let i=d.firstPath;i<d.firstPath+d.nPaths;i++)
-      ctx.fill(buildPath(item.geometry.paths[i]),item.geometry.paths[i].rule);
+    for(let i=d.firstPath;i<d.firstPath+d.nPaths;i++){
+      const path=buildPath(item.geometry.paths[i]);
+      ctx.strokeStyle=ctx.fillStyle;ctx.lineWidth=GRID.markerStroke;ctx.lineJoin='round';ctx.lineCap='round';
+      ctx.stroke(path);ctx.fill(path,item.geometry.paths[i].rule);
+    }
   ctx.restore();
   // Match the original reader: recolor the active word's own QVP contours.
   // There is no box, marker or geometry change over the printed word.
@@ -150,8 +153,8 @@ async function navigate(number,target=null,transitionOverlay=null){
     text.replaceChildren(built.frame);text.classList.add('madinah-text');text.dataset.layoutState='ready';text.dataset.page=String(number);
     $('display-page-number').textContent=digits(number);
     const s=[...new Set(item.geometry.words.map(w=>w.surah))], title=s.map(n=>window.QuranAudio.SURAH_NAMES[n-1]).join('، ');
-    $('page-surah').textContent=title;$('toolbar-surah').textContent=title;
-    const part='الجزء '+digits(juz.filter(n=>n<=number).length);$('page-range').textContent=part;$('toolbar-range').textContent=part;
+    $('toolbar-surah').textContent=title;
+    const part='الجزء '+digits(juz.filter(n=>n<=number).length);$('toolbar-range').textContent=part;
     try{localStorage.setItem(STORAGE,JSON.stringify({displayPage:number,surah:item.geometry.words[0].surah,ayah:item.geometry.words[0].ayah}));}catch{}
     fit();
     if(transitionOverlay){

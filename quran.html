@@ -56,20 +56,15 @@
 
     <main class="reader-stage" id="reader-stage" aria-label="صفحة المصحف">
         <section class="mushaf-page" id="mushaf-page">
-            <div class="page-heading" aria-hidden="true">
-                <span id="page-surah">سورة الفاتحة</span>
-                <span id="page-range">الجزء الأول</span>
-            </div>
             <article class="quran-text" id="quran-text" aria-live="polite"></article>
-            <div class="page-foot" aria-hidden="true">
-                <span class="page-divider"></span>
-                <span class="display-page-number" id="display-page-number">١</span>
-                <span class="page-divider"></span>
-            </div>
         </section>
     </main>
 
     <section class="mushaf-audio-player" id="mushaf-audio-player" aria-label="مشغل التلاوة">
+        <div class="audio-page-badge" aria-label="رقم الصفحة الحالية">
+            <span>صفحة</span>
+            <strong class="display-page-number" id="display-page-number">١</strong>
+        </div>
         <button class="audio-reader-trigger" id="audio-open-options" type="button" aria-haspopup="dialog"
                 aria-controls="audio-options-sheet">
             <span>

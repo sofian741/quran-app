@@ -23,6 +23,20 @@ if(!process.env.QURAN_BASE_URL){
  await page.goto(base+'/quran.html');await page.waitForFunction(()=>window.mushafQvp?.metrics.ready);
  assert.equal(await page.evaluate(()=>mushafReader.getCurrentPage()),4);assert.equal(await page.locator('body').getAttribute('data-theme'),'mint');
  assert.deepEqual(await page.evaluate(async()=>{const normal=mushafQvp.getGeometry().layoutStats.inkScale;await mushafQvp.navigate(1);const opening=mushafQvp.getGeometry().layoutStats.zoom;await mushafQvp.navigate(4);return {normal,opening};}),{normal:1.055,opening:1.5});
+ assert.deepEqual(await page.evaluate(()=>({ink:mushafQvp.metrics.inkStroke,marker:mushafQvp.metrics.markerStroke})),{ink:.4,marker:.25});
+ await check('page chrome is removed and the live page number belongs to the tap controls',async()=>{
+  const clean=await page.evaluate(()=>({
+   headings:document.querySelectorAll('.page-heading,.page-foot').length,
+   frame:getComputedStyle(document.querySelector('.mushaf-page'),'::before').content,
+   badgeParent:document.querySelector('#display-page-number')?.parentElement?.className,
+   playerHidden:getComputedStyle(document.querySelector('#mushaf-audio-player')).visibility
+  }));
+  assert.equal(clean.headings,0);assert.ok(clean.frame==='none'||clean.frame==='normal');assert.equal(clean.badgeParent,'audio-page-badge');assert.equal(clean.playerHidden,'hidden');
+  await page.evaluate(()=>mushafQvp.navigate(604));assert.equal(await page.locator('#display-page-number').textContent(),'٦٠٤');
+  await page.locator('#reader-stage').click({position:{x:195,y:300}});assert.equal(await page.locator('#mushaf-audio-player').evaluate(n=>getComputedStyle(n).visibility),'visible');
+  await page.screenshot({path:path.join(out,'page-604-controls-390x844.png')});report.screenshots.push('page-604-controls-390x844.png');
+  await page.locator('#reader-stage').click({position:{x:195,y:300}});await page.evaluate(()=>mushafQvp.navigate(4));
+ });
  await check('all 604 pages load, word hit boxes match pinned geometry and cache stays bounded',async()=>{
   const result=await page.evaluate(async()=>{
    const errors=[],times=[];let words=0;
@@ -53,12 +67,22 @@ if(!process.env.QURAN_BASE_URL){
   assert.equal(await page.locator('.ornament-cartouche').first().evaluate(n=>getComputedStyle(n).fill),'rgb(32, 46, 41)');
   await page.locator('[data-theme-choice="paper"]').click();await page.locator('#close-settings').click();
  });
- await check('five viewports retain exact printed geometry on varied pages',async()=>{
+ await check('five viewports use the maximum safe axis and retain exact printed geometry',async()=>{
   const sizes=[[320,568],[390,844],[430,932],[768,1024],[1024,1366]], samples=[1,2,3,4,48,77,187,208,262,282,428,451,602,604];let cases=0;
-  for(const [width,height]of sizes){await page.setViewportSize({width,height});for(const n of samples){await page.evaluate(n=>mushafQvp.navigate(n),n);await page.waitForTimeout(20);const r=await page.evaluate(()=>{const t=document.querySelector('#quran-text').getBoundingClientRect(),f=document.querySelector('.madinah-frame').getBoundingClientRect();return {inside:f.left>=t.left-.1&&f.right<=t.right+.1&&f.top>=t.top-.1&&f.bottom<=t.bottom+.1,pixels:mushafQvp.metrics.canvasPixels};});assert.ok(r.inside,'page '+n+' '+width);assert.ok(r.pixels<=3010000);cases++;}}
-  return {cases};
+  let phoneScale=0;
+  for(const [width,height]of sizes){await page.setViewportSize({width,height});for(const n of samples){await page.evaluate(n=>mushafQvp.navigate(n),n);await page.waitForTimeout(20);const r=await page.evaluate(()=>{const t=document.querySelector('#quran-text').getBoundingClientRect(),f=document.querySelector('.madinah-frame').getBoundingClientRect();return {inside:f.left>=t.left-.1&&f.right<=t.right+.1&&f.top>=t.top-.1&&f.bottom<=t.bottom+.1,pixels:mushafQvp.metrics.canvasPixels,axis:Math.max(f.width/t.width,f.height/t.height),scale:f.width/mushafQvp.getGeometry().width};});assert.ok(r.inside,'page '+n+' '+width);assert.ok(r.axis>.995,'unused fit axis page '+n+' '+width);assert.ok(r.pixels<=3010000);if(width===390&&height===844&&n===3)phoneScale=r.scale;cases++;}}
+  assert.ok(phoneScale>1.06,'390px phone should gain the removed page chrome');return {cases,phoneScale};
  });
  await page.setViewportSize({width:390,height:844});
+ await check('search keyboard resize returns to the same full-page fit',async()=>{
+  await page.evaluate(()=>mushafQvp.navigate(3));const before=await page.locator('.madinah-frame').boundingBox();
+  await page.locator('#open-quran-search').evaluate(n=>n.click());await page.locator('#quran-search-input').focus();
+  await page.setViewportSize({width:390,height:500});await page.waitForTimeout(80);
+  assert.ok((await page.locator('.reader-page').getAttribute('style'))?.includes('height'));
+  await page.setViewportSize({width:390,height:844});await page.locator('#quran-search-input').evaluate(n=>n.blur());await page.waitForTimeout(180);
+  await page.locator('#close-quran-search').click();const after=await page.locator('.madinah-frame').boundingBox();
+  assert.ok(Math.abs(before.width-after.width)<.2);assert.ok(Math.abs(before.height-after.height)<.2);return {width:after.width,height:after.height};
+ });
  await check('word tap and genuine long-press menu, favorites, copy, tafsir and sharing',async()=>{
   await page.evaluate(()=>mushafQvp.navigate(4));
   const target=page.locator('.madinah-word[data-word-key="2:17:1"]');await target.click();

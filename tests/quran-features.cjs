@@ -13,7 +13,11 @@ const root = path.join(__dirname, '..');
     const server = http.createServer((request, response) => {
         const pathname = new URL(request.url, 'http://localhost').pathname === '/'
             ? '/index.html' : new URL(request.url, 'http://localhost').pathname;
-        try { response.end(fs.readFileSync(path.join(root, decodeURIComponent(pathname)))); }
+        const types={'.js':'text/javascript','.css':'text/css','.html':'text/html','.json':'application/json'};
+        try {
+            response.setHeader('Content-Type',types[path.extname(pathname)]||'application/octet-stream');
+            response.end(fs.readFileSync(path.join(root, decodeURIComponent(pathname))));
+        }
         catch (_) { response.statusCode = 404; response.end(); }
     });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));

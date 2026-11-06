@@ -153,7 +153,8 @@ function chapterAudio(surah) {
       audio.currentTime = .2; audio.dispatchEvent(new Event('timeupdate'));
     });
     assert.ok(await page.locator('.audio-verse-band').count() > 0, 'current verse must stay highlighted');
-    assert.equal(await page.locator('.mushaf-word.is-audio-word').count(), 0, 'mismatched word counts must disable word highlighting');
+    assert.equal(await page.locator('.mushaf-word.is-audio-word').count(), 1,
+      'a partial trusted timing source must highlight only its explicit word segment');
 
     await page.evaluate(() => window.quranAudioEngine.setRepeat({
       mode: 'range', start: 1, end: 3, count: 4, completed: 0

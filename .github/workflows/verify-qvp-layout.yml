@@ -5,7 +5,13 @@ on:
     paths:
       - 'mushaf-qvp/**'
       - 'tests/qvp-*'
+      - 'tests/fatihah-layout.cjs'
+      - 'tests/swipe-performance.cjs'
+      - 'tests/quran-features.cjs'
+      - 'tests/audio-browser.cjs'
       - 'quran.html'
+      - 'style.css'
+      - 'audio-player.css'
       - 'sw.js'
       - '.github/workflows/verify-qvp-layout.yml'
   workflow_dispatch:
@@ -29,6 +35,17 @@ jobs:
           echo "QURAN_BROWSER_PATH=$(node -e 'process.stdout.write(require("playwright").chromium.executablePath())')" >> "$GITHUB_ENV"
       - name: Verify all 604 QVP pages and geometry alignment
         run: npm run test:qvp
+      - name: Verify opening pages, full-screen fit, gestures and Quran features
+        run: |
+          node tests/fatihah-layout.cjs
+          node tests/swipe-performance.cjs
+          node tests/quran-features.cjs
+      - name: Verify audio highlighting on mobile viewports
+        run: |
+          node scripts/dev-server.mjs >/tmp/ayat-qvp-audio-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID"' EXIT
+          node tests/audio-browser.cjs
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@v4

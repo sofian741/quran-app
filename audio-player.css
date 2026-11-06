@@ -347,7 +347,7 @@
 }
 
 /* Recitation UX: match the reader's tap-to-show chrome. */
-:root { --audio-player-height: 130px; }
+:root { --audio-player-height: 154px; }
 .reader-page .reader-stage { height: 100vh; height: 100dvh; }
 .reader-page.tools-visible .reader-stage { height: calc(100vh - var(--audio-player-height)); height: calc(100dvh - var(--audio-player-height)); }
 .mushaf-audio-player {
@@ -369,6 +369,24 @@
     pointer-events: auto;
     transform: translateY(0);
 }
+.audio-page-badge {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 5px;
+    min-width: 68px;
+    min-height: 24px;
+    margin: 0 auto;
+    padding: 3px 11px;
+    color: #f7fffb;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(157,220,198,.42);
+    border-radius: 8px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+.audio-page-badge span { color: #9dc9ba; font-size: 9px; }
+.audio-page-badge strong { min-width: 1.8em; text-align: center; font-size: 13px; }
 .audio-reader-trigger { flex: 0 0 auto; }
 .audio-progress-row { width: 100%; flex: 0 0 auto; }
 .audio-primary-controls {
@@ -434,14 +452,17 @@
     .audio-repeat-sheet { right: 50%; left: auto; width: min(610px, 100%); transform: translateX(50%); }
 }
 @media (max-width: 350px) {
-    :root { --audio-player-height: 124px; }
+    :root { --audio-player-height: 148px; }
     .audio-primary-controls { gap: 5px; }
     .audio-main-buttons { gap: 4px; }
     .audio-quick-tool { flex-basis: 32px; }
 }
 @media (max-height: 650px) {
-    :root { --audio-player-height: 94px; }
+    :root { --audio-player-height: 116px; }
     .mushaf-audio-player { gap: 0; }
+    .audio-page-badge { min-height: 19px; padding-block: 2px; }
+    .audio-page-badge span { font-size: 8px; }
+    .audio-page-badge strong { font-size: 10px; }
     .audio-primary-controls { gap: 8px; }
     .audio-mini-status { display: none; }
 }
