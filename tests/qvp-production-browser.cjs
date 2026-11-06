@@ -33,9 +33,10 @@ if(!process.env.QURAN_BASE_URL){
   }));
   assert.equal(clean.headings,0);assert.ok(clean.frame==='none'||clean.frame==='normal');assert.equal(clean.badgeParent,'audio-page-badge');assert.equal(clean.playerHidden,'hidden');
   await page.evaluate(()=>mushafQvp.navigate(604));assert.equal(await page.locator('#display-page-number').textContent(),'٦٠٤');
-  await page.locator('#reader-stage').click({position:{x:195,y:300}});assert.equal(await page.locator('#mushaf-audio-player').evaluate(n=>getComputedStyle(n).visibility),'visible');
+  await page.locator('#reader-stage').click({position:{x:195,y:300}});
+  await page.waitForFunction(()=>document.body.classList.contains('tools-visible')&&getComputedStyle(document.querySelector('#mushaf-audio-player')).visibility==='visible');
   await page.screenshot({path:path.join(out,'page-604-controls-390x844.png')});report.screenshots.push('page-604-controls-390x844.png');
-  await page.locator('#reader-stage').click({position:{x:195,y:300}});await page.evaluate(()=>mushafQvp.navigate(4));
+  await page.locator('#reader-stage').click({position:{x:195,y:300}});await page.waitForFunction(()=>!document.body.classList.contains('tools-visible'));await page.evaluate(()=>mushafQvp.navigate(4));
  });
  await check('all 604 pages load, word hit boxes match pinned geometry and cache stays bounded',async()=>{
   const result=await page.evaluate(async()=>{
