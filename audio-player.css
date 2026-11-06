@@ -754,6 +754,9 @@
   margin: 0;
   z-index: 2;
   pointer-events: none;
+  background: #103b32;
+  border-color: rgba(157,220,198,.42);
+  box-shadow: 0 4px 14px rgba(0,0,0,.24);
 }
 @media (max-width: 350px) { :root { --audio-player-height: 128px; } }
 @media (max-height: 650px) { :root { --audio-player-height: 106px; } }
