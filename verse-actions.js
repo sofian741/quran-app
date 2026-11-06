@@ -133,6 +133,7 @@
         cancelPending();
         // Vertical reading owns its own verse hit-testing; never read a hidden
         // QVP word from screen coordinates behind the vertical overlay.
+        if (document.body.classList.contains('vertical-reading-active')) return;
         if (event.target instanceof Element && event.target.closest('#vertical-reading')) return;
         if (isOpen() || (event.pointerType === 'mouse' && event.button !== 0)) return;
         if (document.querySelector('.settings-sheet.is-open, .index-sheet.is-open')) return;
@@ -178,6 +179,7 @@
 
     // Avoid the native text menu competing with the custom long-press menu.
     document.addEventListener('contextmenu', event => {
+        if (document.body.classList.contains('vertical-reading-active')) return;
         if (verseFromTarget(event.target)) event.preventDefault();
     }, true);
 
