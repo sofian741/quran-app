@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v82-full-page-qvp';
+const APP_CACHE = 'quran-reader-shell-v83-tasbih-studio';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './mushaf-qvp/boot.js', './mushaf-qvp/reader.js', './mushaf-qvp/line-layout.js', './mushaf-qvp/heritage-ornament.js', './mushaf-qvp/reader.css', './mushaf-qvp/integrity.js',
@@ -8,11 +8,11 @@ const APP_SHELL = [
     './data/qvp/manifest.json', './data/qvp/word-map.json',
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',
     './style.css', './home.css', './home.js', './welcome.css', './welcome-boot.js', './welcome.js', './tour.css?v=57', './tour-home.css?v=59', './tour.js?v=64', './onboarding.css', './onboarding.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
-    './recitations-overrides.css', './ayat-reading-continuity.css', './unified-nav.css', './global-theme.js', './library.css', './adhkar.css', './legal.css',
+    './recitations-overrides.css', './ayat-reading-continuity.css', './unified-nav.css', './global-theme.js', './library.css', './adhkar.css', './tasbih-studio.css', './legal.css',
     './service-worker-register.js', './home-settings.js?v=54', './android-build-info.js', './app-update.js', './mushaf-keyboard-viewport.js',
     './verse-actions.js', './tafsir.js', './quran-search.js', './verse-tools.js',
     './ayat-connectivity.js', './audio-core.js', './audio-downloads.js', './data/qud/registry.js', './qud-audio.js', './offline-reciter-catalog.js',
-    './ayat-reading-continuity.js', './audio-bulk-download.js', './mushaf-audio.js', './recitations.js', './recitations-library-link.js', './library.js', './adhkar.js',
+    './ayat-reading-continuity.js', './audio-bulk-download.js', './mushaf-audio.js', './recitations.js', './recitations-library-link.js', './library.js', './adhkar.js', './tasbih-studio.js', './mushaf-screen-awake.js',
     './data/quran-uthmani.txt', './data/adhkar.json', './data/adhkar-source.json',
     './data/tafsir_muyassar.json', './assets/fonts/amiri-quran-arabic-400-normal.woff2'
 ];
