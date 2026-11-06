@@ -382,7 +382,7 @@
     if(!wasOpen){node.querySelector('.vertical-verse-actions').hidden=false;listeningVerse=node;}
   }
   viewport.addEventListener('pointerdown',event=>{
-    const node=event.target.closest('.vertical-verse');
+    const node=event.target.closest('.vertical-ayah')?.closest('.vertical-verse');
     if(!node||event.target.closest('button')||event.pointerType==='mouse'&&event.button!==0)return;
     clearTimeout(holdTimer);suppressVerseClick=false;
     holdStart={x:event.clientX,y:event.clientY,node,id:event.pointerId};
@@ -405,7 +405,7 @@
   viewport.addEventListener('click',event=>{
     if(suppressVerseClick){suppressVerseClick=false;event.stopPropagation();return;}
     if(event.target.closest('button'))return;
-    const node=event.target.closest('.vertical-verse');
+    const node=event.target.closest('.vertical-ayah')?.closest('.vertical-verse');
     if(node)toggleVerseAction(node);
   });
   // The playback loop calls this on each animation frame for word-accurate cues.
