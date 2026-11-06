@@ -80,7 +80,8 @@
     const page=window.mushafReader?.getCurrentPage?.();
     if(!page)return null;
     const all=window.mushafReader?.getSearchVerses?.()||[];
-    return all.find(v=>window.mushafReader.findVersePage(v.surah,v.ayah)===page)?.key||null;
+    const candidate=all.find(v=>window.mushafReader.findVersePage(v.surah,v.ayah)===page);
+    return candidate?keyOf(candidate):null;
   }
   async function start(){
     const token=++opening;
@@ -89,7 +90,9 @@
     }
     const firstKey=getFirstVerse();
     if(!firstKey){setStatus('تعذّر تحديد بداية الصفحة الحالية.',true);return;}
-    ordered=window.mushafReader.getSearchVerses();
+    // The reader's search API deliberately omits the internal key field.
+    // Reconstruct a canonical surah:ayah key instead of comparing undefined.
+    ordered=window.mushafReader.getSearchVerses().map(v=>({...v,key:keyOf(v)}));
     const i=ordered.findIndex(v=>v.key===firstKey);
     if(i<0){setStatus('تعذّر العثور على أول آية في الصفحة.',true);return;}
     position=i;records=null;lastVisibleKey=firstKey;
