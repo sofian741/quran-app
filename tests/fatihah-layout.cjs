@@ -20,8 +20,9 @@ const root=path.join(__dirname,'..');
   const page=await browser.newPage({reducedMotion:'reduce',serviceWorkers:'block'}),errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.addInitScript(()=>{localStorage.setItem('ayat-tour-done-quran-v8','1');localStorage.setItem('ayat-tour-optout-quran-v8','1');});
   const url=`http://127.0.0.1:${server.address().port}/quran.html`;
+  await page.goto(url);await page.waitForFunction(()=>window.mushafQvp?.metrics.ready);
   async function open(number){
-   await page.goto(url);await page.evaluate(number=>localStorage.setItem('quranReaderState',JSON.stringify({displayPage:number})),number);await page.reload();
+   await page.evaluate(number=>mushafQvp.navigate(number),number);
    try{await page.waitForFunction(number=>window.mushafQvp?.metrics.ready&&window.mushafReader?.getCurrentPage()===number,number);}
    catch(error){const state=await page.evaluate(()=>({ready:window.mushafQvp?.metrics.ready,current:window.mushafReader?.getCurrentPage(),saved:localStorage.getItem('quranReaderState')}));throw new Error(`${error.message}; page errors: ${errors.join(' | ')}; state: ${JSON.stringify(state)}`);}
    return page.evaluate(()=>{
