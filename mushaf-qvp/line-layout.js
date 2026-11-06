@@ -151,6 +151,7 @@ export function layoutGeometry(g,{uniformInkScale=GRID.inkScale,calibrate=false}
 // Enlarge each original verse-number cartouche around its own center without
 // changing word order or page typography. The *same* factor is used on all pages.
 const intersects=(a,b,pad=0)=>a[0]<b[2]+pad&&a[2]>b[0]-pad&&a[1]<b[3]+pad&&a[3]>b[1]-pad;
+const overlapArea=(a,b,pad=0)=>Math.max(0,Math.min(a[2],b[2]+pad)-Math.max(a[0],b[0]-pad))*Math.max(0,Math.min(a[3],b[3]+pad)-Math.max(a[1],b[1]-pad));
 const scaledAround=(b,cx,cy,s)=>[cx+(b[0]-cx)*s,cy+(b[1]-cy)*s,cx+(b[2]-cx)*s,cy+(b[3]-cy)*s];
 export function maxSafeMarkerScale(g,upper=1.5){
  const markers=g.decorations.filter(d=>d.decoration===0&&valid(d.box));
@@ -163,15 +164,13 @@ export function maxSafeMarkerScale(g,upper=1.5){
    const cx=(d.box[0]+d.box[2])/2,cy=(d.box[1]+d.box[3])/2;
    const b=scaledAround(d.box,cx,cy,s);
    if(b[0]<pad||b[1]<pad||b[2]>g.width-pad||b[3]>g.height-pad)return false;
-   for(const word of other)if(intersects(b,word,pad)&&!intersects(d.box,word,pad))return false;
+   for(const word of other)if(overlapArea(b,word,pad)>overlapArea(d.box,word,pad)+.01)return false;
   }
   // No newly intersecting cartouches.
   for(let i=0;i<markers.length;i++)for(let j=i+1;j<markers.length;j++){
    const a=markers[i].box,b=markers[j].box;
-   if(!intersects(a,b,pad)){
-    const ca=[(a[0]+a[2])/2,(a[1]+a[3])/2],cb=[(b[0]+b[2])/2,(b[1]+b[3])/2];
-    if(intersects(scaledAround(a,...ca,s),scaledAround(b,...cb,s),pad))return false;
-   }
+   const ca=[(a[0]+a[2])/2,(a[1]+a[3])/2],cb=[(b[0]+b[2])/2,(b[1]+b[3])/2];
+   if(overlapArea(scaledAround(a,...ca,s),scaledAround(b,...cb,s),pad)>overlapArea(a,b,pad)+.01)return false;
   }
   return true;
  };
