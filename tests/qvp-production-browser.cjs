@@ -22,8 +22,8 @@ if(!process.env.QURAN_BASE_URL){
  async function check(name,fn){try{const detail=await fn();report.results.push({name,pass:true,detail});fs.writeFileSync(path.join(out,'browser-progress.json'),JSON.stringify(report,null,2));console.log('PASS',name);}catch(e){report.failures.push({name,error:e.message});console.log('FAIL',name,e.message);}}
  await page.goto(base+'/quran.html');await page.waitForFunction(()=>window.mushafQvp?.metrics.ready);
  assert.equal(await page.evaluate(()=>mushafReader.getCurrentPage()),4);assert.equal(await page.locator('body').getAttribute('data-theme'),'mint');
- assert.deepEqual(await page.evaluate(async()=>{const normal=mushafQvp.getGeometry().layoutStats.inkScale;await mushafQvp.navigate(1);const opening=mushafQvp.getGeometry().layoutStats.zoom;await mushafQvp.navigate(4);return {normal,opening};}),{normal:1.055,opening:1.5});
- assert.deepEqual(await page.evaluate(()=>({ink:mushafQvp.metrics.inkStroke,marker:mushafQvp.metrics.markerStroke})),{ink:.4,marker:.25});
+ assert.deepEqual(await page.evaluate(async()=>{const normal=mushafQvp.getGeometry().layoutStats.inkScale;const shared=mushafQvp.getManifest().uniformInkScale??1.055;await mushafQvp.navigate(1);const opening=mushafQvp.getGeometry().layoutStats.zoom;await mushafQvp.navigate(4);return {normal,shared,opening};}),await page.evaluate(()=>({normal:mushafQvp.getManifest().uniformInkScale??1.055,shared:mushafQvp.getManifest().uniformInkScale??1.055,opening:1.5})));
+ assert.deepEqual(await page.evaluate(()=>({ink:mushafQvp.metrics.inkStroke,marker:mushafQvp.metrics.markerStroke})),{ink:.68,marker:.4});
  await check('page chrome is removed and the live page number belongs to the tap controls',async()=>{
   const clean=await page.evaluate(()=>({
    headings:document.querySelectorAll('.page-heading,.page-foot').length,
@@ -44,7 +44,7 @@ if(!process.env.QURAN_BASE_URL){
    for(let n=1;n<=604;n++){
     const begin=performance.now(),ok=await mushafQvp.navigate(n);times.push(performance.now()-begin);
     const g=mushafQvp.getGeometry(),nodes=[...document.querySelectorAll('.madinah-word:not(.madinah-basmala)')];words+=nodes.length;
-    if(!ok||g.number!==n||nodes.length!==g.words.length||mushafQvp.metrics.cachePages>3)errors.push(n);
+    if(!ok||g.number!==n||nodes.length!==g.words.length||mushafQvp.metrics.cachePages>3||(n>=3&&g.layoutStats.inkScale!==(mushafQvp.getManifest().uniformInkScale??1.055)))errors.push(n);
     const frame=document.querySelector('.madinah-frame').getBoundingClientRect(),scale=frame.width/g.width;
     for(let i=0;i<nodes.length;i++){const r=nodes[i].getBoundingClientRect(),w=g.words[i];if(Math.abs(r.left-(frame.left+w.box[0]*scale))>.15||Math.abs(r.top-(frame.top+w.box[1]*scale))>.15)errors.push(n+':'+i);}
    }
