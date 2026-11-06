@@ -64,7 +64,7 @@ function chooseInkScale(g,ownership,centres,targets,originalWidth){
 }
 const boxAt=(b,scale,dx,dy)=>[b[0]*scale+dx,b[1]*scale+dy,b[2]*scale+dx,b[3]*scale+dy];
 
-export function layoutGeometry(g){
+export function layoutGeometry(g,{uniformInkScale=null}={}){
  if(g.layoutApplied)return g;
  const originalHeight=g.height,originalWidth=g.width;
  // Artwork outside the source viewBox (four records on p17) was never visible.
@@ -122,7 +122,11 @@ export function layoutGeometry(g){
    ownership[p]=under.lineIndex;
   }
  }
- const scale=chooseInkScale(g,ownership,centres,targets,originalWidth);
+ // A shared scale is calibrated against all 602 pages during asset preparation.
+ // The historical 1.055 baseline is the safe compatibility fallback for old assets.
+ const maximum=chooseInkScale(g,ownership,centres,targets,originalWidth);
+ const scale=uniformInkScale===null?maximum:Math.min(maximum,Math.max(GRID.inkScale,uniformInkScale));
+ if(uniformInkScale!==null&&scale+0.000001<uniformInkScale)throw new Error('Page '+g.number+' rejects calibrated uniform ink scale '+uniformInkScale);
  const bands=Array.from({length:GRID.slots},()=>[]);
  for(let i=0;i<g.paths.length;i++){
   const p=g.paths[i];if(p.hidden)continue;
