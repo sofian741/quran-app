@@ -9,6 +9,7 @@
     <meta name="description" content="حصن المسلم: أذكار وأدعية مرتبة مع عداد تفاعلي ومراجع.">
     <title>الأذكار | آيات | Ayat</title>
     <link rel="stylesheet" href="adhkar.css">
+    <link rel="stylesheet" href="tasbih-studio.css">
     <link rel="stylesheet" href="unified-nav.css">
   <link rel="stylesheet" href="tour.css?v=57">
   <link rel="stylesheet" href="tour-home.css?v=59">
@@ -42,6 +43,21 @@
             <div class="hero-stats"><span id="stat-chapters">١٣٣ بابًا</span><span class="dot"></span><span id="stat-items">٣٠٢ ذكرًا ودعاءً</span></div><a class="adhkar-jump" href="#library" aria-label="انتقل إلى فهرس أبواب الأذكار أسفل الاختصارات"><span>استعرض أبواب الأذكار</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 4v15m-6-6 6 6 6-6"/></svg></a>
         </section>
 
+
+        <section class="ts-feature" aria-label="المسبحة الإلكترونية">
+            <button type="button" id="ts-open" class="ts-feature-card" aria-haspopup="dialog" aria-controls="ts-studio">
+                <span class="ts-feature-copy">
+                    <span class="ts-feature-eyebrow"><span class="ts-feature-spark">✦</span> رفيق الذكر</span>
+                    <strong>المسبحة الإلكترونية</strong>
+                    <span class="ts-feature-description">سبّح على راحتك، أو اتبع أذكار ما بعد الصلاة خطوة بخطوة.</span>
+                    <span class="ts-feature-action">افتح المسبحة <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 5 7 12l7 7"/></svg></span>
+                </span>
+                <span class="ts-feature-art" aria-hidden="true">
+                    <svg viewBox="0 0 150 150" fill="none"><circle cx="75" cy="75" r="61" stroke="currentColor" stroke-opacity=".15" stroke-width="8"/><circle cx="75" cy="75" r="61" stroke="#c6a46a" stroke-width="8" stroke-linecap="round" stroke-dasharray="295 383" transform="rotate(-90 75 75)"/><circle cx="75" cy="75" r="44" fill="currentColor" fill-opacity=".08"/><path d="M75 54v42M54 75h42" stroke="currentColor" stroke-opacity=".18" stroke-width="1.5"/><circle cx="75" cy="75" r="6" fill="#c6a46a"/></svg>
+                </span>
+            </button>
+        </section>
+
         <section class="quick" aria-labelledby="quick-title">
             <div class="section-heading compact"><div><span class="overline">الأكثر استخدامًا</span><h2 id="quick-title">ابدأ من هنا</h2></div></div>
             <div class="quick-grid">
@@ -65,6 +81,85 @@
         <footer class="source"><strong>المصدر</strong><span>«حصن المسلم من أذكار الكتاب والسنة» لسعيد بن علي بن وهف القحطاني. تظهر المراجع داخل كل ذكر.</span><span class="source-links"><a href="https://risala.prh.gov.sa/ar/content/51" target="_blank" rel="noopener noreferrer">النسخة العربية المرجعية</a><a href="https://github.com/asellam/HisnElMuslim" target="_blank" rel="noopener noreferrer">مصدر البيانات</a><a href="licenses.html">المصادر والتراخيص والخصوصية</a></span></footer>
     </main>
 </div>
+
+
+<section id="ts-studio" class="ts-studio" hidden role="dialog" aria-modal="true" aria-labelledby="ts-title">
+    <div class="ts-studio-shell">
+        <header class="ts-head">
+            <button id="ts-close" class="ts-icon-button" type="button" aria-label="إغلاق المسبحة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg></button>
+            <div class="ts-head-title"><span>وقتٌ للذِّكر</span><h2 id="ts-title">المسبحة الإلكترونية</h2></div>
+            <button id="ts-haptic" class="ts-haptic" type="button" aria-pressed="true" aria-label="تبديل الاهتزاز"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="8" y="2.5" width="8" height="19" rx="2.5"/><path d="M4 8v8M20 8v8"/></svg><span>اهتزاز</span></button>
+        </header>
+        <div class="ts-studio-body">
+            <div class="ts-tabs" role="tablist" aria-label="نوع التسبيح">
+                <button id="ts-tab-free" type="button" role="tab" aria-selected="true" aria-controls="ts-free">تسبيح حر</button>
+                <button id="ts-tab-prayer" type="button" role="tab" aria-selected="false" aria-controls="ts-prayer">أذكار بعد الصلاة</button>
+            </div>
+            <div id="ts-free" class="ts-mode-panel" role="tabpanel" aria-labelledby="ts-tab-free">
+                <div class="ts-section-label"><span>اختر الذكر</span><span class="ts-section-note">لكل ذكر عدّاد محفوظ</span></div>
+                <div id="ts-phrases" class="ts-phrases" role="group" aria-label="الأذكار الجاهزة">
+                    <button type="button" data-ts-phrase="subhan">سبحان الله</button>
+                    <button type="button" data-ts-phrase="hamd">الحمد لله</button>
+                    <button type="button" data-ts-phrase="akbar">الله أكبر</button>
+                    <button type="button" data-ts-phrase="astaghfir">أستغفر الله</button>
+                    <button type="button" data-ts-phrase="tahlil">لا إله إلا الله</button>
+                    <button type="button" data-ts-phrase="salawat">الصلاة على النبي ﷺ</button>
+                    <button type="button" data-ts-phrase="custom">+ ذكر خاص</button>
+                </div>
+                <label id="ts-custom-row" class="ts-custom-row" hidden>الذكر الخاص
+                    <input id="ts-custom-text" type="text" maxlength="120" autocomplete="off" placeholder="اكتب الذكر الذي تريد عدّه">
+                </label>
+                <div class="ts-section-label"><span>هدف العدّ</span><span class="ts-section-note">اختياري وليس عددًا شرعيًا مقررًا</span></div>
+                <div id="ts-goals" class="ts-goals" role="group" aria-label="عدد التكرارات">
+                    <button type="button" data-ts-goal="33">٣٣</button>
+                    <button type="button" data-ts-goal="100">١٠٠</button>
+                    <button type="button" data-ts-goal="infinite">بلا نهاية ∞</button>
+                    <button type="button" data-ts-goal="custom">مخصص</button>
+                </div>
+                <label id="ts-custom-goal-row" class="ts-custom-row" hidden>العدد المطلوب
+                    <input id="ts-custom-goal" type="number" min="1" max="1000000" inputmode="numeric" value="50">
+                </label>
+            </div>
+            <div id="ts-prayer" class="ts-mode-panel" role="tabpanel" aria-labelledby="ts-tab-prayer" hidden>
+                <div class="ts-section-label"><span>صيغة الذكر بعد الصلاة</span><span class="ts-section-note">من صحيح مسلم</span></div>
+                <div class="ts-prayer-choices" role="group" aria-label="صيغة أذكار ما بعد الصلاة">
+                    <button type="button" data-ts-prayer="334" aria-pressed="true"><strong>٣٣ • ٣٣ • ٣٤</strong><small>تسبيح، تحميد، تكبير</small></button>
+                    <button type="button" data-ts-prayer="333" aria-pressed="false"><strong>٣٣ • ٣٣ • ٣٣ + التهليل</strong><small>ثم تهليلة ختامًا</small></button>
+                </div>
+                <div id="ts-steps" class="ts-steps" aria-label="مراحل الذكر"></div>
+                <p id="ts-prayer-source" class="ts-prayer-source"></p>
+            </div>
+            <div class="ts-counter-wrap">
+                <div id="ts-phrase-title" class="ts-phrase-title">سُبْحَانَ اللَّهِ</div>
+                <button id="ts-count" type="button" class="ts-counter" aria-label="اضغط لعدّ الذكر">
+                    <svg class="ts-ring" viewBox="0 0 260 260" aria-hidden="true">
+                        <circle class="ts-ring-track" cx="130" cy="130" r="110"/>
+                        <circle id="ts-ring-fill" class="ts-ring-fill" cx="130" cy="130" r="110"/>
+                    </svg>
+                    <span class="ts-counter-inner">
+                        <span class="ts-count-number" id="ts-number">٠</span>
+                        <span class="ts-count-target" id="ts-of">من ٣٣</span>
+                        <span class="ts-counter-prompt">اضغط للتسبيح</span>
+                    </span>
+                </button>
+                <p id="ts-status" class="ts-status" role="status" aria-live="polite">كل ضغطة تُحسب مرة واحدة</p>
+                <div class="ts-counter-actions">
+                    <button type="button" id="ts-undo" class="ts-secondary-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-2"/></svg> تراجع</button>
+                    <button type="button" id="ts-reset" class="ts-secondary-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg> تصفير</button>
+                </div>
+                <div class="ts-bottom-info">
+                    <div><span>تسبيحات اليوم</span><strong id="ts-today">٠</strong></div>
+                    <div><span id="ts-rounds-label">الدورات المكتملة</span><strong id="ts-rounds">٠</strong></div>
+                </div>
+                <div id="ts-prayer-navigation" class="ts-prayer-navigation" hidden>
+                    <button type="button" id="ts-prayer-prev">السابق</button>
+                    <button type="button" id="ts-prayer-next">التالي</button>
+                </div>
+                <p class="ts-footnote">العدّ للمساعدة على الذكر. الأهداف التي تختارها بنفسك لا ننسب لها فضلًا مخصوصًا.</p>
+            </div>
+        </div>
+    </div>
+</section>
 
 <div id="index-backdrop" class="sheet-backdrop" hidden></div>
 <aside id="index-sheet" class="index-sheet" role="dialog" aria-modal="true" aria-labelledby="index-title" aria-hidden="true">
@@ -114,6 +209,7 @@
 </nav>
 <script src="service-worker-register.js"></script>
 <script src="adhkar.js"></script>
+<script src="tasbih-studio.js"></script>
 <script src="tour.js?v=64"></script>
 </body>
 </html>
