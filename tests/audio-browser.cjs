@@ -6,6 +6,7 @@ const { chromium } = require('playwright');
 
 const browserPath = process.env.QURAN_BROWSER_PATH || '/usr/bin/chromium';
 const base = process.env.QURAN_BASE_URL || 'http://127.0.0.1:4173';
+let browser;
 
 const catalog = {
   reciters: [{
@@ -52,8 +53,15 @@ function chapterAudio(surah) {
 }
 
 (async () => {
-  const browser = await chromium.launch({ headless: true, executablePath: browserPath, args: ['--no-sandbox'] });
-  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
+  let available=false;
+  for(let attempt=0;attempt<50&&!available;attempt++){
+    try{available=(await fetch(base+'/quran.html',{method:'HEAD'})).ok;}catch{}
+    if(!available)await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  assert.equal(available,true,'Quran test server must be ready');
+  browser = await chromium.launch({ headless: true, executablePath: browserPath, args: ['--no-sandbox'] });
+  try {
+   for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
     const page = await browser.newPage({ viewport, serviceWorkers: 'block' });
     const pageErrors = [];
     page.on('pageerror', error => pageErrors.push(error.message));
@@ -186,9 +194,11 @@ function chapterAudio(surah) {
     assert.match(await page.locator('#audio-mini-status').textContent(), /تعذّر|الاتصال/);
     assert.deepEqual(pageErrors, [], `browser errors at ${viewport.width}px`);
     await page.close();
+   }
+   console.log('audio-browser: player, synchronization, repeat, and 2 mobile viewports passed');
+  } finally {
+    await browser?.close();
   }
-  await browser.close();
-  console.log('audio-browser: player, synchronization, repeat, and 2 mobile viewports passed');
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;
