@@ -72,7 +72,7 @@ body.ts-open{overflow:hidden}
 .ts-ring{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transform:rotate(-90deg);pointer-events:none}
 .ts-ring-track,.ts-ring-fill{fill:none;stroke-width:6}
 .ts-ring-track{stroke:rgba(229,248,236,.16)}
-.ts-ring-fill{stroke:var(--ts-gold);stroke-linecap:round;stroke-dasharray:691.15038379;stroke-dashoffset:691.15038379;filter:drop-shadow(0 0 2px rgba(198,164,106,.28));transition:stroke-dashoffset .56s cubic-bezier(.16,.9,.3,1)}
+.ts-ring-fill{stroke:var(--ts-gold);stroke-linecap:round;stroke-dasharray:728.84949563;stroke-dashoffset:728.84949563;filter:drop-shadow(0 0 2px rgba(198,164,106,.28));transition:stroke-dashoffset .56s cubic-bezier(.16,.9,.3,1)}
 .ts-counter-inner{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;pointer-events:none;padding:12px}
 .ts-count-number{font-size:clamp(56px,15vw,76px);font-weight:800;line-height:1.25;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 .ts-count-target{font-size:16px;font-weight:800;color:#efdbb8;margin-top:1px}
