@@ -68,21 +68,21 @@
         </div>
     </section>
 
+    <!-- Independent reading mode control: never nested in the green audio controls. -->
+        <button id="toggle-vertical-reading" class="reading-mode-switch" type="button"
+                        aria-label="القراءة الرأسية مع التفسير" aria-pressed="false"
+                        aria-controls="vertical-reading" title="القراءة الرأسية مع التفسير">
+                    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor"
+                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 6.5C9.3 4.8 6.3 4.5 3 5.4v13c3.4-.9 6.4-.6 9 1.1 2.6-1.7 5.6-2 9-1.1v-13c-3.3-.9-6.3-.6-9 1.1Z"/>
+                        <path d="M12 6.5v12.6"/>
+                    </svg>
+                </button>
+    
     <section class="mushaf-audio-player" id="mushaf-audio-player" aria-label="مشغل التلاوة">
-        <div class="reading-mode-switch-row">
-            <button id="toggle-vertical-reading" class="reading-mode-switch" type="button"
-                    aria-label="القراءة الرأسية مع التفسير" aria-pressed="false"
-                    aria-controls="vertical-reading" title="القراءة الرأسية مع التفسير">
-                <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor"
-                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 6.5C9.3 4.8 6.3 4.5 3 5.4v13c3.4-.9 6.4-.6 9 1.1 2.6-1.7 5.6-2 9-1.1v-13c-3.3-.9-6.3-.6-9 1.1Z"/>
-                    <path d="M12 6.5v12.6"/>
-                </svg>
-            </button>
-            <div class="audio-page-badge" aria-label="رقم الصفحة الحالية">
-                <span>صفحة</span>
-                <strong class="display-page-number" id="display-page-number">١</strong>
-            </div>
+        <div class="audio-page-badge" aria-label="رقم الصفحة الحالية">
+            <span>صفحة</span>
+            <strong class="display-page-number" id="display-page-number">١</strong>
         </div>
         <button class="audio-reader-trigger" id="audio-open-options" type="button" aria-haspopup="dialog"
                 aria-controls="audio-options-sheet">
