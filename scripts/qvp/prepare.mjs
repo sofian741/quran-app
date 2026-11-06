@@ -4,7 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import {decodeGeometry} from '../../mushaf-qvp/vendor/lite.js';
-import {layoutGeometry, GRID} from '../../mushaf-qvp/line-layout.js';
+import {layoutGeometry, maxSafeMarkerScale, GRID} from '../../mushaf-qvp/line-layout.js';
 import {parseTanzil, splitWords, alignWords} from '../../mushaf-qvp/text-map.js';
 const root = path.resolve(import.meta.dirname, '../..');
 const pins = JSON.parse(await fs.readFile(root+'/mushaf-qvp/sources.json'));
@@ -91,14 +91,25 @@ const report={edition:pins.edition,pages:604,verses:verses.length,words:totalWor
   textValidation:'All verse letter skeletons aligned uniquely; not a diacritic or authoritative print certification',
   productionReady:false,blockers:['Independent authorized print comparison','Provider lexical timing certification','Real Android/device parity and performance']};
 await fs.writeFile(out+'/word-map.json',JSON.stringify(mappings));
+// A second pass fits verse-number cartouches after the shared text scale is known.
+let uniformMarkerScale=1.5,markerLimitingPage=0;
+for(let n=3;n<=604;n++){
+ const id=String(n).padStart(3,'0');
+ const geometry=decodeGeometry(await fs.readFile(out+'/pages/'+id+'.qvp'));
+ layoutGeometry(geometry,{uniformInkScale});
+ const maximum=maxSafeMarkerScale(geometry);
+ if(maximum<uniformMarkerScale){uniformMarkerScale=maximum;markerLimitingPage=n;}
+}
+uniformMarkerScale=Math.floor(uniformMarkerScale*1000)/1000;
+if(uniformMarkerScale<1)throw new Error('Invalid shared marker scale');
 // Round down once, and use this exact uniform value for every standard page.
 uniformInkScale=Math.floor(uniformInkScale*1000)/1000;
 if(!Number.isFinite(uniformInkScale)||uniformInkScale<GRID.inkScale)throw new Error('Invalid shared glyph scale');
-await fs.writeFile(out+'/manifest.json',JSON.stringify({edition:pins.edition,pins,pages,files,uniformInkScale,limitingPage,inkStroke:GRID.inkStroke,markerStroke:GRID.markerStroke}));
+await fs.writeFile(out+'/manifest.json',JSON.stringify({edition:pins.edition,pins,pages,files,uniformInkScale,limitingPage,uniformMarkerScale,markerLimitingPage,inkStroke:GRID.inkStroke,markerStroke:GRID.markerStroke}));
 await fs.writeFile(out+'/validation-data.json',JSON.stringify(report,null,2));
 
 for(const file of ['NOTICE.txt','VERSION.json']) {
  await fs.copyFile(qvp+'/'+file,out+'/'+file);
 }
 await fs.copyFile(root+'/mushaf-qvp/vendor/LICENSE',out+'/ENGINE-LICENSE');
-console.log(JSON.stringify({edition:pins.edition,pages:pages.length,verses:verses.length,words:totalWords,basmalas,uniformInkScale,limitingPage,timingFailures:timing.reduce((n,t)=>n+t.ordinalRangeFailures.length,0),changes:changes.map(c=>c.verse)},null,2));
+console.log(JSON.stringify({edition:pins.edition,pages:pages.length,verses:verses.length,words:totalWords,basmalas,uniformInkScale,limitingPage,uniformMarkerScale,markerLimitingPage,timingFailures:timing.reduce((n,t)=>n+t.ordinalRangeFailures.length,0),changes:changes.map(c=>c.verse)},null,2));
