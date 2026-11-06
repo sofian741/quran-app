@@ -73,3 +73,5 @@ body.dark {
 @media(prefers-reduced-motion:reduce){
   .adhkar-jump,.adhkar-jump svg{animation:none;transition:none;}
 }
+
+.tasbih::after{content:"";position:absolute;inset:32px;border-radius:50%;background:conic-gradient(from 0deg,var(--gold) 0 var(--progress,0%),transparent var(--progress,0%) 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 6px));mask:radial-gradient(farthest-side,transparent calc(100% - 7px),#000 calc(100% - 6px));pointer-events:none;transition:background .15s ease;z-index:1}.tasbih:focus-visible{border-radius:50%;outline:3px solid var(--gold);outline-offset:3px}@media(prefers-reduced-motion:reduce){.tasbih::after{transition:none}}
