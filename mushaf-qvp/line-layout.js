@@ -211,6 +211,16 @@ export function headingBox(g,decoration){
  const zoom=g.layoutStats.mode==='opening-zoom'?g.layoutStats.zoom:1;
  // Full-width frame with enough room for title ink and padding, independent of
  // whether the page contains 8 or 15 source rows.
- const height=(decoration.box[3]-decoration.box[1]+8*zoom)*224/144;
- const y=middle(decoration.box);return [4,y-height/2,g.width-4,y+height/2];
+ // Grow the decorative surah banner equally upward and downward, without
+ // moving its centre or stretching the Quranic title glyphs on the QVP canvas.
+ // Clamp against neighbouring printed rows, including dense multi-surah pages.
+ const originalHeight=(decoration.box[3]-decoration.box[1]+8*zoom)*224/144;
+ const desiredHeight=originalHeight*1.26;
+ const y=middle(decoration.box),line=decoration.lineIndex;
+ const previous=g.lines.filter(l=>l.index<line&&valid(l.box)).map(l=>l.box[3]);
+ const following=g.lines.filter(l=>l.index>line&&valid(l.box)).map(l=>l.box[1]);
+ const topLimit=Math.max(2,previous.length?Math.max(...previous)+2:2);
+ const bottomLimit=Math.min(g.height-2,following.length?Math.min(...following)-2:g.height-2);
+ const half=Math.max(0,Math.min(desiredHeight/2,y-topLimit,bottomLimit-y));
+ return [4,y-half,g.width-4,y+half];
 }
