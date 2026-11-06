@@ -148,6 +148,59 @@ export function layoutGeometry(g,{uniformInkScale=GRID.inkScale,calibrate=false}
  g.layoutApplied=true;return g;
 }
 
+// Enlarge each original verse-number cartouche around its own center without
+// changing word order or page typography. The *same* factor is used on all pages.
+const intersects=(a,b,pad=0)=>a[0]<b[2]+pad&&a[2]>b[0]-pad&&a[1]<b[3]+pad&&a[3]>b[1]-pad;
+const scaledAround=(b,cx,cy,s)=>[cx+(b[0]-cx)*s,cy+(b[1]-cy)*s,cx+(b[2]-cx)*s,cy+(b[3]-cy)*s];
+export function maxSafeMarkerScale(g,upper=1.5){
+ const markers=g.decorations.filter(d=>d.decoration===0&&valid(d.box));
+ if(!markers.length)return upper;
+ const other=[...g.words,...g.decorations.filter(d=>d.decoration!==0)]
+  .filter(r=>valid(r.box)).map(r=>r.box);
+ const pad=Math.max(GRID.inkStroke,GRID.markerStroke)/2+.25;
+ const safe=s=>{
+  for(const d of markers){
+   const cx=(d.box[0]+d.box[2])/2,cy=(d.box[1]+d.box[3])/2;
+   const b=scaledAround(d.box,cx,cy,s);
+   if(b[0]<pad||b[1]<pad||b[2]>g.width-pad||b[3]>g.height-pad)return false;
+   for(const word of other)if(intersects(b,word,pad)&&!intersects(d.box,word,pad))return false;
+  }
+  // No newly intersecting cartouches.
+  for(let i=0;i<markers.length;i++)for(let j=i+1;j<markers.length;j++){
+   const a=markers[i].box,b=markers[j].box;
+   if(!intersects(a,b,pad)){
+    const ca=[(a[0]+a[2])/2,(a[1]+a[3])/2],cb=[(b[0]+b[2])/2,(b[1]+b[3])/2];
+    if(intersects(scaledAround(a,...ca,s),scaledAround(b,...cb,s),pad))return false;
+   }
+  }
+  return true;
+ };
+ let low=1,high=upper;
+ if(!safe(1))return 1;
+ if(safe(high))return high;
+ for(let i=0;i<12;i++){const mid=(low+high)/2;if(safe(mid))low=mid;else high=mid;}
+ return Math.floor(low*1000)/1000;
+}
+export function enlargeVerseMarkers(g,scale){
+ if(!Number.isFinite(scale)||scale<1||scale>1.5)throw new Error('Invalid marker scale');
+ if(scale===1)return g;
+ if(g.markerScaleApplied)throw new Error('Marker scale applied twice');
+ for(const d of g.decorations.filter(d=>d.decoration===0&&valid(d.box))){
+  const cx=(d.box[0]+d.box[2])/2,cy=(d.box[1]+d.box[3])/2;
+  for(let i=d.firstPath;i<d.firstPath+d.nPaths;i++){
+   const p=g.paths[i];if(p.hidden)continue;
+   for(let k=0;k<p.pts.length;k+=2){
+    p.pts[k]=cx+(p.pts[k]-cx)*scale;
+    p.pts[k+1]=cy+(p.pts[k+1]-cy)*scale;
+   }
+   p.box=scaledAround(p.box,cx,cy,scale);
+  }
+  d.box=scaledAround(d.box,cx,cy,scale);
+ }
+ g.markerScaleApplied=true;
+ return g;
+}
+
 // Preserve upstream data/path indices; discard only the originally clipped ink
 // from the painter's view. Word/ayah references and original buffers stay intact.
 export function paintGeometry(g){
