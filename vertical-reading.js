@@ -289,6 +289,8 @@
     }
     lastAudioKey=key;
   }
+  // The playback loop calls this on each animation frame for word-accurate cues.
+  window.mushafVerticalReading={syncAudio:applyAudio,isActive:()=>active};
   window.addEventListener('quran-audio:time',event=>applyAudio(event.detail));
   window.addEventListener('quran-audio:state',event=>applyAudio(event.detail));
   window.addEventListener('mushaf:data-ready',()=>{if(active&&!records)start();});
