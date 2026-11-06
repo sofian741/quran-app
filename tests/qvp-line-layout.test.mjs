@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {decodeGeometry} from '../mushaf-qvp/vendor/lite.js';
-import {layoutGeometry,paintGeometry,headingBox,GRID} from '../mushaf-qvp/line-layout.js';
+import {layoutGeometry,paintGeometry,headingBox,maxSafeMarkerScale,enlargeVerseMarkers,GRID} from '../mushaf-qvp/line-layout.js';
 const raw=n=>decodeGeometry(fs.readFileSync(new URL('../data/qvp/pages/'+String(n).padStart(3,'0')+'.qvp',import.meta.url)));
 const near=(a,b,label='coordinate')=>assert.ok(Math.abs(a-b)<.00012,label+': '+a+' vs '+b);
 const bodyCentre=(g,line)=>{
@@ -72,5 +72,25 @@ test('pages 1 and 2 use a single 1.5x affine zoom, including all marks, without 
    assert.ok(p.box[0]>=6+GRID.inkStroke/2&&p.box[2]<=339-GRID.inkStroke/2&&p.box[1]>=10+GRID.inkStroke/2&&p.box[3]<=540-GRID.inkStroke/2);
   }
   for(let i=0;i<g.words.length;i++){const w=g.words[i],old=source.words[i];assert.equal(w.text,old.text);near(w.box[2]-w.box[0],(old.box[2]-old.box[0])*zoom);near(w.box[3]-w.box[1],(old.box[3]-old.box[1])*zoom);}
+ }
+});
+
+test('generated shared glyph and ayah-marker sizes fit every standard page identically',()=>{
+ const manifest=JSON.parse(fs.readFileSync(new URL('../data/qvp/manifest.json',import.meta.url)));
+ const {uniformInkScale,uniformMarkerScale}=manifest;
+ assert.ok(Number.isFinite(uniformInkScale)&&uniformInkScale>=GRID.inkScale&&uniformInkScale<=GRID.maxInkScale);
+ assert.ok(Number.isFinite(uniformMarkerScale)&&uniformMarkerScale>=1&&uniformMarkerScale<=1.5);
+ for(let n=3;n<=604;n++){
+  const g=layoutGeometry(raw(n),{uniformInkScale});
+  assert.equal(g.layoutStats.inkScale,uniformInkScale,'shared text '+n);
+  assert.ok(maxSafeMarkerScale(g)+.001>=uniformMarkerScale,'marker limit '+n);
+  const before=g.decorations.filter(d=>d.decoration===0).map(d=>d.box.slice());
+  enlargeVerseMarkers(g,uniformMarkerScale);
+  assert.equal(!!g.markerScaleApplied,uniformMarkerScale>1,'shared numeral sizing '+n);
+  for(const [i,d] of g.decorations.filter(d=>d.decoration===0).entries()){
+   const old=before[i],b=d.box;
+   near((b[2]-b[0])/(old[2]-old[0]),uniformMarkerScale,'marker width '+n);
+   near((b[3]-b[1])/(old[3]-old[1]),uniformMarkerScale,'marker height '+n);
+  }
  }
 });
