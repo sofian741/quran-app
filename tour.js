@@ -27,6 +27,7 @@
       {selector:'.verse-actions-grid',mode:'note',group:'خيارات الآية',title:'حفظ ونسخ ومشاركة',body:'يمكنك إضافة الآية للمفضلة، نسخ نصها، مشاركتها كصورة، أو وضع فاصلة آية. الجولة تشرح هذه الأدوات من غير تغيير محفوظاتك.'},
       {selector:'#open-index',mode:'real-open',opens:'#index-sheet',prepare:'close-verse',group:'الفهرس',title:'افتح الفهرس بنفسك',body:'اضغط زر الخطوط الحقيقي أعلى المصحف لفتح الفهرس.'},
       {selector:'#index-sheet',mode:'note',group:'الفهرس',title:'السور والأجزاء والآيات',body:'بدّل بين تبويب السور والأجزاء، وافتح سهم السورة لعرض آياتها والبحث داخلها ثم الانتقال للموضع المطلوب. لن تغيّر الجولة موضع قراءتك.'},
+      {selector:'#toggle-vertical-reading',mode:'note',prepare:'close-index',audio:true,group:'طريقة القراءة',title:'القراءة الرأسية',body:'زر الكتاب يفتح الآيات وتحت كل آية تفسيرها. اضغطه مرة ثانية للرجوع للمصحف العادي.'},
       {selector:'#toggle-page-marker',mode:'note',prepare:'close-index',group:'الفواصل',title:'فاصلة الصفحة',body:'هذا الزر يحفظ الصفحة الحالية لتعود إليها من المحفوظات. لن تضغطه الجولة حتى لا تستبدل فاصلتك الحالية.'},
       {selector:'#open-settings',mode:'real-open',opens:'#settings-sheet',group:'إعدادات المصحف',title:'افتح الإعدادات بنفسك',body:'اضغط زر الإعدادات الحقيقي لنرى البحث والمحفوظات وخيارات المظهر.'},
       {selector:'#open-saved',mode:'note',group:'إعدادات المصحف',title:'المحفوظات',body:'من هنا ترجع للمفضلة وفاصلة الآية وفاصلة الصفحة، وكل نوع موجود في تبويب مستقل.'},
