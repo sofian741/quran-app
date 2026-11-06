@@ -1,35 +1,90 @@
-/* Standalone vertical, verse-by-verse reading mode. QVP page geometry is untouched. */
-.reading-mode-switch-row{display:flex;direction:rtl;align-items:center;justify-content:center;gap:10px;width:100%;min-height:34px;flex:0 0 auto}
-.reading-mode-switch{position:relative;flex:0 0 auto;display:grid;place-items:center;width:38px;height:30px;padding:0;border:1px solid rgba(157,220,198,.4);border-radius:11px;background:rgba(255,255,255,.075);color:#e9fff6;cursor:pointer;touch-action:manipulation}
-.reading-mode-switch:focus-visible{outline:2px solid #dcb97a;outline-offset:2px}
-.reading-mode-switch[aria-pressed="true"]{background:#d2af6d;color:#153a33;border-color:#f2daac}
+/* Vertical reading is an independent reading surface. The QVP Mushaf stays untouched. */
+.reading-mode-switch{
+  position:fixed;z-index:38;
+  right:max(10px, env(safe-area-inset-right));
+  bottom:calc(var(--audio-player-height,132px) + 12px);
+  display:grid;place-items:center;
+  width:46px;height:46px;padding:0;
+  border:1px solid #c8d7c9;border-radius:14px;
+  background:#f6f7f1;color:#176b58;
+  box-shadow:0 4px 15px #001c1429;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transform:translateY(8px);
+  transition:opacity .2s ease, transform .2s ease, visibility .2s ease;
+  cursor:pointer;touch-action:manipulation;
+}
+.reader-page.tools-visible .reading-mode-switch{
+  opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0);
+}
+.reading-mode-switch:focus-visible{outline:3px solid #bc9458;outline-offset:3px}
+.reading-mode-switch[aria-pressed="true"]{background:#e4f0e6;border-color:#b0cabc;color:#0d614c}
+.reader-page[data-theme="dark"] .reading-mode-switch{background:#263c33;border-color:#4d6a5b;color:#c2e8d6}
+.reader-page[data-theme="dark"] .reading-mode-switch[aria-pressed="true"]{background:#35574b}
 .vertical-reading[hidden]{display:none!important}
-.vertical-reading{position:fixed;inset:0;z-index:3;overflow:hidden;background:#f9f8f2;color:#1a2622}
-.vertical-reading-content{box-sizing:border-box;width:100%;height:100%;overflow-y:auto;overscroll-behavior-y:contain;touch-action:pan-y;scroll-behavior:auto;-webkit-overflow-scrolling:touch;padding:max(32px, env(safe-area-inset-top)) 0 74px;scrollbar-width:thin}
-.vertical-reading-list{width:min(100%,720px);padding:0 clamp(17px,5vw,40px);margin-inline:auto;box-sizing:border-box}
+.vertical-reading{position:fixed;inset:0;z-index:3;overflow:hidden;background:#fbfaf6;color:#28332e}
+.vertical-reading-content{
+  box-sizing:border-box;width:100%;height:100%;
+  overflow-y:auto;overscroll-behavior-y:contain;touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
+  padding:max(25px, env(safe-area-inset-top)) 0 90px;
+  scrollbar-width:thin;
+}
+.vertical-reading-list{box-sizing:border-box;width:min(100%,690px);padding:0 clamp(22px,5vw,44px);margin-inline:auto}
 .reader-page.vertical-reading-active .reader-stage{visibility:hidden;pointer-events:none}
-.reader-page.vertical-reading-active.tools-visible .vertical-reading-content{padding-bottom:calc(var(--audio-player-height,132px) + 32px)}
-.vertical-surah-heading{text-align:center;padding:26px 8px 19px;margin:6px 0 12px;position:relative;color:#176b58}
-.vertical-surah-heading::after{content:"";position:absolute;bottom:0;left:24%;right:24%;height:1px;background:linear-gradient(90deg,transparent,#b9aa7b,transparent)}
-.vertical-surah-heading h2{font-family:serif;font-size:clamp(21px,5.5vw,28px);font-weight:700;margin:0;line-height:1.7}
-.vertical-surah-heading small{display:block;font:12px/1.5 system-ui,sans-serif;color:#6b806e}
-.vertical-verse{border-bottom:1px solid #dfdfd3;padding:18px 0 22px;contain:layout style}
-.vertical-verse:last-child{border-bottom-color:transparent}
-.vertical-ayah{margin:0;color:#08634d;font-family:'Amiri Quran',serif;font-size:clamp(25px,6.2vw,34px);font-weight:400;line-height:2.1;text-align:right;overflow-wrap:break-word}
-.vertical-ayah-number{display:inline-block;font:600 13px/1.6 system-ui,sans-serif;color:#90733e;white-space:nowrap;padding-inline:4px}
-.vertical-tafsir{margin:8px 0 0;color:#202522;font:400 clamp(15px,3.9vw,17px)/2.05 system-ui,'Noto Naskh Arabic',sans-serif;text-align:right;overflow-wrap:break-word}
-.vertical-reading-status{box-sizing:border-box;max-width:660px;margin:0 auto;padding:16px 24px 38px;color:#58766b;text-align:center;font:14px/1.8 system-ui,sans-serif}
+.reader-page.vertical-reading-active.tools-visible .vertical-reading-content{padding-bottom:calc(var(--audio-player-height,132px) + 45px)}
+/* Surah headings are quiet anchors, not enormous decorative cards. */
+.vertical-surah-heading{
+  position:relative;margin:12px 0 12px;padding:22px 0 19px;
+  text-align:center;color:#206c57;
+}
+.vertical-surah-heading::after{
+  content:"";display:block;width:82px;height:1px;margin:12px auto 0;
+  background:linear-gradient(90deg,transparent,#c3a971,transparent);
+}
+.vertical-surah-heading h2{margin:0;font:600 clamp(21px,5.2vw,26px)/1.7 'Amiri Quran',serif}
+.vertical-verse{padding:19px 0 23px;border-bottom:1px solid #e6e5dc;contain:layout style}
+.vertical-verse:last-child{border-bottom:0}
+.vertical-ayah{
+  margin:0;color:#13634e;
+  font-family:'Amiri Quran',serif;
+  font-size:clamp(23px,5.6vw,29px);
+  font-weight:400;line-height:1.98;
+  text-align:right;overflow-wrap:break-word;
+}
+.vertical-ayah-number{
+  display:inline-block;white-space:nowrap;margin-inline-start:5px;
+  font:500 13px/1.5 system-ui,sans-serif;color:#967b4f;
+}
+.vertical-tafsir-label{
+  width:max-content;margin:14px 0 5px;
+  color:#849088;font:600 11px/1.5 system-ui,sans-serif;
+  letter-spacing:0;
+}
+.vertical-tafsir{
+  margin:0;color:#313731;
+  font:400 clamp(15px,3.85vw,16px)/2.05 system-ui,'Noto Naskh Arabic',sans-serif;
+  text-align:right;overflow-wrap:break-word;
+}
+.vertical-reading-status{
+  box-sizing:border-box;max-width:690px;margin:0 auto;
+  padding:16px 24px 38px;color:#697c70;
+  text-align:center;font:13px/1.8 system-ui,sans-serif;
+}
 .vertical-reading-status:empty{display:none}
-.vertical-reading-status button{display:inline-block;margin-top:10px;padding:8px 22px;border:1px solid #a6c4b7;border-radius:10px;background:#e9f5ee;color:#135747;font:inherit}
-.reader-page[data-theme="dark"] .vertical-reading{background:#17231f;color:#e7eee8}
-.reader-page[data-theme="dark"] .vertical-surah-heading{color:#95dec5}
-.reader-page[data-theme="dark"] .vertical-surah-heading small{color:#a6bfb3}
-.reader-page[data-theme="dark"] .vertical-verse{border-color:#34463e}
-.reader-page[data-theme="dark"] .vertical-ayah{color:#88d8b7}
-.reader-page[data-theme="dark"] .vertical-ayah-number{color:#d8bc83}
-.reader-page[data-theme="dark"] .vertical-tafsir{color:#e1e7df}
-.reader-page[data-theme="dark"] .vertical-reading-status{color:#c2d5c9}
+.vertical-reading-status button{
+  display:inline-block;margin-top:10px;padding:8px 22px;
+  border:1px solid #a6c4b7;border-radius:10px;background:#e9f5ee;color:#135747;font:inherit;
+}
+.reader-page[data-theme="dark"] .vertical-reading{background:#19251f;color:#e5ece4}
+.reader-page[data-theme="dark"] .vertical-surah-heading{color:#a5d9c1}
+.reader-page[data-theme="dark"] .vertical-surah-heading::after{background:linear-gradient(90deg,transparent,#8f7c52,transparent)}
+.reader-page[data-theme="dark"] .vertical-verse{border-color:#38483d}
+.reader-page[data-theme="dark"] .vertical-ayah{color:#9dd6bc}
+.reader-page[data-theme="dark"] .vertical-ayah-number{color:#d1b27c}
+.reader-page[data-theme="dark"] .vertical-tafsir-label{color:#9caea0}
+.reader-page[data-theme="dark"] .vertical-tafsir{color:#e0e5dd}
+.reader-page[data-theme="dark"] .vertical-reading-status{color:#b7cabd}
 .reader-page[data-theme="dark"] .vertical-reading-status button{background:#284439;color:#e0f4e9;border-color:#527b68}
-
-@media(max-height:650px){.reading-mode-switch-row{min-height:25px;gap:8px}.reading-mode-switch{width:32px;height:25px}.reading-mode-switch svg{width:18px;height:18px}}
-@media(prefers-reduced-motion:reduce){.vertical-reading-content{scroll-behavior:auto}}
+@media(min-width:700px){.reading-mode-switch{right:max(16px,calc((100vw - 720px)/2 + 12px))}}
+@media(max-height:650px){.reading-mode-switch{width:40px;height:40px;bottom:calc(var(--audio-player-height,56px) + 9px)}}
+@media(prefers-reduced-motion:reduce){.reading-mode-switch{transition:none}}
