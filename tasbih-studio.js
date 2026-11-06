@@ -21,7 +21,7 @@ const ar=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
 const digitsToLatin=n=>typeof n==='string'?n.replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-0x0660)).replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-0x06F0)):n;
 const bounded=(n,max=MAX_COUNT)=>{const v=Number(digitsToLatin(n));return Number.isFinite(v)?Math.max(0,Math.min(max,Math.floor(v))):0};
 const day=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
-const fresh=()=>({mode:'free',selected:'subhan',customText:'',entries:{},prayer:'334',prayerIndex:{'334':0,'333':0},prayerCounts:{'334':[0,0,0],'333':[0,0,0,0]},haptic:true,day:day(),today:0,undo:null});
+const fresh=()=>({mode:'free',selected:'subhan',customText:'',entries:{},prayer:'334',prayerIndex:{'334':0,'333':0},prayerCounts:{'334':[0,0,0],'333':[0,0,0,0]},day:day(),today:0,daily:{},undo:null});
 let state=fresh();
 try{
  const x=JSON.parse(localStorage.getItem(STORAGE)||'null');
@@ -36,13 +36,21 @@ try{
    state.prayerCounts[id]=steps.map((s,i)=>bounded(x.prayerCounts?.[id]?.[i],s[1]));
    state.prayerIndex[id]=bounded(x.prayerIndex?.[id],steps.length-1);
   }
-  state.haptic=x.haptic!==false;
+  state.daily=x.daily&&typeof x.daily==='object'&&!Array.isArray(x.daily)?x.daily:{};
   state.day=typeof x.day==='string'?x.day:day();
   state.today=bounded(x.today);
+  if(!Object.prototype.hasOwnProperty.call(state.daily,state.day))state.daily[state.day]=state.today;
   state.undo=x.undo||null;
  }
 }catch{}
-function refreshDay(){const d=day();if(state.day!==d){state.day=d;state.today=0;state.undo=null}}
+function refreshDay(){
+ const d=day();if(state.day!==d){state.day=d;state.today=0;state.undo=null}
+ if(!Object.prototype.hasOwnProperty.call(state.daily,d))state.daily[d]=state.today;
+ state.today=bounded(state.daily[d]);
+ const cutoff=new Date();cutoff.setHours(12,0,0,0);cutoff.setDate(cutoff.getDate()-400);
+ const key=[cutoff.getFullYear(),String(cutoff.getMonth()+1).padStart(2,'0'),String(cutoff.getDate()).padStart(2,'0')].join('-');
+ for(const stamp of Object.keys(state.daily))if(!/^\d{4}-\d{2}-\d{2}$/.test(stamp)||stamp<key||stamp>d)delete state.daily[stamp];
+}
 function save(){refreshDay();try{localStorage.setItem(STORAGE,JSON.stringify(state))}catch{}}
 function selectedEntry(){
  const id=state.selected,candidate=state.entries[id];
@@ -58,7 +66,8 @@ function prayer(){return PRAYERS[state.prayer]}
 function stepIndex(){return bounded(state.prayerIndex[state.prayer],prayer().steps.length-1)}
 function currentStep(){return prayer().steps[stepIndex()]}
 const circle=$('ts-ring-fill'),countButton=$('ts-count');
-let advanceTimer=null,resetTimer=null,resetArmed=false,returnFocus=null,ownsHistory=false;
+let advanceTimer=null,resetTimer=null,resetArmed=false,returnFocus=null,ownsHistory=false,statsFocus=null;
+const statsPanel=$('ts-stats');
 function cancelAdvance(){if(advanceTimer!==null){clearTimeout(advanceTimer);advanceTimer=null}}
 function disarmReset(){
  resetArmed=false;
@@ -81,7 +90,22 @@ function bounce(completed){
  void countButton.offsetWidth;
  countButton.classList.add(completed?'ts-finished':'ts-bump');
 }
-function haptic(completed=false){if(!state.haptic)return;try{navigator.vibrate?.(completed?[22,45,40]:12)}catch{}}
+let audio=null;
+function playTick(){
+ try{
+  const Context=window.AudioContext||window.webkitAudioContext;
+  if(!Context)return;
+  if(!audio)audio=new Context();
+  if(audio.state==='suspended')audio.resume().catch(()=>{});
+  const t=audio.currentTime,osc=audio.createOscillator(),gain=audio.createGain();
+  osc.type='triangle';osc.frequency.setValueAtTime(900,t);
+  osc.frequency.exponentialRampToValueAtTime(480,t+.035);
+  gain.gain.setValueAtTime(.0001,t);
+  gain.gain.exponentialRampToValueAtTime(.045,t+.004);
+  gain.gain.exponentialRampToValueAtTime(.0001,t+.048);
+  osc.connect(gain);gain.connect(audio.destination);osc.start(t);osc.stop(t+.055);
+ }catch{}
+}
 function activeData(){
  if(state.mode==='free'){
   const e=selectedEntry(),goal=goalOf(e),raw=e.count,mod=goal?raw%goal:raw;
@@ -131,7 +155,7 @@ function render(opts={}){
  $('ts-rounds-label').textContent=isPrayer?'إجمالي ذكر هذه الجلسة':'الدورات المكتملة';
  $('ts-rounds').textContent=ar(data.cycles);
  $('ts-today').textContent=ar(state.today);
- $('ts-haptic').setAttribute('aria-pressed',String(state.haptic));
+ 
  $('ts-undo').disabled=data.raw===0;
  $('ts-reset').disabled=data.raw===0&&!(isPrayer&&counts.some(n=>n>0));
  if(isPrayer){
@@ -167,11 +191,11 @@ function increment(){
   entry.count++;
   state.undo={mode:'free',which:state.selected,day:state.day};
  }
- state.today=bounded(state.today+1);
+ state.today=bounded(state.today+1);state.daily[state.day]=state.today;
  save();
  const after=activeData(),newCompletion=after.complete&&!before.complete;
  render({animate:true,restart:state.mode==='free'&&Boolean(after.goal)&&before.raw>0&&before.raw%after.goal===0});
- bounce(newCompletion);haptic(newCompletion);
+ bounce(newCompletion);playTick();
  if(newCompletion&&state.mode==='prayer'&&stepIndex()<prayer().steps.length-1){
   const preset=state.prayer,stage=stepIndex();
   advanceTimer=setTimeout(()=>{
@@ -188,7 +212,7 @@ function undo(){
   (state.mode==='free'?state.undo.which===state.selected:state.undo.which===state.prayer&&state.undo.idx===stepIndex());
  if(state.mode==='free')selectedEntry().count--;
  else state.prayerCounts[state.prayer][stepIndex()]--;
- if(canRewindToday)state.today=Math.max(0,state.today-1);
+ if(canRewindToday){state.today=Math.max(0,state.today-1);state.daily[state.day]=state.today}
  state.undo=null;save();render({message:'تم التراجع عن آخر عدّة.'});
 }
 function reset(){
@@ -216,7 +240,54 @@ function previousPrayer(){
  if(state.mode!=='prayer'||stepIndex()===0)return;
  state.prayerIndex[state.prayer]--;state.undo=null;save();render();
 }
+
+function localKey(date){return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-')}
+function weekStart(now){const date=new Date(now.getFullYear(),now.getMonth(),now.getDate(),12);date.setDate(date.getDate()-(date.getDay()+1)%7);return date}
+function renderStats(){
+ refreshDay();
+ const now=new Date(),start=weekStart(now),monthStart=new Date(now.getFullYear(),now.getMonth(),1,12);
+ let weekly=0,monthly=0,activeDays=0,max=0;
+ const rows=[],labels=['س','ح','ن','ث','ر','خ','ج'];
+ for(let i=0;i<7;i++){
+  const date=new Date(start);date.setDate(start.getDate()+i);
+  const future=date.getTime()>now.getTime();
+  const value=future?0:bounded(state.daily[localKey(date)]);
+  rows.push({value,label:labels[i],date:localKey(date),future});
+  weekly+=value;if(value>0)activeDays++;max=Math.max(max,value);
+ }
+ for(let date=new Date(monthStart);date<=now;date.setDate(date.getDate()+1))monthly+=bounded(state.daily[localKey(date)]);
+ $('ts-stat-day').textContent=ar(state.today);
+ $('ts-stat-week').textContent=ar(weekly);
+ $('ts-stat-month').textContent=ar(monthly);
+ $('ts-stat-active-days').textContent=ar(activeDays)+(activeDays===1?' يوم نشط':' أيام نشطة');
+ const bars=$('ts-stats-bars');bars.replaceChildren();
+ for(const row of rows){
+  const item=document.createElement('div');item.className='ts-stats-bar-item';
+  const value=document.createElement('span');value.className='ts-stats-bar-value';value.textContent=row.value?ar(row.value):'';
+  const track=document.createElement('span');track.className='ts-stats-bar-track';
+  const fill=document.createElement('span');fill.className='ts-stats-bar-fill';
+  fill.style.height=row.value?Math.max(9,Math.round(row.value/Math.max(1,max)*100))+'%':'0%';
+  if(row.date===day())item.classList.add('is-today');
+  if(row.future)item.classList.add('is-future');
+  track.append(fill);
+  const weekday=document.createElement('span');weekday.className='ts-stats-weekday';weekday.textContent=row.label;
+  item.append(value,track,weekday);bars.append(item);
+ }
+ bars.setAttribute('aria-label',rows.map(row=>row.date+': '+ar(row.value)).join('، '));
+}
+function openStats(){
+ if(studio.hidden||!statsPanel.hidden)return;
+ statsFocus=document.activeElement;
+ renderStats();statsPanel.hidden=false;$('ts-stats-close').focus();
+}
+function closeStats(){
+ if(statsPanel.hidden)return;
+ statsPanel.hidden=true;
+ if(statsFocus?.isConnected)statsFocus.focus();
+}
+
 function hide(fromHistory=false){
+ closeStats();
  if(studio.hidden)return;
  cancelAdvance();disarmReset();
  studio.hidden=true;document.body.classList.remove('ts-open');
@@ -255,7 +326,8 @@ $('ts-custom-goal').addEventListener('input',ev=>{
 studio.querySelectorAll('[data-ts-prayer]').forEach(button=>button.addEventListener('click',()=>{
  cancelAdvance();disarmReset();state.prayer=button.dataset.tsPrayer;state.undo=null;save();render();
 }));
-$('ts-haptic').addEventListener('click',()=>{state.haptic=!state.haptic;save();render()});
+$('ts-stats-open').addEventListener('click',openStats);
+$('ts-stats-close').addEventListener('click',closeStats);
 countButton.addEventListener('click',increment);
 $('ts-undo').addEventListener('click',undo);
 $('ts-reset').addEventListener('click',reset);
@@ -264,9 +336,10 @@ $('ts-prayer-prev').addEventListener('click',previousPrayer);
 window.addEventListener('popstate',()=>{if(!studio.hidden)hide(true)});
 document.addEventListener('keydown',ev=>{
  if(studio.hidden)return;
- if(ev.key==='Escape'){ev.preventDefault();ev.stopImmediatePropagation();hide();return}
+ if(ev.key==='Escape'){ev.preventDefault();ev.stopImmediatePropagation();if(!statsPanel.hidden)closeStats();else hide();return}
  if(ev.key!=='Tab')return;
- const nodes=[...studio.querySelectorAll('button:not([disabled]),input:not([disabled])')].filter(el=>!el.hidden&&el.getClientRects().length);
+ const scope=statsPanel.hidden?studio:statsPanel;
+ const nodes=[...scope.querySelectorAll('button:not([disabled]),input:not([disabled])')].filter(el=>!el.hidden&&el.getClientRects().length);
  if(!nodes.length)return;
  const first=nodes[0],last=nodes[nodes.length-1];
  if(ev.shiftKey&&document.activeElement===first){ev.preventDefault();last.focus()}
