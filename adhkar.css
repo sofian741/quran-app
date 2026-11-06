@@ -82,7 +82,7 @@ body.dark {
 .tasbih-progress{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible;transform:rotate(-90deg)}
 .tasbih-progress-track,.tasbih-progress-fill{fill:none;stroke-width:5}
 .tasbih-progress-track{stroke:rgba(20,63,49,.28)}
-.tasbih-progress-fill{stroke:#c19a58;stroke-linecap:round;stroke-dasharray:502.65482457;stroke-dashoffset:502.65482457;filter:drop-shadow(0 0 2px rgba(193,154,88,.28));transition:stroke-dashoffset .65s cubic-bezier(.18,.7,.25,1)}
+.tasbih-progress-fill{stroke:#c19a58;stroke-linecap:round;stroke-dasharray:552.92030703;stroke-dashoffset:552.92030703;filter:drop-shadow(0 0 2px rgba(193,154,88,.28));transition:stroke-dashoffset .65s cubic-bezier(.18,.7,.25,1)}
 .tasbih-center{position:relative;z-index:2;width:100%;height:100%;background:transparent!important;border:0!important;box-shadow:none!important}
 .tasbih-center span{font-size:48px;color:#fff!important}
 .tasbih-center small{display:block;font-size:16px!important;font-weight:700;color:#f1e6cf!important;opacity:1!important;margin-top:5px;line-height:1.5}
