@@ -37,6 +37,20 @@ function chooseInkScale(g,ownership,centres,targets,originalWidth){
   // a positive gap between successive rows prevents touching even at dense marks.
   for(let i=1;i<projected.length;i++)
    if(projected[i][1]-projected[i-1][3]<Math.max(GRID.inkStroke,GRID.markerStroke)+.5)return false;
+  // The heritage surah frame is taller than its printed QVP title contours.
+  // Reserve the frame's full height, not just the glyph bounding box.
+  for(const d of g.decorations){
+   if(d.decoration!==1)continue;
+   const line=d.lineIndex,boxes=g.paths.slice(d.firstPath,d.firstPath+d.nPaths).filter(p=>!p.hidden);
+   if(!boxes.length)continue;
+   const dy=targets[line]-centres[line]*scale;
+   const top=Math.min(...boxes.map(p=>p.box[1]))*scale+dy;
+   const bottom=Math.max(...boxes.map(p=>p.box[3]))*scale+dy;
+   const h=(bottom-top+8)*224/144,mid=(top+bottom)/2;
+   if(mid-h/2<pad||mid+h/2>GRID.height-pad)return false;
+   if(line>0&&mid-h/2<=projected[line-1][3]+pad)return false;
+   if(line<GRID.slots-1&&mid+h/2>=projected[line+1][1]-pad)return false;
+  }
   return true;
  };
  let low=GRID.inkScale,high=GRID.maxInkScale;
