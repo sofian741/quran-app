@@ -1,7 +1,7 @@
 // Fixed printed-line grid. Uniformly size glyphs within fixed rows; never stretch them or
 // reflow words. Reference for body-only centres, ayah-marker ownership and
 // sajdah underlines: Quran Engine qvp-core/src/lib.rs at sources.json engineCommit.
-export const GRID=Object.freeze({slots:15,band:40,gap:10,width:360,height:760,inkScale:1.055,inkStroke:.58,markerStroke:.25});
+export const GRID=Object.freeze({slots:15,band:40,gap:10,width:360,height:760,inkScale:1.055,maxInkScale:1.25,inkStroke:.68,markerStroke:.4});
 const valid=b=>Array.isArray(b)&&b.length===4&&b.every(Number.isFinite);
 const middle=b=>(b[1]+b[3])/2;
 const union=boxes=>boxes.length?[
@@ -9,6 +9,45 @@ const union=boxes=>boxes.length?[
  Math.max(...boxes.map(b=>b[2])),Math.max(...boxes.map(b=>b[3]))
 ]:null;
 const onPage=(box,g)=>valid(box)&&box[2]>0&&box[0]<g.width&&box[3]>0&&box[1]<g.height;
+
+// Fit the *printed contours* rather than enlarging the CSS canvas: text, harakat
+// and verse numerals then share exactly the same affine transformation.
+// This conservative bound uses the actual glyph boxes on each of the 15 rows.
+// Never reduce a formerly working page below its previous 1.055 scale.
+function chooseInkScale(g,ownership,centres,targets,originalWidth){
+ const buckets=Array.from({length:GRID.slots},()=>[]);
+ for(let i=0;i<g.paths.length;i++){
+  const p=g.paths[i],line=ownership[i];
+  if(!p.hidden&&line>=0&&valid(p.box))buckets[line].push(p.box);
+ }
+ const pad=Math.max(GRID.inkStroke,GRID.markerStroke)/2+.5;
+ const fits=scale=>{
+  const dx=GRID.width/2-originalWidth/2*scale;
+  const projected=buckets.map((boxes,line)=>{
+   const dy=targets[line]-centres[line]*scale;
+   let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+   for(const b of boxes){
+    left=Math.min(left,b[0]*scale+dx);right=Math.max(right,b[2]*scale+dx);
+    top=Math.min(top,b[1]*scale+dy);bottom=Math.max(bottom,b[3]*scale+dy);
+   }
+   return [left,top,right,bottom];
+  });
+  for(const b of projected)if(b[0]<pad||b[2]>GRID.width-pad||b[1]<pad||b[3]>GRID.height-pad)return false;
+  // This is intentionally stricter than checking only pixels with common X:
+  // a positive gap between successive rows prevents touching even at dense marks.
+  for(let i=1;i<projected.length;i++)
+   if(projected[i][1]-projected[i-1][3]<Math.max(GRID.inkStroke,GRID.markerStroke)+.5)return false;
+  return true;
+ };
+ let low=GRID.inkScale,high=GRID.maxInkScale;
+ if(!fits(low))return low; // honour the proven prior layout on unusual pages
+ if(fits(high))return high;
+ for(let i=0;i<14;i++){
+  const mid=(low+high)/2;
+  if(fits(mid))low=mid;else high=mid;
+ }
+ return Math.floor(low*1000)/1000;
+}
 const boxAt=(b,scale,dx,dy)=>[b[0]*scale+dx,b[1]*scale+dy,b[2]*scale+dx,b[3]*scale+dy];
 
 export function layoutGeometry(g){
@@ -69,15 +108,16 @@ export function layoutGeometry(g){
    ownership[p]=under.lineIndex;
   }
  }
+ const scale=chooseInkScale(g,ownership,centres,targets,originalWidth);
  const bands=Array.from({length:GRID.slots},()=>[]);
  for(let i=0;i<g.paths.length;i++){
   const p=g.paths[i];if(p.hidden)continue;
   const line=ownership[i];if(line<0)throw new Error('Unowned visible path '+g.number+':'+i);
-  const scale=GRID.inkScale,dx=GRID.width/2-originalWidth/2*scale,dy=targets[line]-centres[line]*scale;
+  const dx=GRID.width/2-originalWidth/2*scale,dy=targets[line]-centres[line]*scale;
   for(let k=0;k<p.pts.length;k+=2){p.pts[k]=p.pts[k]*scale+dx;p.pts[k+1]=p.pts[k+1]*scale+dy;}
   p.box=boxAt(p.box,scale,dx,dy);bands[line].push(p.box);
  }
- for(const w of g.words)w.box=boxAt(w.box,GRID.inkScale,GRID.width/2-originalWidth/2*GRID.inkScale,targets[w.lineIndex]-centres[w.lineIndex]*GRID.inkScale);
+ for(const w of g.words)w.box=boxAt(w.box,scale,GRID.width/2-originalWidth/2*scale,targets[w.lineIndex]-centres[w.lineIndex]*scale);
  for(const d of g.decorations){
   const boxes=g.paths.slice(d.firstPath,d.firstPath+d.nPaths).filter(p=>!p.hidden).map(p=>p.box);
   if(boxes.length)d.box=union(boxes);
@@ -85,7 +125,7 @@ export function layoutGeometry(g){
  for(let i=0;i<GRID.slots;i++)g.lines[i].box=union(bands[i]);
  for(const a of g.ayahs)a.box=union(g.words.slice(a.firstWord,a.firstWord+a.nWords).map(w=>w.box));
  g.width=GRID.width;g.height=GRID.height;
- g.layoutStats={mode:'fixed-grid',inkScale:GRID.inkScale,sourceWidth:originalWidth,slots:GRID.slots,band:GRID.band,gap:GRID.gap,pitch:GRID.band+GRID.gap,centres:targets,sourceCentres:centres,pathLines:ownership};
+ g.layoutStats={mode:'fixed-grid',inkScale:scale,sourceWidth:originalWidth,slots:GRID.slots,band:GRID.band,gap:GRID.gap,pitch:GRID.band+GRID.gap,centres:targets,sourceCentres:centres,pathLines:ownership};
  g.layoutApplied=true;return g;
 }
 
