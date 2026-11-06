@@ -240,9 +240,10 @@
   viewport.addEventListener('scroll',onScroll,{passive:true});
   // At the initial top boundary scrollTop cannot turn negative. A downward
   // finger gesture / upward mouse wheel therefore needs to load earlier ayat.
-  viewport.addEventListener('touchstart',event=>{touchY=event.touches[0]?.clientY??null;followingAudio=false;manualFollowSuspended=true;},{passive:true});
+  viewport.addEventListener('touchstart',event=>{touchY=event.touches[0]?.clientY??null;},{passive:true});
   viewport.addEventListener('touchmove',event=>{
     const y=event.touches[0]?.clientY;
+    if(active&&touchY!==null&&Math.abs(y-touchY)>12){followingAudio=false;manualFollowSuspended=true;}
     if(active&&touchY!==null&&y>touchY+18&&viewport.scrollTop<50){prependBatch();touchY=y;}
   },{passive:true});
   viewport.addEventListener('touchend',()=>{touchY=null;},{passive:true});
