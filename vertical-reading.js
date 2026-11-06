@@ -12,7 +12,7 @@
   const digits=n=>String(n).replace(/\d/g,d=>ARABIC_DIGITS[Number(d)]);
   let dataPromise=null,ordered=[],position=0,topIndex=0,active=false,opening=0,rendering=false;
   let lastScrollTop=0,touchY=null,ignorePageEvent=null,followingAudio=false,lastAudioKey='',lastCueKey='',pendingScrollSync=false;
-  let listeningVerse=null,holdTimer=null,holdStart=null,suppressVerseClick=false,latestAudioState=null;
+  let listeningVerse=null,holdTimer=null,holdStart=null,suppressVerseClick=false,latestAudioState=null,manualFollowSuspended=false;
   let lastVisibleKey=null;
   const keyOf=v=>v.surah+':'+v.ayah;
   const reader=()=>window.mushafReader;
@@ -156,7 +156,7 @@
     const i=ordered.findIndex(v=>v.key===firstKey);
     if(i<0){setStatus('تعذّر العثور على أول آية في الصفحة.',true);return;}
     position=i;topIndex=i;records=null;lastVisibleKey=firstKey;
-    followingAudio=false;lastAudioKey='';lastCueKey='';
+    followingAudio=false;lastAudioKey='';lastCueKey='';manualFollowSuspended=false;
     lastScrollTop=0;
     list.replaceChildren();viewport.scrollTop=0;
     setStatus('جاري تجهيز القراءة الرأسية…');
@@ -206,7 +206,7 @@
   function close(){
     if(!active)return;
     updateVisibleVerse();
-    active=false;++opening;followingAudio=false;
+    active=false;++opening;followingAudio=false;manualFollowSuspended=false;
     document.body.classList.remove('vertical-reading-active');
     surface.hidden=true;
     if(followButton)followButton.hidden=true;
@@ -223,7 +223,7 @@
   button.addEventListener('click',()=>active?close():open());
   // In this mode tapping plain text mirrors the mushaf's tap-to-show-controls behavior.
   viewport.addEventListener('click',event=>{
-    if(!event.target.closest('button,a,input'))document.body.classList.toggle('tools-visible');
+    if(!event.target.closest('.vertical-verse,button,a,input'))document.body.classList.toggle('tools-visible');
   });
   let scheduled=false;
   function onScroll(){
@@ -240,14 +240,14 @@
   viewport.addEventListener('scroll',onScroll,{passive:true});
   // At the initial top boundary scrollTop cannot turn negative. A downward
   // finger gesture / upward mouse wheel therefore needs to load earlier ayat.
-  viewport.addEventListener('touchstart',event=>{touchY=event.touches[0]?.clientY??null;followingAudio=false;},{passive:true});
+  viewport.addEventListener('touchstart',event=>{touchY=event.touches[0]?.clientY??null;followingAudio=false;manualFollowSuspended=true;},{passive:true});
   viewport.addEventListener('touchmove',event=>{
     const y=event.touches[0]?.clientY;
     if(active&&touchY!==null&&y>touchY+18&&viewport.scrollTop<50){prependBatch();touchY=y;}
   },{passive:true});
   viewport.addEventListener('touchend',()=>{touchY=null;},{passive:true});
   viewport.addEventListener('wheel',event=>{
-    followingAudio=false;
+    followingAudio=false;manualFollowSuspended=true;
     if(active&&event.deltaY<0&&viewport.scrollTop<50)prependBatch();
   },{passive:true});
   window.addEventListener('keydown',event=>{
@@ -360,7 +360,7 @@
     }
     // Moving text is only justified when the actively recited word leaves
     // the visible area, NOT at each new ayah or every timing segment.
-    if(state.autoFollow)seekAudioPosition(state);
+    if(state.autoFollow&&!manualFollowSuspended)seekAudioPosition(state);
     updateFollowButton();
     lastAudioKey=key;
   }
@@ -370,6 +370,7 @@
       followButton.title='شغّل التلاوة أولًا';
       return;
     }
+    manualFollowSuspended=false;
     seekAudioPosition(state,true);
     followButton.hidden=true;
   });
