@@ -18,7 +18,8 @@ const PRAYERS={
     ['لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ',1,'ختام']]}
 };
 const ar=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
-const bounded=(n,max=MAX_COUNT)=>Number.isFinite(Number(n))?Math.max(0,Math.min(max,Math.floor(Number(n)))):0;
+const digitsToLatin=n=>typeof n==='string'?n.replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-0x0660)).replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-0x06F0)):n;
+const bounded=(n,max=MAX_COUNT)=>{const v=Number(digitsToLatin(n));return Number.isFinite(v)?Math.max(0,Math.min(max,Math.floor(v))):0};
 const day=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const fresh=()=>({mode:'free',selected:'subhan',customText:'',entries:{},prayer:'334',prayerIndex:{'334':0,'333':0},prayerCounts:{'334':[0,0,0],'333':[0,0,0,0]},haptic:true,day:day(),today:0,undo:null});
 let state=fresh();
@@ -153,7 +154,7 @@ function switchMode(mode){
  cancelAdvance();disarmReset();state.mode=mode;save();render();
 }
 function increment(){
- cancelAdvance();disarmReset();
+ refreshDay();cancelAdvance();disarmReset();
  const before=activeData();
  if(state.mode==='prayer'){
   const idx=stepIndex(),step=currentStep(),values=state.prayerCounts[state.prayer];
