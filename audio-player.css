@@ -347,7 +347,7 @@
 }
 
 /* Recitation UX: match the reader's tap-to-show chrome. */
-:root { --audio-player-height: 154px; }
+:root { --audio-player-height: 132px; }
 .reader-page .reader-stage { height: 100vh; height: 100dvh; }
 .reader-page.tools-visible .reader-stage { height: calc(100vh - var(--audio-player-height)); height: calc(100dvh - var(--audio-player-height)); }
 .mushaf-audio-player {
@@ -743,3 +743,17 @@
 
 .audio-download-chip .audio-bundled-mark { border-radius:6px; padding:2px 5px; font-size:9px; color:#16654a; background:rgba(40,140,97,.12); }
 .reader-page[data-theme='dark'] .audio-download-chip .audio-bundled-mark { color:#b8edc9; background:rgba(90,186,124,.16); }
+
+/* Float the page number independently above the original-sized audio panel. */
+.reader-page .mushaf-audio-player { overflow: visible; }
+.reader-page .audio-page-badge {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  margin: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+@media (max-width: 350px) { :root { --audio-player-height: 128px; } }
+@media (max-height: 650px) { :root { --audio-player-height: 106px; } }
