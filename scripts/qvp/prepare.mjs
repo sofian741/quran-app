@@ -4,6 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import {decodeGeometry} from '../../mushaf-qvp/vendor/lite.js';
+import {layoutGeometry, GRID} from '../../mushaf-qvp/line-layout.js';
 import {parseTanzil, splitWords, alignWords} from '../../mushaf-qvp/text-map.js';
 const root = path.resolve(import.meta.dirname, '../..');
 const pins = JSON.parse(await fs.readFile(root+'/mushaf-qvp/sources.json'));
@@ -21,6 +22,7 @@ if(version.source_version!=='v1.1.2'||version.pages!==604) throw new Error('Wron
 await fs.mkdir(out,{recursive:true});
 await fs.mkdir(out+'/pages',{recursive:true});
 let previousKey=[0,0,0], totalWords=0, fragments=0, markerCount=0, headers=0, basmalas=0;
+let uniformInkScale=GRID.maxInkScale,limitingPage=0;
 const markerKeys = new Set(), counts = {};
 for(let n=1;n<=604;n++) {
   const id=String(n).padStart(3,'0'), bytes=await fs.readFile(qvp+'/'+id+'.qvp');
@@ -28,6 +30,10 @@ for(let n=1;n<=604;n++) {
   if(sha(bytes)!==version.files[id+'.qvp'] || sha(sidecarBytes)!==version.files[id+'.words.json']) throw new Error('QVP file digest '+id);
   const g=decodeGeometry(bytes), words=JSON.parse(sidecarBytes);
   if(g.number!==n||g.width!==345||g.height!==550||g.lines.length!==(n<=2?8:15)) throw new Error('Page geometry '+id);
+  if(n>=3){
+    const fitted=layoutGeometry(decodeGeometry(bytes),{calibrate:true}).layoutStats.inkScale;
+    if(fitted<uniformInkScale){uniformInkScale=fitted;limitingPage=n;}
+  }
   const keys=[];
   for(const w of g.words) {
     const key=`${w.surah}:${w.ayah}:${w.word}`, ref=`${w.surah}:${w.ayah}`;
@@ -85,11 +91,14 @@ const report={edition:pins.edition,pages:604,verses:verses.length,words:totalWor
   textValidation:'All verse letter skeletons aligned uniquely; not a diacritic or authoritative print certification',
   productionReady:false,blockers:['Independent authorized print comparison','Provider lexical timing certification','Real Android/device parity and performance']};
 await fs.writeFile(out+'/word-map.json',JSON.stringify(mappings));
-await fs.writeFile(out+'/manifest.json',JSON.stringify({edition:pins.edition,pins,pages,files}));
+// Round down once, and use this exact uniform value for every standard page.
+uniformInkScale=Math.floor(uniformInkScale*1000)/1000;
+if(!Number.isFinite(uniformInkScale)||uniformInkScale<GRID.inkScale)throw new Error('Invalid shared glyph scale');
+await fs.writeFile(out+'/manifest.json',JSON.stringify({edition:pins.edition,pins,pages,files,uniformInkScale,limitingPage,inkStroke:GRID.inkStroke,markerStroke:GRID.markerStroke}));
 await fs.writeFile(out+'/validation-data.json',JSON.stringify(report,null,2));
 
 for(const file of ['NOTICE.txt','VERSION.json']) {
  await fs.copyFile(qvp+'/'+file,out+'/'+file);
 }
 await fs.copyFile(root+'/mushaf-qvp/vendor/LICENSE',out+'/ENGINE-LICENSE');
-console.log(JSON.stringify({edition:pins.edition,pages:pages.length,verses:verses.length,words:totalWords,basmalas,timingFailures:timing.reduce((n,t)=>n+t.ordinalRangeFailures.length,0),changes:changes.map(c=>c.verse)},null,2));
+console.log(JSON.stringify({edition:pins.edition,pages:pages.length,verses:verses.length,words:totalWords,basmalas,uniformInkScale,limitingPage,timingFailures:timing.reduce((n,t)=>n+t.ordinalRangeFailures.length,0),changes:changes.map(c=>c.verse)},null,2));
