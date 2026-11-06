@@ -290,21 +290,31 @@
   }
   function audioWord(state,key){
     const timing=state.timing,map=qvp()?.getMapping?.(key),ms=state.currentTime*1000;
-    if(!timing||!map)return 0;
-    if(Number.isFinite(timing.timestampFrom)&&ms<timing.timestampFrom||
-       Number.isFinite(timing.timestampTo)&&ms>=timing.timestampTo)return 0;
+    if(!timing||!map||!Number.isFinite(ms))return 0;
+    const start=Number(timing.timestampFrom);
+    const end=Number(timing.timestampTo);
+    if(Number.isFinite(start)&&ms<start||Number.isFinite(end)&&ms>=end)return 0;
     const segments=timing.segments||[];
-    const segment=segments.findLast(item=>ms>=item.start&&ms<item.end);
     const supported=[7,9020,9021,9022,...Array.from({length:19},(_,i)=>9000+i)].filter(n=>n!==9017).includes(Number(state.reciterId));
-    if(!supported||!segment||!segments.length)return 0;
-    // Some valid sources number the first word from 0. Use their actual
-    // declared ordinal convention, without interpolating missing timestamps.
+    if(!supported||!segments.length)return 0;
     const zeroBased=segments.some(item=>item.word===0);
-    const ordinal=segment.word+(zeroBased?1:0);
-    if(!Number.isInteger(ordinal)||ordinal<1||ordinal>map.sourceCount)return 0;
-    if(segments.some(item=>!Number.isInteger(item.word)||item.word<(zeroBased?0:1)||
-      item.word+(zeroBased?1:0)>map.sourceCount))return 0;
-    return ordinal;
+    const offset=zeroBased?1:0;
+    const valid=item=>Number.isInteger(item.word)&&item.word+offset>=1&&
+      item.word+offset<=map.sourceCount&&Number.isFinite(item.start)&&
+      Number.isFinite(item.end)&&item.end>item.start;
+    if(!segments.every(valid))return 0;
+    const segment=segments.findLast(item=>ms>=item.start&&ms<item.end);
+    if(segment)return segment.word+offset;
+
+    // Providers may leave the opening word without an explicit segment or
+    // introduce a short lead-in before its first timed word. When the clip is
+    // already inside this verse and the NEXT verified segment starts at word
+    // one or two, the opening word is the only safe leading cue.
+    // Never extrapolate into later gaps or beyond the first known segment.
+    const first=segments.reduce((earliest,item)=>!earliest||item.start<earliest.start?item:earliest,null);
+    if(first&&ms>=Math.max(Number.isFinite(start)?start:0,first.start-2000)&&
+       ms<first.start&&(first.word+offset===1||first.word+offset===2))return 1;
+    return 0;
   }
   function audioVerseNode(key){
     return [...list.querySelectorAll('.vertical-verse')].find(el=>el.dataset.verse===key);
