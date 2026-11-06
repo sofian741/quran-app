@@ -476,7 +476,9 @@
             // Advance the continuous recording's verse state at the actual
             // boundary, rather than waiting for the next timeupdate event.
             engine.__syncContinuousChapter?.();
-            syncHighlight(engine.snapshot());
+            const frameState = engine.snapshot();
+            syncHighlight(frameState);
+            window.mushafVerticalReading?.syncAudio?.(frameState);
             if (!highlightFrame) highlightFrame = requestAnimationFrame(tick);
         };
         highlightFrame = requestAnimationFrame(tick);
