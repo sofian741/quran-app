@@ -74,5 +74,18 @@ body.dark {
   .adhkar-jump,.adhkar-jump svg{animation:none;transition:none;}
 }
 
-.tasbih-progress{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible;transform:rotate(-90deg)}.tasbih-progress-track,.tasbih-progress-fill{fill:none;stroke-width:7}.tasbih-progress-track{stroke:color-mix(in srgb,var(--green) 18%,var(--line))}.tasbih-progress-fill{stroke:var(--gold);stroke-linecap:round;stroke-dasharray:376.99111843;stroke-dashoffset:376.99111843;transition:stroke-dashoffset .24s cubic-bezier(.22,.75,.3,1)}.tasbih:focus-visible{border-radius:50%;outline:3px solid var(--gold);outline-offset:3px}@media(prefers-reduced-motion:reduce){.tasbih-progress-fill{transition:none}}
 
+/* Hisn al-Muslim counter: one correctly aligned, hardware-friendly SVG ring. */
+.tasbih{isolation:isolate;cursor:pointer}
+.tasbih::before{inset:22px;border:1px solid rgba(169,124,53,.45);background:radial-gradient(circle,rgba(205,164,85,.06) 35%,rgba(201,151,67,.14) 70%,rgba(201,151,67,.03) 100%);box-shadow:0 0 24px rgba(184,133,52,.16),0 0 48px rgba(184,133,52,.07),inset 0 0 18px rgba(205,164,85,.08);z-index:0}
+.tasbih-progress{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible;transform:rotate(-90deg)}
+.tasbih-progress-track,.tasbih-progress-fill{fill:none;stroke-width:7}
+.tasbih-progress-track{stroke:rgba(169,124,53,.2)}
+.tasbih-progress-fill{stroke:#b58a42;stroke-linecap:round;stroke-dasharray:458.67252742;stroke-dashoffset:458.67252742;filter:drop-shadow(0 0 3px rgba(191,144,57,.38));transition:stroke-dashoffset .54s cubic-bezier(.16,1,.3,1)}
+.tasbih-center{width:112px;height:112px;border:1px solid rgba(181,138,66,.32);box-shadow:0 6px 20px rgba(24,66,47,.09),0 0 24px rgba(190,147,65,.12);transition:transform .24s ease,box-shadow .3s ease}
+.tasbih-center span{font-size:35px}
+.tasbih-center small{font-size:12px;font-weight:800;color:#926923;line-height:1.5;margin-top:4px;text-align:center;padding:0 5px}
+.tasbih.tap-bloom .tasbih-center{animation:tasbih-gold-tap .42s cubic-bezier(.2,.8,.2,1)}
+@keyframes tasbih-gold-tap{0%{transform:scale(1)}32%{transform:scale(.94);box-shadow:0 0 35px rgba(194,148,59,.35)}100%{transform:scale(1)}}
+.tasbih:focus-visible{border-radius:50%;outline:3px solid #b58a42;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.tasbih-progress-fill{transition:none}.tasbih.tap-bloom .tasbih-center{animation:none}}
