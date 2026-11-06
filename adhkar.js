@@ -61,7 +61,7 @@ function renderIndex(q=''){
 }
 function findChapter(hint){const w=normalize(hint);let found=chapters.find(ch=>normalize(ch.title).includes(w))||chapters.find(ch=>w.includes(normalize(ch.title)));if(!found&&w.includes('المساء'))found=chapters.find(ch=>{const t=normalize(ch.title);return t.includes('الصباح')&&t.includes('المساء')});if(!found&&w.includes('الصباح'))found=chapters.find(ch=>{const t=normalize(ch.title);return t.includes('الصباح')&&t.includes('المساء')});return found}
 function itemState(){return active?.items[itemIndex]||null}
-function paintTasbih(){const it=itemState();if(!it)return;const now=current(active,it),total=target(it);$('tasbih-current').textContent=digits(now);$('tasbih-target').textContent=`من ${digits(total)}`;$('tasbih').style.setProperty('--progress',`${now/total*100}%`);$('tasbih').classList.toggle('complete',now>=total);$('item-status').textContent=now>=total?'اكتمل':'التكرار '+digits(now)+' / '+digits(total);$('tasbih').setAttribute('aria-label',`عداد الذكر: ${digits(now)} من ${digits(total)}`)}
+function paintTasbih(){const it=itemState();if(!it)return;const now=current(active,it),total=target(it);$('tasbih-current').textContent=digits(now);$('tasbih-target').textContent=`من ${digits(total)}`;$('tasbih-progress-fill').style.strokeDashoffset=String(2*Math.PI*60*(1-now/total));$('tasbih').classList.toggle('complete',now>=total);$('item-status').textContent=now>=total?'اكتمل':'التكرار '+digits(now)+' / '+digits(total);$('tasbih').setAttribute('aria-label',`عداد الذكر: ${digits(now)} من ${digits(total)}`)}
 let advanceTimer=null,transitioning=false;
 function cancelAdvance(){if(advanceTimer!==null){clearTimeout(advanceTimer);advanceTimer=null}}
 // Soft, synthesized tap: no downloaded audio file and no external dependency.
