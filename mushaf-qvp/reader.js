@@ -33,7 +33,7 @@ async function load(number){
     const digest=await sha256(bytes);
     if(digest!==manifest.files[id+'.qvp'].sha256)throw new Error('Page integrity '+number);
     const geometry=decodeGeometry(bytes);if(geometry.number!==number)throw new Error('Page identity');
-    layoutGeometry(geometry);
+    layoutGeometry(geometry,{uniformInkScale:manifest.uniformInkScale??GRID.inkScale});
     const item={geometry,paint:new QvpLitePage(paintGeometry(geometry))};cache.set(number,item);evict();return item;
   })().finally(()=>pending.delete(number));
   pending.set(number,promise);return promise;
