@@ -118,10 +118,13 @@ function chapterAudio(surah) {
 
     const geometry = await page.evaluate(() => {
       const stage = document.querySelector('.reader-stage').getBoundingClientRect();
-      const player = document.querySelector('.mushaf-audio-player').getBoundingClientRect();
-      return { stageBottom: stage.bottom, playerTop: player.top, width: document.documentElement.scrollWidth, client: document.documentElement.clientWidth };
+      const player = getComputedStyle(document.querySelector('.mushaf-audio-player'));
+      return { stageBottom: stage.bottom, viewport: innerHeight, playerVisibility: player.visibility,
+        playerEvents: player.pointerEvents, width: document.documentElement.scrollWidth, client: document.documentElement.clientWidth };
     });
-    assert.ok(geometry.stageBottom <= geometry.playerTop + .5, `${viewport.width}px player must not cover the mushaf`);
+    assert.ok(Math.abs(geometry.stageBottom-geometry.viewport)<1, `${viewport.width}px mushaf must keep the full viewport`);
+    assert.equal(geometry.playerVisibility,'hidden',`${viewport.width}px controls start hidden`);
+    assert.equal(geometry.playerEvents,'none',`${viewport.width}px hidden controls cannot block the mushaf`);
     assert.equal(geometry.width, geometry.client, `${viewport.width}px must not scroll horizontally`);
 
     const before = await page.locator('.mushaf-line').evaluateAll(lines => lines.map(line => [line.offsetWidth, line.offsetHeight]));
@@ -201,5 +204,6 @@ function chapterAudio(surah) {
   }
 })().catch(error => {
   console.error(error);
+  if(process.env.GITHUB_ACTIONS)console.error(`::error title=QVP audio browser::${String(error.stack||error).replace(/%/g,'%25').replace(/\r?\n/g,'%0A')}`);
   process.exitCode = 1;
 });
