@@ -90,6 +90,8 @@ function bounce(completed){
  void countButton.offsetWidth;
  countButton.classList.add(completed?'ts-finished':'ts-bump');
 }
+// A warm, soft tap routed through the normal media output. Android's media
+// volume controls it naturally; no independent fixed-volume playback.
 let audio=null;
 function playTick(){
  try{
@@ -97,13 +99,16 @@ function playTick(){
   if(!Context)return;
   if(!audio)audio=new Context();
   if(audio.state==='suspended')audio.resume().catch(()=>{});
-  const t=audio.currentTime,osc=audio.createOscillator(),gain=audio.createGain();
-  osc.type='triangle';osc.frequency.setValueAtTime(900,t);
-  osc.frequency.exponentialRampToValueAtTime(480,t+.035);
+  const t=audio.currentTime;
+  const osc=audio.createOscillator(),gain=audio.createGain();
+  osc.type='sine';
+  osc.frequency.setValueAtTime(560,t);
+  osc.frequency.exponentialRampToValueAtTime(350,t+.065);
   gain.gain.setValueAtTime(.0001,t);
-  gain.gain.exponentialRampToValueAtTime(.045,t+.004);
-  gain.gain.exponentialRampToValueAtTime(.0001,t+.048);
-  osc.connect(gain);gain.connect(audio.destination);osc.start(t);osc.stop(t+.055);
+  gain.gain.exponentialRampToValueAtTime(.016,t+.009);
+  gain.gain.exponentialRampToValueAtTime(.0001,t+.095);
+  osc.connect(gain);gain.connect(audio.destination);
+  osc.start(t);osc.stop(t+.105);
  }catch{}
 }
 function activeData(){
