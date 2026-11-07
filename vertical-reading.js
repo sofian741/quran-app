@@ -13,6 +13,8 @@
   let dataPromise=null,ordered=[],position=0,topIndex=0,active=false,opening=0,rendering=false;
   let lastScrollTop=0,touchY=null,ignorePageEvent=null,followingAudio=false,lastAudioKey='',lastCueKey='',pendingScrollSync=false;
   let listeningVerse=null,holdTimer=null,holdStart=null,suppressVerseClick=false,latestAudioState=null,manualFollowSuspended=false,trackingEnabled=false,lastTrackedLine='';
+  let trackingFrame=0,trackingDestination=null,trackingStart=0,trackingFrom=0,trackingDuration=460;
+  let manualPointer=null,manualTouch=null,autoScrollUntil=0;
   let lastVisibleKey=null;
   const keyOf=v=>v.surah+':'+v.ayah;
   const reader=()=>window.mushafReader;
@@ -166,7 +168,7 @@
     if(i<0){setStatus('تعذّر العثور على أول آية في الصفحة.',true);return;}
     position=i;topIndex=i;records=null;lastVisibleKey=firstKey;
     followingAudio=false;lastAudioKey='';lastCueKey='';manualFollowSuspended=false;
-    trackingEnabled=false;lastTrackedLine='';
+    trackingEnabled=false;lastTrackedLine='';cancelTrackingMotion();
     lastScrollTop=0;
     list.replaceChildren();viewport.scrollTop=0;
     setStatus('جاري تجهيز القراءة الرأسية…');
@@ -217,7 +219,7 @@
     if(!active)return;
     updateVisibleVerse();
     active=false;++opening;followingAudio=false;manualFollowSuspended=false;
-    trackingEnabled=false;lastTrackedLine='';
+    trackingEnabled=false;lastTrackedLine='';cancelTrackingMotion();
     document.body.classList.remove('vertical-reading-active');
     surface.hidden=true;
     if(followButton)followButton.hidden=true;
@@ -337,22 +339,63 @@
     const state=latestAudioState;
     followButton.hidden=!(active&&state?.playing&&state.provider==='quran-foundation'&&!trackingEnabled);
   }
+  function updateFollowButton(){
+    if(!followButton)return;
+    const state=latestAudioState;
+    followButton.hidden=!(active&&state?.playing&&state.provider==='quran-foundation'&&!trackingEnabled);
+  }
+  function cancelTrackingMotion(){
+    if(trackingFrame)cancelAnimationFrame(trackingFrame);
+    trackingFrame=0;trackingDestination=null;autoScrollUntil=0;
+  }
   function disableTracking(){
     if(!active)return;
     trackingEnabled=false;lastTrackedLine='';followingAudio=false;
+    cancelTrackingMotion();
     updateFollowButton();
   }
-  function audioVerseNodeFor(key){
-    return audioVerseNode(key);
-  }
   function targetLine(word,node){
-    const element=word||node?.querySelector('.vertical-ayah');
-    if(!element)return null;
-    const rect=element.getClientRects()[0]||element.getBoundingClientRect();
+    const ayah=node?.querySelector('.vertical-ayah');
+    if(!ayah)return null;
+    const element=word||node.querySelector('.vertical-ayah-word')||ayah;
     const frame=viewport.getBoundingClientRect();
-    // Normalized document position doesn't move during smooth scrolling.
-    const absoluteTop=viewport.scrollTop+rect.top-frame.top;
-    return {element,absoluteTop,lineKey:node.dataset.verse+':'+Math.round(absoluteTop/18)};
+    const ayahRect=ayah.getBoundingClientRect();
+    const rect=element.getClientRects()[0]||element.getBoundingClientRect();
+    const lh=parseFloat(getComputedStyle(ayah).lineHeight)||Math.max(30,ayahRect.height);
+    // Detect the actual rendered line, not the verse's top, and keep its
+    // identity stable while smooth scrolling changes element rects.
+    const lineIndex=Math.max(0,Math.round((rect.top-ayahRect.top)/lh));
+    const absoluteTop=viewport.scrollTop+ayahRect.top-frame.top+lineIndex*lh;
+    return {absoluteTop,lineKey:node.dataset.verse+':'+lineIndex};
+  }
+  function animateTracking(target){
+    const max=Math.max(0,viewport.scrollHeight-viewport.clientHeight);
+    const destination=Math.min(max,Math.max(0,target));
+    if(Math.abs(viewport.scrollTop-destination)<3)return;
+    if(trackingFrame){
+      // Keep a single continuous animation instead of stacking native smooth
+      // scrolls (which caused a ghost frame at each new ayah).
+      trackingDestination=destination;
+      return;
+    }
+    trackingFrom=viewport.scrollTop;trackingDestination=destination;
+    trackingStart=performance.now();
+    const tick=now=>{
+      if(!trackingEnabled||!active){cancelTrackingMotion();return;}
+      const goal=trackingDestination;
+      const t=Math.min(1,(now-trackingStart)/trackingDuration);
+      const eased=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+      const next=trackingFrom+(goal-trackingFrom)*eased;
+      autoScrollUntil=now+100;
+      viewport.scrollTop=next;
+      if(t<1){trackingFrame=requestAnimationFrame(tick);return;}
+      trackingFrame=0;
+      if(Math.abs(viewport.scrollTop-goal)>2){
+        trackingFrom=viewport.scrollTop;trackingStart=now;
+        trackingFrame=requestAnimationFrame(tick);
+      }else trackingDestination=null;
+    };
+    trackingFrame=requestAnimationFrame(tick);
   }
   function seekAudioPosition(state,force=false){
     if(!active||!records||!state?.playing)return;
@@ -361,7 +404,6 @@
     if(!node){
       const idx=ordered.findIndex(v=>v.key===key);
       if(idx<0)return;
-      // Extend only as needed; don't discard what the user was reading.
       let rounds=0;
       while(!node&&idx>=position&&rounds++<50){appendBatch();node=audioVerseNode(key);}
       rounds=0;
@@ -376,12 +418,11 @@
     if(!force&&line.lineKey===lastTrackedLine)return;
     lastTrackedLine=line.lineKey;
     followingAudio=true;
-    // Place the highlighted LINE at the top of the reading surface.
-    // Native smooth scroll keeps intermediate text visible while moving.
     const padding=Math.max(12,parseFloat(getComputedStyle(viewport).paddingTop)||0);
     const destination=Math.max(0,line.absoluteTop-padding-8);
-    if(Math.abs(viewport.scrollTop-destination)>8)
-      viewport.scrollTo({top:destination,behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth'});
+    if(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches){
+      cancelTrackingMotion();viewport.scrollTop=destination;
+    }else animateTracking(destination);
   }
   function applyAudio(state){
     latestAudioState=state;
