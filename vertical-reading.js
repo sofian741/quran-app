@@ -255,10 +255,24 @@
   viewport.addEventListener('scroll',onScroll,{passive:true});
   // At the initial top boundary scrollTop cannot turn negative. A downward
   // finger gesture / upward mouse wheel therefore needs to load earlier ayat.
-  viewport.addEventListener('touchstart',event=>{touchY=event.touches[0]?.clientY??null;},{passive:true});
+  viewport.addEventListener('pointerdown',event=>{
+    if(!active||event.target.closest('button,input,a'))return;
+    manualPointer={id:event.pointerId,x:event.clientX,y:event.clientY};
+  },{passive:true});
+  viewport.addEventListener('pointermove',event=>{
+    if(!manualPointer||manualPointer.id!==event.pointerId)return;
+    if(Math.abs(event.clientY-manualPointer.y)>4||
+       Math.abs(event.clientX-manualPointer.x)>8){
+      disableTracking();
+      manualPointer=null;
+    }
+  },{passive:true});
+  for(const type of ['pointerup','pointercancel','pointerleave'])
+    viewport.addEventListener(type,()=>{manualPointer=null;},{passive:true});
+    viewport.addEventListener('touchstart',event=>{touchY=event.touches[0]?.clientY??null;},{passive:true});
   viewport.addEventListener('touchmove',event=>{
     const y=event.touches[0]?.clientY;
-    if(active&&touchY!==null&&Math.abs(y-touchY)>6){disableTracking();}
+    if(active&&touchY!==null&&Math.abs(y-touchY)>4){disableTracking();}
     if(active&&touchY!==null&&y>touchY+18&&viewport.scrollTop<50){prependBatch();touchY=y;}
   },{passive:true});
   viewport.addEventListener('touchend',()=>{touchY=null;},{passive:true});
@@ -339,11 +353,6 @@
     const state=latestAudioState;
     followButton.hidden=!(active&&state?.playing&&state.provider==='quran-foundation'&&!trackingEnabled);
   }
-  function updateFollowButton(){
-    if(!followButton)return;
-    const state=latestAudioState;
-    followButton.hidden=!(active&&state?.playing&&state.provider==='quran-foundation'&&!trackingEnabled);
-  }
   function cancelTrackingMotion(){
     if(trackingFrame)cancelAnimationFrame(trackingFrame);
     trackingFrame=0;trackingDestination=null;autoScrollUntil=0;
@@ -373,9 +382,13 @@
     const destination=Math.min(max,Math.max(0,target));
     if(Math.abs(viewport.scrollTop-destination)<3)return;
     if(trackingFrame){
-      // Keep a single continuous animation instead of stacking native smooth
-      // scrolls (which caused a ghost frame at each new ayah).
-      trackingDestination=destination;
+      // Retarget from the ACTUAL current position. Keeping the original start
+      // while changing the destination caused a discontinuity for new ayat.
+      if(Math.abs(trackingDestination-destination)>3){
+        trackingFrom=viewport.scrollTop;
+        trackingStart=performance.now();
+        trackingDestination=destination;
+      }
       return;
     }
     trackingFrom=viewport.scrollTop;trackingDestination=destination;
