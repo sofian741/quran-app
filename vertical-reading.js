@@ -66,7 +66,7 @@
     const sourceText=verse.text||'';
     const map=qvp()?.getMapping?.(verse.key);
     const suffix=new Set(['ۖ','ۚ','ۘ','ۗ','ۛ','ۙ','ۜ','۩']);
-    const words=[],parts=sourceText.trim().split(/\\s+/);
+    const words=[],parts=sourceText.trim().split(/\s+/);
     let prefix='';
     for(const part of parts){
       if(part==='۞')prefix+=part;
