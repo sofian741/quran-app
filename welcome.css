@@ -4,7 +4,7 @@
  position:fixed;inset:0;z-index:9999;display:grid;place-items:center;
  background:radial-gradient(circle at 50% 45%,#205c4c 0%,#103c31 52%,#09291f 100%);
  color:#f2d59b;overflow:hidden;
- transition:opacity .65s ease,visibility .65s ease;
+ transition:opacity .42s ease,visibility .42s ease;
 }
 .ayat-welcome[hidden]{display:none!important}
 .ayat-welcome.is-leaving{opacity:0;visibility:hidden;pointer-events:none}
@@ -29,7 +29,7 @@
  margin:0;align-self:center;border-radius:3px;
  background:linear-gradient(90deg,transparent,#c49a4f 12%,#f8e7b9 50%,#c49a4f 88%,transparent);
  box-shadow:0 0 15px #f5cf7955;
- transform:rotate(90deg) scaleX(.25);transform-origin:center;
+ transform:scaleX(.025);transform-origin:center;
  will-change:transform;
 }
 .ayat-welcome-subtitle{
@@ -59,3 +59,11 @@ html.ayat-tour-boot .home-app,html.ayat-tour-boot .home-bottom-nav{visibility:hi
 @media(prefers-reduced-motion:reduce){
  .ayat-welcome:not(.ayat-welcome-force-motion){transition:none}
 }
+
+/* A quiet horizontal stroke, no flips or sudden direction changes. */
+.ayat-welcome-line{
+ background:linear-gradient(90deg,transparent 0%,#b88c46 11%,#ffe5a7 50%,#b88c46 89%,transparent 100%);
+ box-shadow:0 0 9px #f4d59035;
+}
+.ayat-welcome-title{height:73px;letter-spacing:0}
+.ayat-welcome-subtitle{padding-top:13px;color:#d9d5c3}
