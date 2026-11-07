@@ -89,3 +89,47 @@ html.ayat-tour-boot .home-app,html.ayat-tour-boot .home-bottom-nav{visibility:hi
   .ayat-welcome-en{font-size:17px}
   .ayat-welcome-line{margin-inline:8px}
 }
+
+/* Three-stage signature: the rotating stroke becomes a horizontal horizon;
+   Kalam rises from it, Al-Rahman unfolds beside it, then the caption descends. */
+.ayat-welcome-center{
+  display:flex;flex-direction:column;direction:rtl;
+  width:min(94vw,460px);height:210px;gap:0;justify-content:center;
+}
+.ayat-welcome-title{
+  display:flex;direction:rtl;align-items:baseline;justify-content:center;
+  gap:clamp(7px,2vw,13px);width:100%;height:77px;
+  font-family:'Amiri Quran',Tahoma,Arial,sans-serif;
+  font-size:clamp(33px,8.3vw,47px);font-weight:700;line-height:1.7;
+  color:#f2d59b;white-space:nowrap;
+}
+.ayat-welcome-title .ayat-welcome-word{
+  flex:none;display:inline-block;opacity:0;filter:none;transform:none;
+  will-change:transform,clip-path,opacity;
+}
+.ayat-welcome-line{
+  width:clamp(172px,64vw,270px);height:2px;min-height:2px;
+  flex:0 0 2px;margin:0;
+  background:linear-gradient(90deg,transparent,#c49a4f 12%,#f8e7b9 50%,#c49a4f 88%,transparent);
+  border-radius:3px;box-shadow:0 0 15px #f5cf7955;
+  transform:rotate(90deg) scaleX(.25);transform-origin:center;
+}
+.ayat-welcome-subtitle{
+  position:static;top:auto;left:auto;right:auto;
+  display:block;width:100%;height:46px;padding-top:15px;
+  color:#e5d8b8;font-size:clamp(12px,3.3vw,15px);
+  font-family:Tahoma,Arial,sans-serif;letter-spacing:0;
+  line-height:1.5;opacity:0;transform:none;
+}
+.ayat-welcome.is-playing .ayat-welcome-line,
+.ayat-welcome.is-playing .ayat-welcome-subtitle{animation:none}
+@media(max-width:360px){
+  .ayat-welcome-title{font-size:clamp(30px,8.5vw,34px);gap:7px}
+  .ayat-welcome-line{width:clamp(165px,65vw,220px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .ayat-welcome-title .ayat-welcome-word,.ayat-welcome-subtitle{
+    opacity:1!important;transform:none!important;clip-path:none!important;
+  }
+  .ayat-welcome-line{transform:none!important}
+}
