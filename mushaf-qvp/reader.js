@@ -3,7 +3,7 @@ import {buildPath} from './vendor/lite-path.js';
 import {sha256} from './integrity.js';
 import {SUBWORDS, subwordBox} from './subwords.js';
 import {createHeritageHeading} from './heritage-ornament.js';
-import {parseTanzil, timingRange} from './text-map.js';
+import {parseTanzil, timingRange, splitWords} from './text-map.js';
 import {layoutGeometry, paintGeometry, headingBox, enlargeVerseMarkers, GRID} from './line-layout.js';
 
 const $ = id=>document.getElementById(id), text=$('quran-text'), stage=$('reader-stage');
@@ -464,7 +464,7 @@ async function init(){
     goToVerse:(s,a,p)=>{const key=s+':'+a,v=maps[key];if(closePanels()||!v)return false;navigate(v.pages.includes(p)?p:v.pages[0],key);return true;},
     fitElement:fit, clearFitCache(){}, turnPageInstant:d=>{if(![1,-1].includes(d)||current+d<1||current+d>604)return false;navigate(current+d);return true;}
   };
-  window.mushafQvp={metrics,navigate,syncAudio,follow,wordFromPoint,getPreparedPages:()=>[...prepared.keys()],getGeometry:()=>active?.geometry,getMapping:key=>maps[key],getManifest:()=>manifest,drawReference:()=>active?.paint};
+  window.mushafQvp={metrics,navigate,syncAudio,follow,wordFromPoint,splitWords,getPreparedPages:()=>[...prepared.keys()],getGeometry:()=>active?.geometry,getMapping:key=>maps[key],getManifest:()=>manifest,drawReference:()=>active?.paint};
   settings();
   const hash=new URLSearchParams(location.hash.slice(1)),v=hash.get('verse');
   const saved=read(STORAGE,{}).displayPage,initial=v&&maps[v]?maps[v].pages[0]:Number.isInteger(saved)&&saved>=1&&saved<=604?saved:1;
