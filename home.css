@@ -767,3 +767,7 @@
   .home-brand small{display:none;}
 }
 @media(prefers-reduced-motion:reduce){.home-settings-sheet,.home-settings-backdrop{animation:none;}}
+
+/* Two-word app identity: keep the full Arabic name readable on narrow phones. */
+.home-brand-copy strong{font-size:clamp(13px,3.6vw,16px);letter-spacing:0;white-space:nowrap}
+@media(max-width:370px){.home-brand-copy strong{font-size:13px}}
