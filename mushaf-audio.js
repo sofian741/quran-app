@@ -485,6 +485,9 @@
     }
 
     function followVerse(state) {
+        // Vertical reading owns its scroll position. Never navigate its hidden
+        // QVP page behind the user's tafsir via the ordinary follow handler.
+        if (window.mushafVerticalReading?.isActive?.()) return;
         if (window.mushafReader?.engine === 'qvp') return window.mushafQvp.follow(state);
         if (!state.playing || !state.autoFollow || state.provider !== 'quran-foundation') return;
         const reader = window.mushafReader;
