@@ -56,54 +56,54 @@
       el.style.visibility = 'hidden';
       el.style.opacity = '0';
     }
-    line.style.transform = 'rotate(90deg) scaleX(.25)';
+    line.style.transform = 'scaleX(.025)';
     document.documentElement.classList.add('ayat-splash-startup');
     splash.hidden = false;
 
     if (reduce()) {
-      line.style.transform = 'none';
+      line.style.transform = 'scaleX(1)';
       for (const el of [kalam, rahman, subtitle]) {
         el.style.visibility = 'visible';
         el.style.opacity = '1';
         el.style.clipPath = 'none';
       }
-      await wait(650);
+      await wait(480);
       await leave(id);
       return;
     }
 
-    // Use the *original working pattern*: sequential Web Animations calls.
-    // CSS establishes the hidden first frame; JS owns the only timeline.
-    await animate(line, [
-      { transform: 'rotate(90deg) scaleX(.25)' },
-      { transform: 'rotate(270deg) scaleX(.25)' },
-      { transform: 'rotate(450deg) scaleX(.25)' }
-    ], { duration: 660, easing: 'cubic-bezier(.42,0,.58,1)' });
-    if (id !== run) return;
-    await animate(line, [
-      { transform: 'rotate(450deg) scaleX(.25)' },
-      { transform: 'rotate(360deg) scaleX(1)' }
-    ], { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' });
-    if (id !== run) return;
+    // Same proven Web Animations approach as the original splash.
+    // The first mark is already horizontal; it draws outward instantly.
+    // The reveals overlap just enough to feel like one continuous signature.
+    const ease = 'cubic-bezier(.22,1,.36,1)';
+    const animateAfter = (ms, el, frames, options) =>
+      animate(el, frames, { delay: ms, easing: ease, ...options });
     kalam.style.visibility = 'visible';
-    await animate(kalam, [
-      { opacity: 0, clipPath: 'inset(100% 0 0 0)', transform: 'translateY(15px)' },
-      { opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'translateY(0)' }
-    ], { duration: 630, easing: 'cubic-bezier(.22,1,.36,1)' });
-    if (id !== run) return;
     rahman.style.visibility = 'visible';
-    await animate(rahman, [
-      { opacity: 0, clipPath: 'inset(0 100% 0 0)', transform: 'translateX(9px)' },
-      { opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'translateX(0)' }
-    ], { duration: 610, easing: 'cubic-bezier(.22,1,.36,1)' });
-    if (id !== run) return;
     subtitle.style.visibility = 'visible';
-    await animate(subtitle, [
-      { opacity: 0, clipPath: 'inset(0 0 100% 0)', transform: 'translateY(-9px)' },
-      { opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'translateY(0)' }
-    ], { duration: 530, easing: 'cubic-bezier(.22,1,.36,1)' });
+
+    const movements = [
+      animate(line, [
+        { transform: 'scaleX(.025)', opacity: .7, offset: 0 },
+        { transform: 'scaleX(.19)', opacity: 1, offset: .18 },
+        { transform: 'scaleX(1)', opacity: 1, offset: 1 }
+      ], { duration: 540, easing: ease }),
+      animateAfter(350, kalam, [
+        { opacity: 0, clipPath: 'inset(100% 0 0 0)', transform: 'translateY(11px)' },
+        { opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'translateY(0)' }
+      ], { duration: 570 }),
+      animateAfter(760, rahman, [
+        { opacity: 0, clipPath: 'inset(0 100% 0 0)', transform: 'translateX(6px)' },
+        { opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'translateX(0)' }
+      ], { duration: 570 }),
+      animateAfter(1190, subtitle, [
+        { opacity: 0, clipPath: 'inset(0 0 100% 0)', transform: 'translateY(-7px)' },
+        { opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'translateY(0)' }
+      ], { duration: 520 })
+    ];
+    await Promise.all(movements);
     if (id !== run) return;
-    await wait(650);
+    await wait(520);
     await leave(id);
   }
   function start() { play().catch(() => { leave(run); }); }
