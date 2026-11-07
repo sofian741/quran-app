@@ -96,7 +96,7 @@
   root.id = 'ayat-tour-root';
   root.className = 'ayat-tour-root' + ((kind==='home'||kind==='recitations'||kind==='adhkar'||kind==='quran'||kind==='library')?' is-editorial':'') + (kind==='home'?' is-home':'') + (kind==='recitations'?' is-recitations':'') + (kind==='adhkar'?' is-adhkar':'')+(kind==='library'?' is-library':'') + (kind==='quran'?' is-quran':'');
   root.hidden = true;
-  root.setAttribute('aria-label','دليل استخدام آيات');
+  root.setAttribute('aria-label','دليل استخدام كلام الرحمن');
   root.innerHTML =
     '<div class="ayat-tour-shade" hidden></div><div class="ayat-tour-spot" hidden></div>' +
     '<button type="button" class="ayat-tour-hit" hidden aria-label="اكتشف العنصر المنوّر"></button>' +
@@ -159,8 +159,8 @@
   function chooser(){
     ++stepToken;clearLayers();rootOpen(false);modalOpen=true;
     modal.hidden=false;
-    modal.innerHTML='<div class="ayat-tour-card" role="dialog" aria-modal="true" aria-label="اختيار شرح آيات" tabindex="-1">' +
-      '<div class="ayat-tour-top"><span>دليل آيات</span><span>اختر الصفحة</span></div>' +
+    modal.innerHTML='<div class="ayat-tour-card" role="dialog" aria-modal="true" aria-label="اختيار شرح كلام الرحمن" tabindex="-1">' +
+      '<div class="ayat-tour-top"><span>دليل كلام الرحمن</span><span>اختر الصفحة</span></div>' +
       '<h2 class="ayat-tour-title">تحب تكتشف إيه؟</h2><p class="ayat-tour-body">كل صفحة ليها شرحها الخاص. تقدر تعيد أي شرح وقت ما تحب.</p>' +
       '<div class="ayat-tour-choices">' + Object.keys(PAGE_FOR).map(k=>'<button type="button" class="'+(k===kind?'ayat-tour-main':'ayat-tour-secondary')+'" data-tour-action="replay-'+k+'">'+html('شرح '+NAMES[k])+(k===kind?' · الصفحة الحالية':'')+'</button>').join('') +
       '<button type="button" class="ayat-tour-text" data-tour-action="dismiss">رجوع</button></div></div>';
@@ -495,7 +495,7 @@
     card.innerHTML=
       '<div class="ayat-tour-home-top">'+
         '<span class="ayat-tour-home-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5C9.2 3.6 6.5 3.7 3.5 4.8v14.1c3-1.1 5.7-1 8.5.6 2.8-1.6 5.5-1.7 8.5-.6V4.8c-3-1.1-5.7-1.2-8.5.2Z"/><path d="M12 5v14.5"/></svg></span>'+
-        '<span class="ayat-tour-home-heading"><strong>دليل آيات</strong><small>'+html(step.group||'الرئيسية')+'</small></span>'+
+        '<span class="ayat-tour-home-heading"><strong>دليل كلام الرحمن</strong><small>'+html(step.group||'الرئيسية')+'</small></span>'+
         '<span class="ayat-tour-count">'+String(current).padStart(2,'0')+' <span aria-hidden="true">/</span> '+String(total).padStart(2,'0')+'</span></div>'+
       '<div class="ayat-tour-home-progress" style="grid-template-columns:repeat('+total+',minmax(0,1fr))" aria-hidden="true">'+progress+'</div>'+
       '<h2 class="ayat-tour-title">'+html(step.title)+'</h2>'+
@@ -583,7 +583,7 @@
       card.innerHTML=
         '<div class="ayat-tour-home-top">'+
           '<span class="ayat-tour-home-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5C9.2 3.6 6.5 3.7 3.5 4.8v14.1c3-1.1 5.7-1 8.5.6 2.8-1.6 5.5-1.7 8.5-.6V4.8c-3-1.1-5.7-1.2-8.5.2Z"/><path d="M12 5v14.5"/></svg></span>'+
-          '<span class="ayat-tour-home-heading"><strong>دليل آيات</strong><small>'+html(s.group||'المصحف')+'</small></span>'+
+          '<span class="ayat-tour-home-heading"><strong>دليل كلام الرحمن</strong><small>'+html(s.group||'المصحف')+'</small></span>'+
           '<span class="ayat-tour-count">'+String(count).padStart(2,'0')+' <span aria-hidden="true">/</span> '+String(total).padStart(2,'0')+'</span>'+
         '</div>'+
         '<div class="ayat-tour-home-progress" aria-hidden="true">'+progress+'</div>'+
