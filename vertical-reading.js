@@ -12,7 +12,7 @@
   const digits=n=>String(n).replace(/\d/g,d=>ARABIC_DIGITS[Number(d)]);
   let dataPromise=null,ordered=[],position=0,topIndex=0,active=false,opening=0,rendering=false;
   let lastScrollTop=0,touchY=null,ignorePageEvent=null,followingAudio=false,lastAudioKey='',lastCueKey='',pendingScrollSync=false;
-  let listeningVerse=null,holdTimer=null,holdStart=null,suppressVerseClick=false,latestAudioState=null,manualFollowSuspended=false;
+  let listeningVerse=null,holdTimer=null,holdStart=null,suppressVerseClick=false,latestAudioState=null,manualFollowSuspended=false,trackingEnabled=false,lastTrackedLine='';
   let lastVisibleKey=null;
   const keyOf=v=>v.surah+':'+v.ayah;
   const reader=()=>window.mushafReader;
@@ -173,6 +173,7 @@
     if(i<0){setStatus('تعذّر العثور على أول آية في الصفحة.',true);return;}
     position=i;topIndex=i;records=null;lastVisibleKey=firstKey;
     followingAudio=false;lastAudioKey='';lastCueKey='';manualFollowSuspended=false;
+    trackingEnabled=false;lastTrackedLine='';
     lastScrollTop=0;
     list.replaceChildren();viewport.scrollTop=0;
     setStatus('جاري تجهيز القراءة الرأسية…');
@@ -223,6 +224,7 @@
     if(!active)return;
     updateVisibleVerse();
     active=false;++opening;followingAudio=false;manualFollowSuspended=false;
+    trackingEnabled=false;lastTrackedLine='';
     document.body.classList.remove('vertical-reading-active');
     surface.hidden=true;
     if(followButton)followButton.hidden=true;
@@ -261,12 +263,12 @@
   viewport.addEventListener('touchstart',event=>{touchY=event.touches[0]?.clientY??null;},{passive:true});
   viewport.addEventListener('touchmove',event=>{
     const y=event.touches[0]?.clientY;
-    if(active&&touchY!==null&&Math.abs(y-touchY)>12){followingAudio=false;manualFollowSuspended=true;}
+    if(active&&touchY!==null&&Math.abs(y-touchY)>6){disableTracking();}
     if(active&&touchY!==null&&y>touchY+18&&viewport.scrollTop<50){prependBatch();touchY=y;}
   },{passive:true});
   viewport.addEventListener('touchend',()=>{touchY=null;},{passive:true});
   viewport.addEventListener('wheel',event=>{
-    followingAudio=false;manualFollowSuspended=true;
+    if(Math.abs(event.deltaY)>1)disableTracking();
     if(active&&event.deltaY<0&&viewport.scrollTop<50)prependBatch();
   },{passive:true});
   window.addEventListener('keydown',event=>{
@@ -340,13 +342,24 @@
   function updateFollowButton(){
     if(!followButton)return;
     const state=latestAudioState;
-    if(!active||!state?.playing||state.provider!=='quran-foundation'){
-      followButton.hidden=true;return;
-    }
-    const key=state.surah+':'+state.ayah,node=audioVerseNode(key);
-    const ordinal=audioWord(state,key);
-    const word=node?.dataset.wordMapped==='true'&&ordinal?node.querySelector('[data-ordinal="'+ordinal+'"]'):null;
-    followButton.hidden=isVisible(word||node?.querySelector('.vertical-ayah'));
+    followButton.hidden=!(active&&state?.playing&&state.provider==='quran-foundation'&&!trackingEnabled);
+  }
+  function disableTracking(){
+    if(!active)return;
+    trackingEnabled=false;lastTrackedLine='';followingAudio=false;
+    updateFollowButton();
+  }
+  function audioVerseNodeFor(key){
+    return audioVerseNode(key);
+  }
+  function targetLine(word,node){
+    const element=word||node?.querySelector('.vertical-ayah');
+    if(!element)return null;
+    const rect=element.getClientRects()[0]||element.getBoundingClientRect();
+    const frame=viewport.getBoundingClientRect();
+    // Normalized document position doesn't move during smooth scrolling.
+    const absoluteTop=viewport.scrollTop+rect.top-frame.top;
+    return {element,absoluteTop,lineKey:node.dataset.verse+':'+Math.round(absoluteTop/18)};
   }
   function seekAudioPosition(state,force=false){
     if(!active||!records||!state?.playing)return;
@@ -355,20 +368,27 @@
     if(!node){
       const idx=ordered.findIndex(v=>v.key===key);
       if(idx<0)return;
-      // If close to an existing edge, extend the list instead of rebuilding
-      // it and making the user's interpretation text disappear.
+      // Extend only as needed; don't discard what the user was reading.
       let rounds=0;
-      while(!node&&idx>=position&&rounds++<15){appendBatch();node=audioVerseNode(key);}
-      while(!node&&idx<topIndex&&rounds++<15){prependBatch();node=audioVerseNode(key);}
-      if(!node){if(force||state.autoFollow){const p=pageForVerse(key);if(p)reader()?.goToPage?.(p);}return;}
+      while(!node&&idx>=position&&rounds++<50){appendBatch();node=audioVerseNode(key);}
+      rounds=0;
+      while(!node&&idx<topIndex&&rounds++<50){prependBatch();node=audioVerseNode(key);}
+      if(!node)return;
     }
     const ordinal=audioWord(state,key);
-    const word=ordinal&&node.dataset.wordMapped==='true'?node.querySelector('[data-ordinal="'+ordinal+'"]'):null;
-    const target=word||node.querySelector('.vertical-ayah')||node;
-    if(force||state.autoFollow){
-      if(force){followingAudio=true;viewport.scrollBy({top:target.getBoundingClientRect().top-viewport.getBoundingClientRect().top-viewport.clientHeight*.28,behavior:'smooth'});}
-      else easeIntoView(target);
-    }
+    const word=ordinal&&node.dataset.wordMapped==='true'?
+      node.querySelector('[data-ordinal="'+ordinal+'"]'):null;
+    const line=targetLine(word,node);
+    if(!line)return;
+    if(!force&&line.lineKey===lastTrackedLine)return;
+    lastTrackedLine=line.lineKey;
+    followingAudio=true;
+    // Place the highlighted LINE at the top of the reading surface.
+    // Native smooth scroll keeps intermediate text visible while moving.
+    const padding=Math.max(12,parseFloat(getComputedStyle(viewport).paddingTop)||0);
+    const destination=Math.max(0,line.absoluteTop-padding-8);
+    if(Math.abs(viewport.scrollTop-destination)>8)
+      viewport.scrollTo({top:destination,behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   }
   function applyAudio(state){
     latestAudioState=state;
@@ -389,7 +409,7 @@
     }
     // Moving text is only justified when the actively recited word leaves
     // the visible area, NOT at each new ayah or every timing segment.
-    if(state.autoFollow&&!manualFollowSuspended)seekAudioPosition(state);
+    if(trackingEnabled)seekAudioPosition(state);
     updateFollowButton();
     lastAudioKey=key;
   }
@@ -399,11 +419,21 @@
       followButton.title='شغّل التلاوة أولًا';
       return;
     }
-    manualFollowSuspended=false;
+    manualFollowSuspended=false;trackingEnabled=true;lastTrackedLine='';
     seekAudioPosition(state,true);
-    followButton.hidden=true;
+    updateFollowButton();
   });
-  function toggleVerseAction(node){
+  // Explicit Listen is a playback action, not consent to automatic scrolling.
+  document.addEventListener('click',event=>{
+    if(active&&event.target instanceof Element&&event.target.closest('[data-verse-action="listen"],.vertical-verse-listen'))
+      disableTracking();
+  },true);
+  // Keyboard scrolling is manual navigation too.
+  viewport.addEventListener('keydown',event=>{
+    if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' '].includes(event.key))
+      disableTracking();
+  });
+    function toggleVerseAction(node){
     const wasOpen=node===listeningVerse;
     if(listeningVerse)listeningVerse.querySelector('.vertical-verse-actions').hidden=true;
     listeningVerse=null;
