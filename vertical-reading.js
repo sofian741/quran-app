@@ -65,14 +65,7 @@
     // Preserve the original Uthmani text of the reader and never guess timing.
     const sourceText=verse.text||'';
     const map=qvp()?.getMapping?.(verse.key);
-    const suffix=new Set(['ۖ','ۚ','ۘ','ۗ','ۛ','ۙ','ۜ','۩']);
-    const words=[],parts=sourceText.trim().split(/\s+/);
-    let prefix='';
-    for(const part of parts){
-      if(part==='۞')prefix+=part;
-      else if(suffix.has(part)&&words.length)words[words.length-1]+='\\u202f'+part;
-      else {words.push(prefix+part);prefix='';}
-    }
+    const words=qvp()?.splitWords?.(sourceText)||[];
     const safeMapping=map?.status==='exact-skeleton'&&words.length===map.sourceCount;
     if(safeMapping){
       words.forEach((word,i)=>{
@@ -388,7 +381,7 @@
     const padding=Math.max(12,parseFloat(getComputedStyle(viewport).paddingTop)||0);
     const destination=Math.max(0,line.absoluteTop-padding-8);
     if(Math.abs(viewport.scrollTop-destination)>8)
-      viewport.scrollTo({top:destination,behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+      viewport.scrollTo({top:destination,behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth'});
   }
   function applyAudio(state){
     latestAudioState=state;
