@@ -63,8 +63,9 @@
     playing = true;
     leaving = false;
     const id = ++runId;
-    splash.classList.toggle('ayat-welcome-force-motion',
-      sessionStorage.getItem(previewKey) === '1');
+    let forceMotion = false;
+    try { forceMotion = sessionStorage.getItem(previewKey) === '1'; } catch (_) {}
+    splash.classList.toggle('ayat-welcome-force-motion', forceMotion);
     splash.classList.remove('is-playing', 'is-leaving');
     splash.hidden = false;
     // The important old trick: commit the first (hidden) frame before
