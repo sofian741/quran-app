@@ -1,13 +1,13 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v99-kalam-animated';
+const APP_CACHE = 'quran-reader-shell-v100-kalam-refined';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './mushaf-qvp/boot.js', './mushaf-qvp/reader.js', './mushaf-qvp/line-layout.js', './mushaf-qvp/heritage-ornament.js', './mushaf-qvp/reader.css', './mushaf-qvp/integrity.js',
     './mushaf-qvp/vendor/LICENSE', './mushaf-qvp/text-map.js', './mushaf-qvp/subwords.js', './mushaf-qvp/vendor/lite.js', './mushaf-qvp/vendor/lite-path.js',
     './data/qvp/manifest.json', './data/qvp/word-map.json',
     './', './index.html', './quran.html', './recitations.html', './library.html', './adhkar.html', './licenses.html',
-    './vertical-reading.css', './vertical-reading.js', './mushaf-index-polish.css', './style.css', './home.css', './home.js', './welcome.css?v=99', './welcome-boot.js?v=99', './welcome.js?v=99', './tour.css?v=57', './tour-home.css?v=59', './tour.js?v=64', './onboarding.css', './onboarding.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
+    './vertical-reading.css', './vertical-reading.js', './mushaf-index-polish.css', './style.css', './home.css', './home.js', './welcome.css?v=100', './welcome-boot.js?v=100', './welcome.js?v=100', './tour.css?v=57', './tour-home.css?v=59', './tour.js?v=64', './onboarding.css', './onboarding.js', './reader-enhancements.css', './audio-player.css', './recitations.css',
     './recitations-overrides.css', './ayat-reading-continuity.css', './unified-nav.css', './global-theme.js', './library.css', './adhkar.css', './tasbih-studio.css', './legal.css',
     './service-worker-register.js', './home-settings.js?v=54', './android-build-info.js', './app-update.js', './mushaf-keyboard-viewport.js',
     './verse-actions.js', './tafsir.js', './quran-search.js', './verse-tools.js',
