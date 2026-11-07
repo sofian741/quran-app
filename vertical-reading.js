@@ -86,7 +86,7 @@
       }
     });
     actions.append(listen);
-    section.append(ayah,annotation,tafsir,actions);return section;
+    section.append(ayah,actions,annotation,tafsir);return section;
   }
   let records=null;
   function appendBatch(){
@@ -223,7 +223,9 @@
   button.addEventListener('click',()=>active?close():open());
   // In this mode tapping plain text mirrors the mushaf's tap-to-show-controls behavior.
   viewport.addEventListener('click',event=>{
-    if(!event.target.closest('.vertical-verse,button,a,input'))document.body.classList.toggle('tools-visible');
+    // Match the printed Mushaf: tapping tafsir, gaps or the page toggles controls.
+    // Quran text itself keeps the one-tap Listen action.
+    if(!event.target.closest('.vertical-ayah,button,a,input'))document.body.classList.toggle('tools-visible');
   });
   let scheduled=false;
   function onScroll(){
