@@ -93,8 +93,8 @@
 .vertical-ayah-word{border-radius:5px;transition:background-color .12s ease,color .12s ease}
 .vertical-verse.is-reciting-verse .vertical-ayah{color:#0c7658}
 .vertical-ayah-word.is-reciting{
-  color:#123b30;background:#f2cf80;
-  box-shadow:0 0 0 3px #f2cf80;
+  color:#104936;background:#b4dfc9;
+  box-shadow:0 0 0 3px #b4dfc9;
 }
 .reader-page[data-theme="dark"] .vertical-verse.is-reciting-verse .vertical-ayah{color:#b0e3c8}
 .reader-page[data-theme="dark"] .vertical-ayah-word.is-reciting{
