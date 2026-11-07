@@ -251,8 +251,16 @@ function syncAudio(state){
   lastAudio=state;if(!active)return;
   const playing=state.playing&&state.provider==='quran-foundation'&&state.timing;
   const ref=`${state.surah}:${state.ayah}`;
-  const msKey=state.currentTime*1000, segmentKey=state.timing?.segments?.findLast(s=>msKey>=s.start&&msKey<s.end);
+  const msKey=state.currentTime*1000, segments=state.timing?.segments||[];
   const inVerse=(!Number.isFinite(state.timing?.timestampFrom)||msKey>=state.timing.timestampFrom)&&(!Number.isFinite(state.timing?.timestampTo)||msKey<state.timing.timestampTo);
+  const realSegment=segments.findLast(s=>msKey>=s.start&&msKey<s.end);
+  const firstSegment=segments.reduce((earliest,s)=>!earliest||s.start<earliest.start?s:earliest,null);
+  // The opening syllable can precede the first provider word timestamp.
+  // Never synthesize later gaps or a word from an unrelated verse.
+  const leadWord=inVerse&&!realSegment&&firstSegment&&msKey<firstSegment.start&&
+    (firstSegment.word===1||firstSegment.word===2)&&
+    msKey>=(Number.isFinite(state.timing?.timestampFrom)?state.timing.timestampFrom:Math.max(0,firstSegment.start-2000));
+  const segmentKey=realSegment||(leadWord?{word:1,endWord:1}:null);
   const signature=[current,playing?ref:'',segmentKey?.word,segmentKey?.endWord,state.reciterId,inVerse].join(':');
   if(signature===audioSignature)return;audioSignature=signature;
   const hadAudioWord=text.querySelector('.is-audio-word');
@@ -262,11 +270,11 @@ function syncAudio(state){
   if(Number.isFinite(t.timestampFrom)&&ms<t.timestampFrom||Number.isFinite(t.timestampTo)&&ms>=t.timestampTo)return;
   // Require the complete provider ordinal range. No first-word guessing, no
   // interpolated gaps, and no count based on the current page's fragment.
-  const segments=t.segments||[],map=maps[ref];
+  const map=maps[ref];
   const supported=[7,9020,9021,9022,...Array.from({length:19},(_,i)=>9000+i)].filter(i=>i!==9017).includes(Number(state.reciterId));
   const valid=supported&&map&&segments.length&&segments.every(s=>Number.isInteger(s.word)&&s.word>=1&&(s.endWord??s.word)<=map.sourceCount);
   if(!valid){metrics.lastTimingError='Unmapped provider ordinal '+ref;return;}
-  const segment=segments.findLast(s=>ms>=s.start&&ms<s.end);if(!segment)return;
+  const segment=realSegment||(leadWord?{word:1,endWord:1}:null);if(!segment)return;
   const keys=timingRange(map,segment);if(!keys){metrics.lastTimingError='Unmapped word '+ref;return;}
   for(const key of keys)active.nodes.get(key)?.classList.add('is-audio-word');
   metrics.activeWordKeys=keys;paint(active);
