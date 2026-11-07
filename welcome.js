@@ -89,13 +89,16 @@
         { transform: 'scaleX(1)', opacity: 1, offset: 1 }
       ], { duration: 540, easing: ease }),
       animateAfter(350, kalam, [
-        { opacity: 0, clipPath: 'inset(100% 0 0 0)', transform: 'translateY(11px)' },
-        { opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'translateY(0)' }
-      ], { duration: 570 }),
-      animateAfter(760, rahman, [
-        { opacity: 0, clipPath: 'inset(0 100% 0 0)', transform: 'translateX(6px)' },
+        // Keep glyphs fully opaque behind a bottom-up clipping edge.
+        // Opacity fading made the entire word seem to pop in at once.
+        { opacity: 1, clipPath: 'inset(100% 0 0 0)', transform: 'translateY(9px)' },
+        { opacity: 1, clipPath: 'inset(0% 0 0 0)', transform: 'translateY(0)' }
+      ], { duration: 720, easing: 'cubic-bezier(.45,0,.2,1)' }),
+      animateAfter(820, rahman, [
+        // Reveal from the RIGHT edge towards the LEFT in Arabic reading order.
+        { opacity: 1, clipPath: 'inset(0 0 0 100%)', transform: 'translateX(6px)' },
         { opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'translateX(0)' }
-      ], { duration: 570 }),
+      ], { duration: 630, easing: 'cubic-bezier(.45,0,.2,1)' }),
       animateAfter(1190, subtitle, [
         { opacity: 0, clipPath: 'inset(0 0 100% 0)', transform: 'translateY(-7px)' },
         { opacity: 1, clipPath: 'inset(0 0 0 0)', transform: 'translateY(0)' }
