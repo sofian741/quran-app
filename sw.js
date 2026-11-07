@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_CACHE = 'quran-reader-shell-v93-vertical-word-follow';
+const APP_CACHE = 'quran-reader-shell-v94-follow-motion';
 const AUDIO_CACHE = 'quran-recitation-audio-v1';
 const APP_SHELL = [
     './mushaf-qvp/boot.js', './mushaf-qvp/reader.js', './mushaf-qvp/line-layout.js', './mushaf-qvp/heritage-ornament.js', './mushaf-qvp/reader.css', './mushaf-qvp/integrity.js',
