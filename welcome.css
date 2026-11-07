@@ -19,7 +19,7 @@
 @keyframes ayat-reveal-ar{to{opacity:1;filter:blur(0);transform:translateX(0)}}
 @keyframes ayat-reveal-en{to{opacity:1;filter:blur(0);transform:translateX(0)}}
 @keyframes ayat-fade{to{opacity:1}}
-@media(prefers-reduced-motion:reduce){.ayat-welcome.is-playing .ayat-welcome-line,.ayat-welcome.is-playing .ayat-welcome-word,.ayat-welcome.is-playing .ayat-welcome-subtitle{animation:none;filter:none;opacity:1;transform:none}.ayat-welcome{transition:none}}
+@media(prefers-reduced-motion:reduce){.ayat-welcome:not(.ayat-welcome-force-motion).is-playing .ayat-welcome-line,.ayat-welcome:not(.ayat-welcome-force-motion).is-playing .ayat-welcome-word,.ayat-welcome:not(.ayat-welcome-force-motion).is-playing .ayat-welcome-subtitle{animation:none;filter:none;opacity:1;transform:none}.ayat-welcome:not(.ayat-welcome-force-motion){transition:none}}
 
 /* One transform timeline avoids competing animations masking the rotation. */
 @keyframes ayat-line-sequence {
@@ -157,10 +157,11 @@ html.ayat-tour-boot .home-app,html.ayat-tour-boot .home-bottom-nav{visibility:hi
   .ayat-welcome-line{width:clamp(165px,65vw,220px)}
 }
 @media(prefers-reduced-motion:reduce){
-  .ayat-welcome-title .ayat-welcome-word,.ayat-welcome-subtitle{
+  .ayat-welcome:not(.ayat-welcome-force-motion) .ayat-welcome-title .ayat-welcome-word,
+  .ayat-welcome:not(.ayat-welcome-force-motion) .ayat-welcome-subtitle{
     opacity:1!important;transform:none!important;clip-path:none!important;
   }
-  .ayat-welcome-line{transform:none!important}
+  .ayat-welcome:not(.ayat-welcome-force-motion) .ayat-welcome-line{transform:none!important}
 }
 
 /* Reduced-motion follows user preference in production. Explicit splash
@@ -171,10 +172,5 @@ html.ayat-tour-boot .home-app,html.ayat-tour-boot .home-bottom-nav{visibility:hi
   .ayat-welcome.is-playing:not(.ayat-welcome-force-motion) .ayat-welcome-subtitle{
     animation:none!important;
   }
-  .ayat-welcome.ayat-welcome-force-motion .ayat-welcome-title .ayat-welcome-word{
-    opacity:0!important;transform:none;clip-path:none;
-  }
-  .ayat-welcome.ayat-welcome-force-motion.is-playing .ayat-welcome-title .ayat-welcome-word{
-    animation-play-state:running!important;
-  }
+
 }
