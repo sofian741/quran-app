@@ -46,3 +46,46 @@ html.ayat-tour-boot .home-app,html.ayat-tour-boot .home-bottom-nav{visibility:hi
 .ayat-welcome .ayat-welcome-skip{position:absolute;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:2;min-width:76px;min-height:40px;padding:10px 15px;border:0;border-radius:12px;background:transparent;box-shadow:none;color:#85b5a1;font-family:Tahoma,Arial,sans-serif;font-size:12px;font-weight:400;opacity:.62;cursor:pointer}
 .ayat-welcome .ayat-welcome-skip:active,.ayat-welcome .ayat-welcome-skip:hover{opacity:1;color:#c1dfd0}
 .ayat-welcome .ayat-welcome-skip:focus-visible{outline:2px solid #b8d5c5;outline-offset:2px}
+
+/* Kalam Al-Rahman: keep the original gold-line reveal, with balanced
+   two-word Arabic identity and a quiet bilingual signature. */
+.ayat-welcome-center{
+  width:min(96vw,540px);
+  height:190px;
+  gap:0;
+}
+.ayat-welcome-ar{
+  flex:0 1 auto;
+  min-width:0;
+  font-family:'Amiri Quran',Tahoma,Arial,sans-serif;
+  font-size:clamp(27px,6vw,41px);
+  font-weight:700;
+  line-height:1.7;
+  letter-spacing:0;
+  text-align:left;
+  white-space:nowrap;
+}
+.ayat-welcome-en{
+  flex:0 0 auto;
+  font-family:Georgia,serif;
+  font-size:clamp(17px,3.75vw,28px);
+  font-weight:400;
+  line-height:1.22;
+  letter-spacing:.01em;
+  text-align:left;
+  white-space:normal;
+}
+.ayat-welcome-line{
+  flex:0 0 2px;
+  height:70px;
+  margin:0 clamp(9px,2.4vw,17px);
+}
+.ayat-welcome-subtitle{
+  top:calc(50% + 73px);
+  font-size:clamp(11px,2.8vw,13px);
+}
+@media(max-width:360px){
+  .ayat-welcome-ar{font-size:clamp(25px,6.5vw,29px)}
+  .ayat-welcome-en{font-size:17px}
+  .ayat-welcome-line{margin-inline:8px}
+}
