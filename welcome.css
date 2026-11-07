@@ -121,8 +121,37 @@ html.ayat-tour-boot .home-app,html.ayat-tour-boot .home-bottom-nav{visibility:hi
   font-family:Tahoma,Arial,sans-serif;letter-spacing:0;
   line-height:1.5;opacity:0;transform:none;
 }
-.ayat-welcome.is-playing .ayat-welcome-line,
-.ayat-welcome.is-playing .ayat-welcome-subtitle{animation:none}
+/* Run the reveal on CSS's own clock; no JS Animation.finished dependency. */
+.ayat-welcome.is-playing .ayat-welcome-line{
+  animation:kalam-gold-stroke 1.08s cubic-bezier(.4,0,.25,1) both;
+}
+.ayat-welcome.is-playing .ayat-welcome-kalam{
+  animation:kalam-rise .58s 1.08s cubic-bezier(.22,1,.36,1) both;
+}
+.ayat-welcome.is-playing .ayat-welcome-rahman{
+  animation:kalam-unfold .57s 1.68s cubic-bezier(.22,1,.36,1) both;
+}
+.ayat-welcome.is-playing .ayat-welcome-subtitle{
+  animation:kalam-caption .5s 2.27s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes kalam-gold-stroke{
+  0%{transform:rotate(90deg) scaleX(.25)}
+  38%{transform:rotate(270deg) scaleX(.25)}
+  62%{transform:rotate(450deg) scaleX(.25)}
+  100%{transform:rotate(360deg) scaleX(1)}
+}
+@keyframes kalam-rise{
+  from{opacity:0;clip-path:inset(100% 0 0 0);transform:translateY(15px)}
+  to{opacity:1;clip-path:inset(0);transform:translateY(0)}
+}
+@keyframes kalam-unfold{
+  from{opacity:0;clip-path:inset(0 100% 0 0);transform:translateX(9px)}
+  to{opacity:1;clip-path:inset(0);transform:translateX(0)}
+}
+@keyframes kalam-caption{
+  from{opacity:0;clip-path:inset(0 0 100% 0);transform:translateY(-9px)}
+  to{opacity:1;clip-path:inset(0);transform:translateY(0)}
+}
 @media(max-width:360px){
   .ayat-welcome-title{font-size:clamp(30px,8.5vw,34px);gap:7px}
   .ayat-welcome-line{width:clamp(165px,65vw,220px)}
@@ -132,4 +161,20 @@ html.ayat-tour-boot .home-app,html.ayat-tour-boot .home-bottom-nav{visibility:hi
     opacity:1!important;transform:none!important;clip-path:none!important;
   }
   .ayat-welcome-line{transform:none!important}
+}
+
+/* Reduced-motion follows user preference in production. Explicit splash
+   previews can override it without modifying the system setting. */
+@media(prefers-reduced-motion:reduce){
+  .ayat-welcome.is-playing:not(.ayat-welcome-force-motion) .ayat-welcome-line,
+  .ayat-welcome.is-playing:not(.ayat-welcome-force-motion) .ayat-welcome-word,
+  .ayat-welcome.is-playing:not(.ayat-welcome-force-motion) .ayat-welcome-subtitle{
+    animation:none!important;
+  }
+  .ayat-welcome.ayat-welcome-force-motion .ayat-welcome-title .ayat-welcome-word{
+    opacity:0!important;transform:none;clip-path:none;
+  }
+  .ayat-welcome.ayat-welcome-force-motion.is-playing .ayat-welcome-title .ayat-welcome-word{
+    animation-play-state:running!important;
+  }
 }
