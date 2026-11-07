@@ -59,17 +59,33 @@
     const section=document.createElement('section');section.className='vertical-verse';section.dataset.verse=verse.key;
     section.dataset.surah=String(verse.surah);
     const ayah=document.createElement('p');ayah.className='vertical-ayah';ayah.lang='ar';
-    // Keep Quran text unchanged. For a verified full word mapping only, wrap
-    // each original token so the current recited word can be colored.
-    const words=record.arabic_text.trim().split(/\s+/);
+    // Use the SAME trusted Tanzil word-boundary rules that generated the QVP
+    // sourceCount. Tafsir display data may separate stop signs with spaces,
+    // especially in long ayat, without changing the Quran words themselves.
+    // Preserve the original Uthmani text of the reader and never guess timing.
+    const sourceText=verse.text||'';
     const map=qvp()?.getMapping?.(verse.key);
-    const source=verse.text?.trim().split(/\s+/)||[];
-    const normal=t=>t.normalize('NFD').replace(/[\p{M}\u0640\u06D6-\u06ED\s\u202f]/gu,'').replace(/ٱ/g,'ا').replace(/ى/g,'ي');
-    const safeMapping=words.length===source.length&&words.length===map?.sourceCount&&words.every((w,i)=>normal(w)===normal(source[i]));
+    const suffix=new Set(['ۖ','ۚ','ۘ','ۗ','ۛ','ۙ','ۜ','۩']);
+    const words=[],parts=sourceText.trim().split(/\\s+/);
+    let prefix='';
+    for(const part of parts){
+      if(part==='۞')prefix+=part;
+      else if(suffix.has(part)&&words.length)words[words.length-1]+='\\u202f'+part;
+      else {words.push(prefix+part);prefix='';}
+    }
+    const safeMapping=map?.status==='exact-skeleton'&&words.length===map.sourceCount;
     if(safeMapping){
-      words.forEach((word,i)=>{const span=document.createElement('span');span.className='vertical-ayah-word';span.dataset.ordinal=String(i+1);span.textContent=word;ayah.append(span,document.createTextNode(' '));});
+      words.forEach((word,i)=>{
+        const span=document.createElement('span');
+        span.className='vertical-ayah-word';
+        span.dataset.ordinal=String(i+1);span.textContent=word;
+        ayah.append(span,document.createTextNode(' '));
+      });
       section.dataset.wordMapped='true';
-    }else ayah.append(document.createTextNode(record.arabic_text+' '));
+    }else{
+      // Incomplete mapping must never color an unrelated token.
+      ayah.append(document.createTextNode(sourceText||record.arabic_text));
+    }
     const number=document.createElement('span');number.className='vertical-ayah-number';
     number.textContent='﴿'+digits(verse.ayah)+'﴾';number.setAttribute('aria-label','الآية '+digits(verse.ayah));ayah.append(number);
     const annotation=document.createElement('div');annotation.className='vertical-tafsir-label';annotation.textContent='التفسير الميسّر';
